@@ -152,7 +152,15 @@ select pg_temp.authenticate_as(
 
 select is(
   pg_temp.sqlstate_from(
-    $$ select public.create_group_visit(180, false, null, false) $$
+    $$
+      select public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '4 hours',
+        false,
+        null,
+        false
+      )
+    $$
   ),
   '23514',
   'leader must accept terms before creating a group visit'
@@ -162,7 +170,13 @@ select lives_ok(
   $$
     with created as (
       select *
-      from public.create_group_visit(180, false, null, true)
+      from public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '4 hours',
+        false,
+        null,
+        true
+      )
     )
     insert into pg_temp.test_created_visits (label, visit_id, join_code)
     select 'main', visit_id, join_code
@@ -175,7 +189,8 @@ select results_eq(
   $$
     select
       visit.status::text,
-      visit.expected_duration_minutes,
+      visit.visit_type::text,
+      visit.expected_return_at = pg_catalog.now() + interval '4 hours',
       visit.has_local_guide,
       visit.guide_name is null,
       visit.join_code ~ '^[A-Z0-9]{6}$',
@@ -188,7 +203,7 @@ select results_eq(
       where label = 'main'
     )
   $$,
-  $$ values ('forming'::text, 180, false, true, true, 'ascenso-cima'::text) $$,
+  $$ values ('forming'::text, 'day_hike'::text, true, false, true, true, 'ascenso-cima'::text) $$,
   'created visit uses server code, forming status, and default route'
 );
 
@@ -209,7 +224,15 @@ select results_eq(
 
 select is(
   pg_temp.sqlstate_from(
-    $$ select public.create_group_visit(120, false, null, true) $$
+    $$
+      select public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '5 hours',
+        false,
+        null,
+        true
+      )
+    $$
   ),
   'P0001',
   'tourist cannot create a second active group visit'
@@ -222,13 +245,15 @@ select is(
         route_id,
         created_by,
         join_code,
-        expected_duration_minutes
+        visit_type,
+        expected_return_at
       )
       select
         route.id,
         'b1000000-0000-4000-8000-000000000001'::uuid,
         'DIRECT',
-        120
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '5 hours'
       from public.routes as route
       where route.slug = 'ascenso-cima'
     $$
@@ -318,7 +343,15 @@ select pg_temp.authenticate_as(
 
 select is(
   pg_temp.sqlstate_from(
-    $$ select public.create_group_visit(180, false, null, true) $$
+    $$
+      select public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '4 hours',
+        false,
+        null,
+        true
+      )
+    $$
   ),
   'P0001',
   'incomplete profile cannot create a group visit'
@@ -341,7 +374,15 @@ select pg_temp.authenticate_as(
 
 select is(
   pg_temp.sqlstate_from(
-    $$ select public.create_group_visit(180, false, null, true) $$
+    $$
+      select public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '4 hours',
+        false,
+        null,
+        true
+      )
+    $$
   ),
   'P0001',
   'tourist without emergency contact cannot create a group visit'
@@ -428,7 +469,13 @@ select lives_ok(
   $$
     with created as (
       select *
-      from public.create_group_visit(240, true, 'Guia Local', true)
+      from public.create_group_visit(
+        'expedition_camping'::public.visit_type,
+        pg_catalog.now() + interval '2 days',
+        true,
+        'Guia Local',
+        true
+      )
     )
     insert into pg_temp.test_created_visits (label, visit_id, join_code)
     select 'secondary', visit_id, join_code
@@ -517,14 +564,14 @@ select results_eq(
 
 select results_eq(
   $$
-    select expected_return_at = started_at + interval '180 minutes'
+    select expected_return_at = pg_catalog.now() + interval '4 hours'
     from public.visits
     where id = (
       select visit_id from pg_temp.test_created_visits where label = 'main'
     )
   $$,
   $$ values (true) $$,
-  'expected return time is calculated from the configured duration'
+  'starting preserves the expected return time selected during creation'
 );
 
 select pg_temp.authenticate_as(
@@ -656,7 +703,15 @@ select is(
 
 select is(
   pg_temp.sqlstate_from(
-    'select public.create_group_visit(180, false, null, true)'
+    $$
+      select public.create_group_visit(
+        'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '4 hours',
+        false,
+        null,
+        true
+      )
+    $$
   ),
   '42501',
   'anonymous user cannot execute group visit RPCs'
