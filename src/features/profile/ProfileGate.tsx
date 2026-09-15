@@ -1,0 +1,124 @@
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { getAuthErrorMessage } from '../auth/auth-errors'
+import { useAuth } from '../auth/useAuth'
+import { loadTouristProfile } from './profile-service'
+import {
+  isTouristProfileComplete,
+  type TouristProfileData,
+} from './profile-types'
+import { AuthenticatedPage } from '../../pages/AuthenticatedPage'
+import { ProfileFormPage } from '../../pages/ProfileFormPage'
+
+export function ProfileGate() {
+  const { t } = useTranslation()
+  const { user, signOut } = useAuth()
+  const [profile, setProfile] = useState<TouristProfileData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [signOutError, setSignOutError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [requestNumber, setRequestNumber] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+
+    void loadTouristProfile(user.id)
+      .then((loadedProfile) => {
+        if (!active) return
+
+        setProfile(loadedProfile)
+        setLoadError(false)
+      })
+      .catch(() => {
+        if (active) setLoadError(true)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user, requestNumber])
+
+  if (!user || loading) {
+    return (
+      <main className="auth-shell">
+        <p className="loading-message" role="status">
+          {t('profile.loading')}
+        </p>
+      </main>
+    )
+  }
+
+  if (loadError || !profile) {
+    const retry = () => {
+      setLoading(true)
+      setLoadError(false)
+      setRequestNumber((current) => current + 1)
+    }
+
+    const handleSignOut = async () => {
+      setSignOutError(null)
+
+      try {
+        await signOut()
+      } catch (error) {
+        setSignOutError(getAuthErrorMessage(error))
+      }
+    }
+
+    return (
+      <main className="auth-shell">
+        <section className="auth-card authenticated-card">
+          <header className="auth-header">
+            <span className="eyebrow">{t('common.brand')}</span>
+            <h1>{t('profile.loadErrorTitle')}</h1>
+            <p>{t('profile.loadErrorSubtitle')}</p>
+          </header>
+
+          {signOutError && (
+            <p className="form-message error-message" role="alert">
+              {signOutError}
+            </p>
+          )}
+
+          <div className="account-actions">
+            <button className="primary-button" type="button" onClick={retry}>
+              {t('profile.retry')}
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleSignOut}
+            >
+              {t('common.signOut')}
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  const profileComplete = isTouristProfileComplete(profile)
+
+  if (!profileComplete || editing) {
+    return (
+      <ProfileFormPage
+        userId={user.id}
+        initialData={profile}
+        requiredCompletion={!profileComplete}
+        onSaved={(savedProfile) => {
+          setProfile(savedProfile)
+          setEditing(false)
+        }}
+        onCancel={() => setEditing(false)}
+      />
+    )
+  }
+
+  return <AuthenticatedPage onEditProfile={() => setEditing(true)} />
+}

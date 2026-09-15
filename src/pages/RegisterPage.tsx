@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthErrorMessage } from '../features/auth/auth-errors'
 import { useAuth } from '../features/auth/useAuth'
+import { normalizeSpaces } from '../lib/text'
 
 type RegisterPageProps = {
   onShowLogin: () => void
@@ -9,6 +11,7 @@ type RegisterPageProps = {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function RegisterPage({ onShowLogin }: RegisterPageProps) {
+  const { t } = useTranslation()
   const { signUp } = useAuth()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -27,19 +30,19 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
       !password ||
       !confirmPassword
     ) {
-      return 'Completa todos los campos.'
+      return t('validation.required')
     }
 
     if (!EMAIL_PATTERN.test(email.trim())) {
-      return 'Ingresa un correo electrónico válido.'
+      return t('validation.invalidEmail')
     }
 
     if (password.length < 8) {
-      return 'La contraseña debe tener al menos 8 caracteres.'
+      return t('validation.passwordLength')
     }
 
     if (password !== confirmPassword) {
-      return 'Las contraseñas no coinciden.'
+      return t('validation.passwordMismatch')
     }
 
     return null
@@ -60,15 +63,15 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
 
     try {
       const result = await signUp(
-        firstName.trim(),
-        lastName.trim(),
+        normalizeSpaces(firstName),
+        normalizeSpaces(lastName),
         email.trim(),
         password,
       )
 
       if (result.requiresEmailConfirmation) {
         setSuccess(
-          'Cuenta creada. Revisa tu correo y confirma la cuenta antes de iniciar sesión.',
+          t('auth.confirmationRequired'),
         )
         setPassword('')
         setConfirmPassword('')
@@ -84,14 +87,14 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="register-title">
         <header className="auth-header">
-          <span className="eyebrow">Volcán Santa María</span>
-          <h1 id="register-title">Crear cuenta</h1>
-          <p>Regístrate para comenzar tu experiencia.</p>
+          <span className="eyebrow">{t('common.brand')}</span>
+          <h1 id="register-title">{t('auth.registerTitle')}</h1>
+          <p>{t('auth.registerSubtitle')}</p>
         </header>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label>
-            Nombre
+            {t('common.firstName')}
             <input
               type="text"
               name="firstName"
@@ -104,7 +107,7 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
           </label>
 
           <label>
-            Apellido
+            {t('common.lastName')}
             <input
               type="text"
               name="lastName"
@@ -117,7 +120,7 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
           </label>
 
           <label>
-            Correo electrónico
+            {t('common.email')}
             <input
               type="email"
               name="email"
@@ -130,7 +133,7 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
           </label>
 
           <label>
-            Contraseña
+            {t('common.password')}
             <input
               type="password"
               name="password"
@@ -144,7 +147,7 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
           </label>
 
           <label>
-            Confirmar contraseña
+            {t('auth.confirmPassword')}
             <input
               type="password"
               name="confirmPassword"
@@ -170,14 +173,18 @@ export function RegisterPage({ onShowLogin }: RegisterPageProps) {
           )}
 
           <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
+            {t(
+              submitting
+                ? 'auth.creatingAccount'
+                : 'auth.createAccountLink',
+            )}
           </button>
         </form>
 
         <p className="auth-switch">
-          ¿Ya tienes una cuenta?{' '}
+          {t('auth.alreadyRegistered')}{' '}
           <button type="button" onClick={onShowLogin} disabled={submitting}>
-            Iniciar sesión
+            {t('auth.loginLink')}
           </button>
         </p>
       </section>

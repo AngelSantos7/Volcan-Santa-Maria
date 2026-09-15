@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuthErrorMessage } from '../features/auth/auth-errors'
 import { useAuth } from '../features/auth/useAuth'
 
@@ -7,6 +8,7 @@ type LoginPageProps = {
 }
 
 export function LoginPage({ onShowRegister }: LoginPageProps) {
+  const { t } = useTranslation()
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,7 +20,7 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
     setError(null)
 
     if (!email.trim() || !password) {
-      setError('Completa todos los campos.')
+      setError(t('validation.required'))
       return
     }
 
@@ -37,14 +39,14 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="login-title">
         <header className="auth-header">
-          <span className="eyebrow">Volcán Santa María</span>
-          <h1 id="login-title">Iniciar sesión</h1>
-          <p>Ingresa con tu correo electrónico para continuar.</p>
+          <span className="eyebrow">{t('common.brand')}</span>
+          <h1 id="login-title">{t('auth.loginTitle')}</h1>
+          <p>{t('auth.loginSubtitle')}</p>
         </header>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label>
-            Correo electrónico
+            {t('common.email')}
             <input
               type="email"
               name="email"
@@ -57,7 +59,7 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
           </label>
 
           <label>
-            Contraseña
+            {t('common.password')}
             <input
               type="password"
               name="password"
@@ -76,14 +78,14 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
           )}
 
           <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? 'Ingresando…' : 'Ingresar'}
+            {t(submitting ? 'auth.loggingIn' : 'auth.loginSubmit')}
           </button>
         </form>
 
         <p className="auth-switch">
-          ¿Aún no tienes una cuenta?{' '}
+          {t('auth.noAccount')}{' '}
           <button type="button" onClick={onShowRegister} disabled={submitting}>
-            Crear cuenta
+            {t('auth.createAccountLink')}
           </button>
         </p>
       </section>
