@@ -7,6 +7,7 @@ import type {
   GroupVisitStatus,
   EarlyReturnReason,
   VisitHistoryItem,
+  VisitHistoryMember,
   VisitMemberStatus,
   VisitType,
 } from './visit-types';
@@ -64,6 +65,14 @@ type VisitHistoryRow = {
   return_started_at: string | null;
   checked_out_at: string | null;
   participant_count: number;
+};
+
+type VisitHistoryMemberRow = {
+  first_name: string;
+  last_name: string;
+  member_role: GroupVisitMemberRole;
+  member_status: VisitMemberStatus;
+  checked_out_at: string | null;
 };
 
 function firstRow<Row>(data: unknown): Row | null {
@@ -263,5 +272,24 @@ export async function getMyVisitHistory(
     returnStartedAt: row.return_started_at,
     checkedOutAt: row.checked_out_at,
     participantCount: row.participant_count,
+  }));
+}
+
+export async function getVisitHistoryMembers(
+  visitId: string
+): Promise<VisitHistoryMember[]> {
+  const { data, error } = await supabase.rpc('get_visit_history_members', {
+    p_visit_id: visitId,
+  });
+
+  if (error) throw error;
+  if (!Array.isArray(data)) return [];
+
+  return (data as VisitHistoryMemberRow[]).map((row) => ({
+    firstName: row.first_name,
+    lastName: row.last_name,
+    memberRole: row.member_role,
+    memberStatus: row.member_status,
+    checkedOutAt: row.checked_out_at,
   }));
 }

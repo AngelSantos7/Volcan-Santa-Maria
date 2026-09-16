@@ -43,6 +43,18 @@ values
     '{"first_name":"Tania","last_name":"Tardia"}'::jsonb
   );
 
+update auth.users
+set email_confirmed_at = pg_catalog.now()
+where id in (
+  'b1000000-0000-4000-8000-000000000001'::uuid,
+  'b2000000-0000-4000-8000-000000000002'::uuid,
+  'b3000000-0000-4000-8000-000000000003'::uuid,
+  'b4000000-0000-4000-8000-000000000004'::uuid,
+  'b5000000-0000-4000-8000-000000000005'::uuid,
+  'b6000000-0000-4000-8000-000000000006'::uuid,
+  'b7000000-0000-4000-8000-000000000007'::uuid
+);
+
 update public.profiles
 set
   nationality_country_code = 'GT',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { getAppLanguage } from '../../i18n';
 import { EarlyReturnForm } from './EarlyReturnForm';
 import { getVisitErrorMessage } from './visit-errors';
@@ -32,15 +33,24 @@ type EarlyReturnTarget =
   | { mode: 'self' }
   | { mode: 'organizer'; userId: string; participantName: string };
 
-function formatDateTime(value: string | null, language: string): string {
+type PendingConfirmation =
+  | { action: 'cancel' }
+  | { action: 'complete' }
+  | { action: 'withdraw' }
+  | { action: 'checkout' }
+  | { action: 'remove'; participant: GroupVisitParticipant };
+
+function formatExpectedReturn(value: string | null, language: string): string {
   if (!value) return '—';
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
 
   return new Intl.DateTimeFormat(language === 'es' ? 'es-GT' : 'en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(date);
 }
 
@@ -73,6 +83,8 @@ export function GroupVisitScreen({
   const [busy, setBusy] = useState(false);
   const [earlyReturnTarget, setEarlyReturnTarget] =
     useState<EarlyReturnTarget | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] =
+    useState<PendingConfirmation | null>(null);
   const language = getAppLanguage(i18n.resolvedLanguage);
   const routeName =
     language === 'es' ? details.routeNameEs : details.routeNameEn;
@@ -139,8 +151,6 @@ export function GroupVisitScreen({
   };
 
   const handleCancel = async () => {
-    if (!window.confirm(t('visits.cancel.confirm'))) return;
-
     setBusy(true);
     setActionError(null);
 
@@ -154,8 +164,6 @@ export function GroupVisitScreen({
   };
 
   const handleComplete = async () => {
-    if (!window.confirm(t('visits.complete.confirm'))) return;
-
     setBusy(true);
     setActionError(null);
 
@@ -170,8 +178,6 @@ export function GroupVisitScreen({
   };
 
   const handleWithdraw = async () => {
-    if (!window.confirm(t('visits.members.withdrawConfirm'))) return;
-
     setBusy(true);
     setActionError(null);
     try {
@@ -184,16 +190,6 @@ export function GroupVisitScreen({
   };
 
   const handleRemoveMember = async (participant: GroupVisitParticipant) => {
-    if (
-      !window.confirm(
-        t('visits.members.removeConfirm', {
-          name: participantName(participant),
-        })
-      )
-    ) {
-      return;
-    }
-
     setBusy(true);
     setActionError(null);
     try {
@@ -237,8 +233,6 @@ export function GroupVisitScreen({
   };
 
   const handleCheckout = async () => {
-    if (!window.confirm(t('visits.earlyReturn.checkoutConfirm'))) return;
-
     setBusy(true);
     setActionError(null);
     try {
@@ -258,6 +252,57 @@ export function GroupVisitScreen({
   const showFutureFeature = (feature: string) => {
     setNotice(t('visits.inProgress.futureFeature', { feature }));
   };
+
+  const confirmPendingAction = () => {
+    const confirmation = pendingConfirmation;
+    setPendingConfirmation(null);
+
+    if (!confirmation) return;
+
+    switch (confirmation.action) {
+      case 'cancel':
+        void handleCancel();
+        break;
+      case 'complete':
+        void handleComplete();
+        break;
+      case 'withdraw':
+        void handleWithdraw();
+        break;
+      case 'checkout':
+        void handleCheckout();
+        break;
+      case 'remove':
+        void handleRemoveMember(confirmation.participant);
+        break;
+    }
+  };
+
+  const confirmationMessage = pendingConfirmation
+    ? pendingConfirmation.action === 'cancel'
+      ? t('visits.cancel.confirm')
+      : pendingConfirmation.action === 'complete'
+        ? t('visits.complete.confirm')
+        : pendingConfirmation.action === 'withdraw'
+          ? t('visits.members.withdrawConfirm')
+          : pendingConfirmation.action === 'checkout'
+            ? t('visits.earlyReturn.checkoutConfirm')
+            : t('visits.members.removeConfirm', {
+                name: participantName(pendingConfirmation.participant),
+              })
+    : '';
+
+  const confirmationLabel = pendingConfirmation
+    ? pendingConfirmation.action === 'cancel'
+      ? t('visits.cancel.action')
+      : pendingConfirmation.action === 'complete'
+        ? t('visits.complete.action')
+        : pendingConfirmation.action === 'withdraw'
+          ? t('visits.members.withdraw')
+          : pendingConfirmation.action === 'checkout'
+            ? t('visits.earlyReturn.checkout')
+            : t('visits.members.remove')
+    : '';
 
   return (
     <section className="group-visit" aria-labelledby="group-visit-title">
@@ -293,13 +338,13 @@ export function GroupVisitScreen({
         </div>
         <div>
           <dt>{t('visits.expectedReturn')}</dt>
-          <dd>{formatDateTime(details.expectedReturnAt, language)}</dd>
+          <dd>{formatExpectedReturn(details.expectedReturnAt, language)}</dd>
         </div>
         {(details.status === 'in_progress' ||
           details.status === 'completed') && (
           <div>
             <dt>{t('visits.inProgress.startedAt')}</dt>
-            <dd>{formatDateTime(details.startedAt, language)}</dd>
+            <dd>{formatTime(details.startedAt, language)}</dd>
           </div>
         )}
         {details.hasLocalGuide && details.guideName && (
@@ -380,7 +425,9 @@ export function GroupVisitScreen({
                   <button
                     className="participant-action"
                     type="button"
-                    onClick={() => void handleRemoveMember(participant)}
+                    onClick={() =>
+                      setPendingConfirmation({ action: 'remove', participant })
+                    }
                     disabled={busy}
                   >
                     {t('visits.members.remove')}
@@ -439,7 +486,7 @@ export function GroupVisitScreen({
           <button
             className="danger-outline-button member-primary-action"
             type="button"
-            onClick={() => void handleWithdraw()}
+            onClick={() => setPendingConfirmation({ action: 'withdraw' })}
             disabled={busy}
           >
             {t('visits.members.withdraw')}
@@ -464,7 +511,7 @@ export function GroupVisitScreen({
           <button
             className="primary-button member-primary-action"
             type="button"
-            onClick={() => void handleCheckout()}
+            onClick={() => setPendingConfirmation({ action: 'checkout' })}
             disabled={busy}
           >
             {t('visits.earlyReturn.checkout')}
@@ -477,7 +524,7 @@ export function GroupVisitScreen({
           <button
             className="danger-text-button"
             type="button"
-            onClick={handleCancel}
+            onClick={() => setPendingConfirmation({ action: 'cancel' })}
             disabled={busy}
           >
             {t(busy ? 'visits.cancel.cancelling' : 'visits.cancel.action')}
@@ -506,7 +553,7 @@ export function GroupVisitScreen({
             <button
               className="primary-button complete-visit-button"
               type="button"
-              onClick={handleComplete}
+              onClick={() => setPendingConfirmation({ action: 'complete' })}
               disabled={busy}
             >
               {t(
@@ -526,6 +573,19 @@ export function GroupVisitScreen({
           {t('visits.complete.back')}
         </button>
       )}
+
+      <ConfirmationDialog
+        open={pendingConfirmation !== null}
+        message={confirmationMessage}
+        confirmLabel={confirmationLabel}
+        danger={
+          pendingConfirmation?.action === 'cancel' ||
+          pendingConfirmation?.action === 'withdraw' ||
+          pendingConfirmation?.action === 'remove'
+        }
+        onConfirm={confirmPendingAction}
+        onCancel={() => setPendingConfirmation(null)}
+      />
     </section>
   );
 }

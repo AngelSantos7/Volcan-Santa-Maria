@@ -15,10 +15,19 @@
   --success-bg: #edf8f0;
   --success-border: #badcc3;
   --success-text: #28643a;
+  --warning-bg: #fff8e7;
+  --warning-border: #e7d29b;
+  --warning-text: #70520b;
   --shadow: 0 18px 50px rgba(32, 54, 40, 0.1);
 
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   color: var(--text-heading);
   background: var(--page-bg);
   font-synthesis: none;
@@ -74,6 +83,9 @@ h1 {
     --success-bg: #183023;
     --success-border: #315b40;
     --success-text: #95d5a4;
+    --warning-bg: #302815;
+    --warning-border: #675729;
+    --warning-text: #f5d985;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
   }
 

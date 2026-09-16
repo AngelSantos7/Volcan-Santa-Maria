@@ -1,32 +1,45 @@
 import i18n from '../../i18n';
 
 export function getVisitErrorMessage(error: unknown): string {
-  const message =
-    typeof error === 'object' && error !== null && 'message' in error
-      ? String(error.message).toLowerCase()
-      : '';
+  const errorText =
+    typeof error === 'object' && error !== null
+      ? ['code', 'message', 'details', 'hint']
+          .flatMap((key) =>
+            key in error ? [String(Reflect.get(error, key))] : []
+          )
+          .join(' ')
+          .toLowerCase()
+      : String(error ?? '').toLowerCase();
 
-  if (message.includes('already belong')) {
+  if (
+    errorText.includes('email_not_verified') ||
+    errorText.includes('email not verified') ||
+    errorText.includes('email not confirmed')
+  ) {
+    return i18n.t('visits.errors.emailVerificationRequired');
+  }
+
+  if (errorText.includes('already belong')) {
     return i18n.t('visits.errors.alreadyActive');
   }
 
-  if (message.includes('code not found')) {
+  if (errorText.includes('code not found')) {
     return i18n.t('visits.errors.codeNotFound');
   }
 
-  if (message.includes('no longer accepting')) {
+  if (errorText.includes('no longer accepting')) {
     return i18n.t('visits.errors.notAccepting');
   }
 
-  if (message.includes('complete your tourist profile')) {
+  if (errorText.includes('complete your tourist profile')) {
     return i18n.t('visits.errors.profileRequired');
   }
 
-  if (message.includes('access') && message.includes('denied')) {
+  if (errorText.includes('access') && errorText.includes('denied')) {
     return i18n.t('visits.errors.accessDenied');
   }
 
-  if (message.includes('expected return')) {
+  if (errorText.includes('expected return')) {
     return i18n.t('visits.validation.futureReturn');
   }
 

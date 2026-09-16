@@ -1,48 +1,50 @@
-import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { getAuthErrorMessage } from '../auth/auth-errors'
-import { useAuth } from '../auth/useAuth'
-import { loadTouristProfile } from './profile-service'
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getAuthErrorMessage } from '../auth/auth-errors';
+import { useAuth } from '../auth/useAuth';
+import { useToast } from '../../components/toast-context';
+import { loadTouristProfile } from './profile-service';
 import {
   isTouristProfileComplete,
   type TouristProfileData,
-} from './profile-types'
-import { AuthenticatedPage } from '../../pages/AuthenticatedPage'
-import { ProfileFormPage } from '../../pages/ProfileFormPage'
+} from './profile-types';
+import { AuthenticatedPage } from '../../pages/AuthenticatedPage';
+import { ProfileFormPage } from '../../pages/ProfileFormPage';
 
 export function ProfileGate() {
-  const { t } = useTranslation()
-  const { user, signOut } = useAuth()
-  const [profile, setProfile] = useState<TouristProfileData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(false)
-  const [signOutError, setSignOutError] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false)
-  const [requestNumber, setRequestNumber] = useState(0)
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<TouristProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [requestNumber, setRequestNumber] = useState(0);
 
   useEffect(() => {
-    if (!user) return
+    if (!user) return;
 
-    let active = true
+    let active = true;
 
     void loadTouristProfile(user.id)
       .then((loadedProfile) => {
-        if (!active) return
+        if (!active) return;
 
-        setProfile(loadedProfile)
-        setLoadError(false)
+        setProfile(loadedProfile);
+        setLoadError(false);
       })
       .catch(() => {
-        if (active) setLoadError(true)
+        if (active) setLoadError(true);
       })
       .finally(() => {
-        if (active) setLoading(false)
-      })
+        if (active) setLoading(false);
+      });
 
     return () => {
-      active = false
-    }
-  }, [user, requestNumber])
+      active = false;
+    };
+  }, [user, requestNumber]);
 
   if (!user || loading) {
     return (
@@ -51,25 +53,25 @@ export function ProfileGate() {
           {t('profile.loading')}
         </p>
       </main>
-    )
+    );
   }
 
   if (loadError || !profile) {
     const retry = () => {
-      setLoading(true)
-      setLoadError(false)
-      setRequestNumber((current) => current + 1)
-    }
+      setLoading(true);
+      setLoadError(false);
+      setRequestNumber((current) => current + 1);
+    };
 
     const handleSignOut = async () => {
-      setSignOutError(null)
+      setSignOutError(null);
 
       try {
-        await signOut()
+        await signOut();
       } catch (error) {
-        setSignOutError(getAuthErrorMessage(error))
+        setSignOutError(getAuthErrorMessage(error));
       }
-    }
+    };
 
     return (
       <main className="auth-shell">
@@ -100,10 +102,10 @@ export function ProfileGate() {
           </div>
         </section>
       </main>
-    )
+    );
   }
 
-  const profileComplete = isTouristProfileComplete(profile)
+  const profileComplete = isTouristProfileComplete(profile);
 
   if (!profileComplete || editing) {
     return (
@@ -112,13 +114,16 @@ export function ProfileGate() {
         initialData={profile}
         requiredCompletion={!profileComplete}
         onSaved={(savedProfile) => {
-          setProfile(savedProfile)
-          setEditing(false)
+          if (!profileComplete) {
+            showToast(t('profile.registrationCompleted'));
+          }
+          setProfile(savedProfile);
+          setEditing(false);
         }}
         onCancel={() => setEditing(false)}
       />
-    )
+    );
   }
 
-  return <AuthenticatedPage onEditProfile={() => setEditing(true)} />
+  return <AuthenticatedPage onEditProfile={() => setEditing(true)} />;
 }

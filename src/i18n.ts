@@ -20,6 +20,13 @@ const resources = {
         signingOut: 'Cerrando sesión…',
         unavailable: 'No disponible',
         language: 'Idioma',
+        closeNotification: 'Cerrar notificación',
+        confirmAction: 'Confirmar acción',
+        openCalendar: 'Abrir calendario para {{field}}',
+        chooseDate: 'Seleccionar {{field}}',
+        month: 'Mes',
+        year: 'Año',
+        dateFormatHelp: 'DD/MM/AAAA',
       },
       auth: {
         checkingSession: 'Verificando sesión…',
@@ -37,11 +44,44 @@ const resources = {
         loginLink: 'Iniciar sesión',
         confirmationRequired:
           'Cuenta creada. Revisa tu correo y confirma la cuenta antes de iniciar sesión.',
+        accountCreatedTitle: 'Cuenta creada',
+        accountCreatedToast: 'Cuenta creada correctamente',
+        emailConfirmedToast: 'Correo confirmado correctamente',
+        emailConfirmedToastDescription: 'Completa tus datos para continuar.',
+        confirmationSentTo:
+          'Te enviamos un enlace de confirmación a {{email}}.',
+        confirmationRequiredForVisits:
+          'Confirma tu correo para poder registrar o unirte a un ascenso.',
+        confirmationEmailResent:
+          'Si la cuenta puede recibir un correo de confirmación, enviaremos un nuevo enlace.',
+        resendConfirmation: 'Reenviar correo',
+        resendingConfirmation: 'Reenviando…',
+        resendAvailableIn: 'Reenviar en {{seconds}} s',
+        backHome: 'Volver al inicio',
+        forgotPassword: '¿Olvidaste tu contraseña?',
+        forgotPasswordTitle: 'Recuperar contraseña',
+        forgotPasswordSubtitle:
+          'Ingresa tu correo para solicitar un enlace de recuperación.',
+        passwordResetRequestSent:
+          'Si existe una cuenta asociada a ese correo, recibirás un enlace para restablecer tu contraseña.',
+        sendPasswordReset: 'Enviar enlace',
+        sendingPasswordReset: 'Enviando…',
+        resetPasswordAction: 'Restablecer contraseña',
+        backToLogin: 'Volver a iniciar sesión',
+        newPasswordTitle: 'Restablecer contraseña',
+        newPasswordSubtitle: 'Crea una contraseña nueva para tu cuenta.',
+        newPassword: 'Nueva contraseña',
+        confirmNewPassword: 'Confirmar nueva contraseña',
+        updatePassword: 'Actualizar contraseña',
+        updatingPassword: 'Actualizando…',
+        passwordUpdatedToast: 'Contraseña actualizada correctamente',
         activeSession: 'Sesión activa',
         welcome: '¡Bienvenido, {{name}}!',
         welcomeGeneric: '¡Bienvenido!',
         authenticated: 'Tu cuenta está autenticada correctamente.',
         editProfile: 'Editar perfil',
+        verificationPersistentNotice:
+          'Confirma tu correo para habilitar el registro de ascensos.',
       },
       profile: {
         loading: 'Cargando perfil…',
@@ -67,6 +107,41 @@ const resources = {
         },
         save: 'Guardar perfil',
         saving: 'Guardando…',
+        registrationCompleted: 'Registro completado exitosamente',
+        relationships: {
+          parent: 'Madre o padre',
+          spouse: 'Pareja o cónyuge',
+          sibling: 'Hermana o hermano',
+          child: 'Hija o hijo',
+          relative: 'Otro familiar',
+          friend: 'Amistad',
+          other: 'Otro',
+        },
+        validation: {
+          nationalityRequired: 'Selecciona una nacionalidad.',
+          dateOfBirthRequired: 'Selecciona una fecha de nacimiento.',
+          dateOfBirthInvalid:
+            'Selecciona una fecha de nacimiento válida y razonable.',
+          phoneRequired: 'Falta el teléfono.',
+          phoneInvalid: 'Ingresa un teléfono válido para el país seleccionado.',
+          documentTypeRequired: 'Selecciona el tipo de documento.',
+          documentNumberRequired: 'Falta el número de documento.',
+          documentNumberInvalid:
+            'Ingresa un número de documento válido de 3 a 40 caracteres.',
+          emergencyFirstNameRequired:
+            'Falta el nombre del contacto de emergencia.',
+          emergencyFirstNameInvalid:
+            'Ingresa un nombre válido para el contacto de emergencia.',
+          emergencyLastNameRequired:
+            'Falta el apellido del contacto de emergencia.',
+          emergencyLastNameInvalid:
+            'Ingresa un apellido válido para el contacto de emergencia.',
+          relationshipRequired: 'Selecciona el parentesco.',
+          emergencyPhoneRequired:
+            'Falta el teléfono del contacto de emergencia.',
+          emergencyPhoneInvalid:
+            'Ingresa un teléfono válido para el contacto de emergencia.',
+        },
       },
       country: {
         search: 'Escribe para buscar un país',
@@ -91,6 +166,10 @@ const resources = {
         expectedReturn: 'Retorno estimado',
         returnDate: 'Fecha estimada de regreso',
         returnTime: 'Hora estimada de regreso',
+        timePicker: {
+          hour: 'Hora',
+          minute: 'Minutos',
+        },
         localGuide: 'Guía local',
         guideName: 'Nombre del guía',
         participants: 'Participantes',
@@ -139,8 +218,27 @@ const resources = {
           individual: 'Individual',
           group: 'Grupal',
           groupOrganizer: 'Grupal · Organizador',
+          groupWithCount_one: 'Grupal · {{count}} participante',
+          groupWithCount_other: 'Grupal · {{count}} participantes',
+          organizer: 'Organizador',
+          startedAt: 'Inicio',
+          endedAt: 'Finalización',
+          duration: 'Duración',
+          durationHoursMinutes: '{{hours}} h {{minutes}} min',
+          durationMinutes: '{{minutes}} min',
           loadMore: 'Cargar más',
           loadingMore: 'Cargando…',
+          viewMembers: 'Ver integrantes',
+          hideMembers: 'Ocultar integrantes',
+          membersTitle: 'Integrantes',
+          loadingMembers: 'Cargando integrantes…',
+          memberStatus: {
+            active: 'En curso',
+            returningEarly: 'Regresando antes',
+            returnedEarly: 'Retorno anticipado',
+            withdrawn: 'Se retiró antes de iniciar',
+            completed: 'Completado',
+          },
           status: {
             active: 'En curso',
             returningEarly: 'Regresando antes',
@@ -184,7 +282,7 @@ const resources = {
         inProgress: {
           status: 'En curso',
           title: 'Ascenso en curso',
-          startedAt: 'Hora de inicio',
+          startedAt: 'Inicio',
           route: 'Ver ruta',
           map: 'Mapa',
           references: 'Referencias',
@@ -205,7 +303,12 @@ const resources = {
           back: 'Volver al inicio',
         },
         validation: {
-          futureReturn: 'Selecciona una fecha y hora de regreso futuras.',
+          returnDateRequired: 'Selecciona una fecha estimada de regreso.',
+          returnDatePast: 'La fecha de regreso no puede ser anterior a hoy.',
+          returnDateInvalid: 'Ingresa una fecha de regreso válida.',
+          returnTimeRequired: 'Selecciona una hora estimada de regreso.',
+          futureReturn:
+            'La fecha y hora de regreso deben ser posteriores al momento actual.',
           guideName: 'Ingresa el nombre del guía local.',
           acceptTerms: 'Debes aceptar las normas y recomendaciones.',
           invalidCode: 'Ingresa un código válido de 6 caracteres.',
@@ -217,6 +320,8 @@ const resources = {
           notAccepting: 'Ese grupo ya no acepta integrantes.',
           profileRequired: 'Completa tu perfil antes de continuar.',
           accessDenied: 'No tienes acceso a ese grupo.',
+          emailVerificationRequired:
+            'Debes confirmar tu correo antes de registrar un ascenso.',
           copyFailed: 'No se pudo copiar el código.',
           shareFailed: 'No se pudo compartir el código.',
           generic: 'No se pudo completar la acción. Inténtalo de nuevo.',
@@ -224,6 +329,18 @@ const resources = {
       },
       validation: {
         required: 'Completa todos los campos.',
+        completeRequiredFields: 'Completa los campos obligatorios',
+        firstNameRequired: 'Falta el nombre.',
+        invalidFirstName: 'Ingresa un nombre válido.',
+        lastNameRequired: 'Falta el apellido.',
+        invalidLastName: 'Ingresa un apellido válido.',
+        emailRequired: 'Falta el correo electrónico.',
+        passwordRequired: 'Falta la contraseña.',
+        confirmPasswordRequired: 'Confirma la contraseña.',
+        captchaRequired: 'Completa la verificación de seguridad.',
+        captchaExpired: 'La verificación expiró. Complétala nuevamente.',
+        captchaTemporary:
+          'No pudimos cargar la verificación. Inténtalo nuevamente.',
         invalidEmail: 'Ingresa un correo electrónico válido.',
         passwordLength: 'La contraseña debe tener al menos 8 caracteres.',
         passwordMismatch: 'Las contraseñas no coinciden.',
@@ -237,13 +354,22 @@ const resources = {
         invalidCredentials: 'El correo o la contraseña no son correctos.',
         emailNotConfirmed:
           'Confirma tu correo electrónico antes de iniciar sesión.',
-        accountCreation: 'No fue posible crear la cuenta con ese correo.',
+        accountCreation:
+          'No fue posible crear la cuenta. Revisa los datos e inténtalo nuevamente.',
+        accountExistsTitle: 'Ya existe una cuenta con este correo.',
+        accountExistsDescription:
+          'Inicia sesión o restablece tu contraseña para continuar.',
         weakPassword: 'La contraseña no cumple los requisitos de seguridad.',
+        samePassword: 'La nueva contraseña debe ser diferente a la actual.',
+        captchaFailed:
+          'No pudimos validar la verificación de seguridad. Inténtalo nuevamente.',
         rateLimit:
-          'Se realizaron demasiados intentos. Espera un momento y vuelve a intentarlo.',
+          'Has realizado demasiados intentos. Espera un momento e inténtalo nuevamente.',
         signupDisabled: 'El registro no está disponible en este momento.',
         network:
           'No se pudo conectar con el servicio. Revisa tu conexión e inténtalo de nuevo.',
+        recoveryExpired:
+          'El enlace de recuperación expiró o ya no es válido. Solicita uno nuevo.',
         generic:
           'Ocurrió un problema con la autenticación. Inténtalo de nuevo.',
       },
@@ -263,6 +389,13 @@ const resources = {
         signingOut: 'Signing out…',
         unavailable: 'Unavailable',
         language: 'Language',
+        closeNotification: 'Close notification',
+        confirmAction: 'Confirm action',
+        openCalendar: 'Open calendar for {{field}}',
+        chooseDate: 'Choose {{field}}',
+        month: 'Month',
+        year: 'Year',
+        dateFormatHelp: 'DD/MM/YYYY',
       },
       auth: {
         checkingSession: 'Checking session…',
@@ -280,11 +413,43 @@ const resources = {
         loginLink: 'Sign in',
         confirmationRequired:
           'Account created. Check your email and confirm your account before signing in.',
+        accountCreatedTitle: 'Account created',
+        accountCreatedToast: 'Account created successfully',
+        emailConfirmedToast: 'Email confirmed successfully',
+        emailConfirmedToastDescription:
+          'Complete your information to continue.',
+        confirmationSentTo: 'We sent a confirmation link to {{email}}.',
+        confirmationRequiredForVisits:
+          'Confirm your email to register or join an ascent.',
+        confirmationEmailResent:
+          'If the account can receive a confirmation email, we will send a new link.',
+        resendConfirmation: 'Resend email',
+        resendingConfirmation: 'Resending…',
+        resendAvailableIn: 'Resend in {{seconds}}s',
+        backHome: 'Back to home',
+        forgotPassword: 'Forgot your password?',
+        forgotPasswordTitle: 'Reset your password',
+        forgotPasswordSubtitle: 'Enter your email to request a recovery link.',
+        passwordResetRequestSent:
+          'If an account is associated with that email, you will receive a link to reset your password.',
+        sendPasswordReset: 'Send link',
+        sendingPasswordReset: 'Sending…',
+        resetPasswordAction: 'Reset password',
+        backToLogin: 'Back to sign in',
+        newPasswordTitle: 'Reset password',
+        newPasswordSubtitle: 'Create a new password for your account.',
+        newPassword: 'New password',
+        confirmNewPassword: 'Confirm new password',
+        updatePassword: 'Update password',
+        updatingPassword: 'Updating…',
+        passwordUpdatedToast: 'Password updated successfully',
         activeSession: 'Active session',
         welcome: 'Welcome, {{name}}!',
         welcomeGeneric: 'Welcome!',
         authenticated: 'Your account is authenticated.',
         editProfile: 'Edit profile',
+        verificationPersistentNotice:
+          'Confirm your email to enable ascent registration.',
       },
       profile: {
         loading: 'Loading profile…',
@@ -310,6 +475,38 @@ const resources = {
         },
         save: 'Save profile',
         saving: 'Saving…',
+        registrationCompleted: 'Registration completed successfully',
+        relationships: {
+          parent: 'Parent',
+          spouse: 'Partner or spouse',
+          sibling: 'Sibling',
+          child: 'Child',
+          relative: 'Other relative',
+          friend: 'Friend',
+          other: 'Other',
+        },
+        validation: {
+          nationalityRequired: 'Select a nationality.',
+          dateOfBirthRequired: 'Select a date of birth.',
+          dateOfBirthInvalid: 'Select a valid and reasonable date of birth.',
+          phoneRequired: 'Enter your phone number.',
+          phoneInvalid: 'Enter a valid phone number for the selected country.',
+          documentTypeRequired: 'Select a document type.',
+          documentNumberRequired: 'Enter the document number.',
+          documentNumberInvalid:
+            'Enter a valid document number between 3 and 40 characters.',
+          emergencyFirstNameRequired:
+            "Enter the emergency contact's first name.",
+          emergencyFirstNameInvalid:
+            'Enter a valid first name for the emergency contact.',
+          emergencyLastNameRequired: "Enter the emergency contact's last name.",
+          emergencyLastNameInvalid:
+            'Enter a valid last name for the emergency contact.',
+          relationshipRequired: 'Select the relationship.',
+          emergencyPhoneRequired: "Enter the emergency contact's phone number.",
+          emergencyPhoneInvalid:
+            'Enter a valid phone number for the emergency contact.',
+        },
       },
       country: {
         search: 'Type to search for a country',
@@ -334,6 +531,10 @@ const resources = {
         expectedReturn: 'Estimated return',
         returnDate: 'Estimated return date',
         returnTime: 'Estimated return time',
+        timePicker: {
+          hour: 'Hour',
+          minute: 'Minutes',
+        },
         localGuide: 'Local guide',
         guideName: 'Guide name',
         participants: 'Participants',
@@ -383,8 +584,27 @@ const resources = {
           individual: 'Individual',
           group: 'Group',
           groupOrganizer: 'Group · Organizer',
+          groupWithCount_one: 'Group · {{count}} participant',
+          groupWithCount_other: 'Group · {{count}} participants',
+          organizer: 'Organizer',
+          startedAt: 'Start',
+          endedAt: 'Finish',
+          duration: 'Duration',
+          durationHoursMinutes: '{{hours}} h {{minutes}} min',
+          durationMinutes: '{{minutes}} min',
           loadMore: 'Load more',
           loadingMore: 'Loading…',
+          viewMembers: 'View members',
+          hideMembers: 'Hide members',
+          membersTitle: 'Members',
+          loadingMembers: 'Loading members…',
+          memberStatus: {
+            active: 'In progress',
+            returningEarly: 'Returning early',
+            returnedEarly: 'Early return',
+            withdrawn: 'Withdrew before start',
+            completed: 'Completed',
+          },
           status: {
             active: 'In progress',
             returningEarly: 'Returning early',
@@ -428,7 +648,7 @@ const resources = {
         inProgress: {
           status: 'In progress',
           title: 'Hike in progress',
-          startedAt: 'Start time',
+          startedAt: 'Start',
           route: 'View route',
           map: 'Map',
           references: 'References',
@@ -448,7 +668,12 @@ const resources = {
           back: 'Back to home',
         },
         validation: {
-          futureReturn: 'Select a future return date and time.',
+          returnDateRequired: 'Select an estimated return date.',
+          returnDatePast: 'The return date cannot be before today.',
+          returnDateInvalid: 'Enter a valid return date.',
+          returnTimeRequired: 'Select an estimated return time.',
+          futureReturn:
+            'The return date and time must be later than the current time.',
           guideName: 'Enter the local guide’s name.',
           acceptTerms: 'You must accept the rules and recommendations.',
           invalidCode: 'Enter a valid 6-character code.',
@@ -460,6 +685,8 @@ const resources = {
           notAccepting: 'That group is no longer accepting members.',
           profileRequired: 'Complete your profile before continuing.',
           accessDenied: 'You do not have access to that group.',
+          emailVerificationRequired:
+            'You must confirm your email before registering an ascent.',
           copyFailed: 'The code could not be copied.',
           shareFailed: 'The code could not be shared.',
           generic: 'The action could not be completed. Try again.',
@@ -467,6 +694,18 @@ const resources = {
       },
       validation: {
         required: 'Complete all fields.',
+        completeRequiredFields: 'Complete the required fields',
+        firstNameRequired: 'Enter your first name.',
+        invalidFirstName: 'Enter a valid first name.',
+        lastNameRequired: 'Enter your last name.',
+        invalidLastName: 'Enter a valid last name.',
+        emailRequired: 'Enter your email address.',
+        passwordRequired: 'Enter your password.',
+        confirmPasswordRequired: 'Confirm your password.',
+        captchaRequired: 'Complete the security check.',
+        captchaExpired: 'The security check expired. Complete it again.',
+        captchaTemporary:
+          'We could not load the security check. Please try again.',
         invalidEmail: 'Enter a valid email address.',
         passwordLength: 'The password must be at least 8 characters long.',
         passwordMismatch: 'The passwords do not match.',
@@ -479,12 +718,21 @@ const resources = {
       errors: {
         invalidCredentials: 'The email or password is incorrect.',
         emailNotConfirmed: 'Confirm your email address before signing in.',
-        accountCreation: 'The account could not be created with that email.',
+        accountCreation:
+          'The account could not be created. Review your details and try again.',
+        accountExistsTitle: 'An account already exists with this email.',
+        accountExistsDescription: 'Sign in or reset your password to continue.',
         weakPassword: 'The password does not meet the security requirements.',
+        samePassword:
+          'Your new password must be different from your current password.',
+        captchaFailed:
+          'We could not validate the security check. Please try again.',
         rateLimit: 'Too many attempts. Wait a moment and try again.',
         signupDisabled: 'Registration is not available right now.',
         network:
           'Could not connect to the service. Check your connection and try again.',
+        recoveryExpired:
+          'The recovery link has expired or is no longer valid. Request a new one.',
         generic: 'There was an authentication problem. Try again.',
       },
     },

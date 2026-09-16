@@ -70,3 +70,11 @@ export type VisitHistoryItem = {
   checkedOutAt: string | null;
   participantCount: number;
 };
+
+export type VisitHistoryMember = {
+  firstName: string;
+  lastName: string;
+  memberRole: GroupVisitMemberRole;
+  memberStatus: VisitMemberStatus;
+  checkedOutAt: string | null;
+};
