@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { getAppLanguage } from '../../i18n';
+import type { RouteTab } from '../routes/route-types';
 import { EarlyReturnForm } from './EarlyReturnForm';
 import { getVisitErrorMessage } from './visit-errors';
 import {
@@ -27,6 +28,7 @@ type GroupVisitScreenProps = {
   loadError: string | null;
   onRefresh: () => Promise<void>;
   onVisitClosed: () => void;
+  onOpenRoute: (tab: RouteTab) => void;
 };
 
 type EarlyReturnTarget =
@@ -76,6 +78,7 @@ export function GroupVisitScreen({
   loadError,
   onRefresh,
   onVisitClosed,
+  onOpenRoute,
 }: GroupVisitScreenProps) {
   const { t, i18n } = useTranslation();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -247,10 +250,6 @@ export function GroupVisitScreen({
     } finally {
       setBusy(false);
     }
-  };
-
-  const showFutureFeature = (feature: string) => {
-    setNotice(t('visits.inProgress.futureFeature', { feature }));
   };
 
   const confirmPendingAction = () => {
@@ -541,7 +540,7 @@ export function GroupVisitScreen({
                 className="secondary-button"
                 type="button"
                 onClick={() =>
-                  showFutureFeature(t(`visits.inProgress.${feature}`))
+                  onOpenRoute(feature === 'route' ? 'information' : feature)
                 }
                 disabled={busy}
               >

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RouteInfoScreen } from '../routes/RouteInfoScreen';
+import type { RouteTab } from '../routes/route-types';
 import { CreateVisitForm } from './CreateVisitForm';
 import { GroupVisitScreen } from './GroupVisitScreen';
 import { JoinVisitForm } from './JoinVisitForm';
@@ -10,11 +12,12 @@ type GroupVisitsProps = {
   currentUserId: string;
 };
 
-type VisitView = 'home' | 'create' | 'join';
+type VisitView = 'home' | 'create' | 'join' | 'route';
 
 export function GroupVisits({ currentUserId }: GroupVisitsProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<VisitView>('home');
+  const [routeTab, setRouteTab] = useState<RouteTab>('information');
   const {
     details,
     loading,
@@ -33,6 +36,12 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
     );
   }
 
+  if (view === 'route') {
+    return (
+      <RouteInfoScreen initialTab={routeTab} onBack={() => setView('home')} />
+    );
+  }
+
   if (details) {
     return (
       <GroupVisitScreen
@@ -43,6 +52,10 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
         onVisitClosed={() => {
           clearVisit();
           setView('home');
+        }}
+        onOpenRoute={(tab) => {
+          setRouteTab(tab);
+          setView('route');
         }}
       />
     );
@@ -100,6 +113,16 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
             onClick={() => setView('join')}
           >
             {t('visits.join.action')}
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setRouteTab('information');
+              setView('route');
+            }}
+          >
+            {t('routes.open')}
           </button>
         </div>
       </section>

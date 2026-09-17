@@ -51,7 +51,7 @@ select
   pg_catalog.now() - interval '1 hour',
   pg_catalog.now() - interval '30 minutes'
 from public.routes as route
-where route.slug = 'ascenso-cima';
+where route.slug = 'ascenso-a-la-cima';
 
 insert into public.visit_members (
   visit_id,

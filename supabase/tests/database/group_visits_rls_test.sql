@@ -151,9 +151,9 @@ select results_eq(
   $$
     select slug, name_es, name_en, is_active
     from public.routes
-    where slug = 'ascenso-cima'
+    where slug = 'ascenso-a-la-cima'
   $$,
-  $$ values ('ascenso-cima'::text, 'Ascenso a la Cima'::text, 'Summit Ascent'::text, true) $$,
+  $$ values ('ascenso-a-la-cima'::text, 'Ascenso a la Cima'::text, 'Summit Route'::text, true) $$,
   'default summit route exists and is active'
 );
 
@@ -215,7 +215,7 @@ select results_eq(
       where label = 'main'
     )
   $$,
-  $$ values ('forming'::text, 'day_hike'::text, true, false, true, true, 'ascenso-cima'::text) $$,
+  $$ values ('forming'::text, 'day_hike'::text, true, false, true, true, 'ascenso-a-la-cima'::text) $$,
   'created visit uses server code, forming status, and default route'
 );
 
@@ -267,7 +267,7 @@ select is(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '5 hours'
       from public.routes as route
-      where route.slug = 'ascenso-cima'
+      where route.slug = 'ascenso-a-la-cima'
     $$
   ),
   '42501',
