@@ -40,6 +40,7 @@ export type GroupVisitDetails = {
   visitType: VisitType;
   hasLocalGuide: boolean;
   guideName: string | null;
+  plannedStartAt: string | null;
   startedAt: string | null;
   expectedReturnAt: string | null;
   completedAt: string | null;
@@ -49,9 +50,11 @@ export type GroupVisitDetails = {
 
 export type CreateGroupVisitInput = {
   visitType: VisitType;
+  plannedStartAt: string;
   expectedReturnAt: string;
   hasLocalGuide: boolean;
   guideName: string | null;
+  recommendationsAccepted: boolean;
 };
 
 export type VisitHistoryItem = {
@@ -63,6 +66,7 @@ export type VisitHistoryItem = {
   routeNameEn: string;
   memberRole: GroupVisitMemberRole;
   memberStatus: VisitMemberStatus;
+  plannedStartAt: string | null;
   startedAt: string | null;
   expectedReturnAt: string | null;
   completedAt: string | null;

@@ -177,9 +177,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '8 hours',
         false,
         null,
+        true,
         true
       )
     )
@@ -269,9 +271,11 @@ select throws_ok(
   $$
     select public.create_group_visit(
       'day_hike'::public.visit_type,
+      pg_catalog.now() + interval '1 hour',
       pg_catalog.now() + interval '8 hours',
       false,
       null,
+      true,
       true
     )
   $$,

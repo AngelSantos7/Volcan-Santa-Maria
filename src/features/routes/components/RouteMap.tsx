@@ -12,7 +12,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import mapLibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useTranslation } from 'react-i18next';
 import { getAppLanguage } from '../../../i18n';
-import type { RouteCheckpoint, RouteContent, RouteMedia } from '../route-types';
+import type { RouteCheckpoint, RouteContent } from '../route-types';
+import { CheckpointMediaGallery } from './CheckpointMediaGallery';
 
 setWorkerUrl(mapLibreWorkerUrl);
 
@@ -21,6 +22,8 @@ const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY?.trim() || null;
 const SATELLITE_STYLE_URL = MAPTILER_KEY
   ? `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${encodeURIComponent(MAPTILER_KEY)}`
   : null;
+const DEFAULT_BASE_MAP = SATELLITE_STYLE_URL ? 'satellite' : 'map';
+const DEFAULT_STYLE_URL = SATELLITE_STYLE_URL ?? MAP_STYLE_URL;
 const ROUTE_SOURCE_ID = 'summit-route-path';
 const ROUTE_CASING_LAYER_ID = 'summit-route-path-casing';
 const ROUTE_LAYER_ID = 'summit-route-path-line';
@@ -71,10 +74,6 @@ function getLocalizedCheckpoint(
     description:
       language === 'es' ? checkpoint.descriptionEs : checkpoint.descriptionEn,
   };
-}
-
-function getLocalizedCaption(media: RouteMedia, language: 'es' | 'en') {
-  return language === 'es' ? media.captionEs : media.captionEn;
 }
 
 function removeRouteLayers(map: Map): void {
@@ -161,7 +160,7 @@ export function RouteMap({ route }: RouteMapProps) {
   const [mapAttempt, setMapAttempt] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
-  const [baseMap, setBaseMap] = useState<BaseMap>('map');
+  const [baseMap, setBaseMap] = useState<BaseMap>(DEFAULT_BASE_MAP);
   const [styleSwitching, setStyleSwitching] = useState(false);
   const [satelliteLoadFailed, setSatelliteLoadFailed] = useState(false);
   const [selection, setSelection] = useState<MapSelection>(null);
@@ -182,8 +181,9 @@ export function RouteMap({ route }: RouteMapProps) {
     [route.pathGeojson]
   );
   const routeGeoJsonRef = useRef(routeGeoJson);
-  const baseMapRef = useRef<BaseMap>('map');
+  const baseMapRef = useRef<BaseMap>(DEFAULT_BASE_MAP);
   const pendingBaseMapRef = useRef<BaseMap | null>(null);
+  const fallbackInProgressRef = useRef(false);
   const selectedCheckpoint =
     selection?.kind === 'checkpoint'
       ? (locatedCheckpoints.find(
@@ -214,9 +214,12 @@ export function RouteMap({ route }: RouteMapProps) {
     let map: Map | null = null;
 
     try {
+      baseMapRef.current = DEFAULT_BASE_MAP;
+      pendingBaseMapRef.current =
+        DEFAULT_BASE_MAP === 'satellite' ? 'satellite' : null;
       map = new Map({
         container: containerRef.current,
-        style: MAP_STYLE_URL,
+        style: DEFAULT_STYLE_URL,
         center: VOLCANO_CENTER,
         zoom: INITIAL_ZOOM,
         dragPan: true,
@@ -240,6 +243,10 @@ export function RouteMap({ route }: RouteMapProps) {
         baseMapRef.current = appliedBaseMap;
         syncRouteLayers(map, routeGeoJsonRef.current, appliedBaseMap);
 
+        if (fallbackInProgressRef.current && appliedBaseMap === 'map') {
+          fallbackInProgressRef.current = false;
+        }
+
         if (pendingBaseMapRef.current) {
           pendingBaseMapRef.current = null;
           setBaseMap(appliedBaseMap);
@@ -262,18 +269,20 @@ export function RouteMap({ route }: RouteMapProps) {
 
           if (pendingBaseMap === 'satellite' && map) {
             baseMapRef.current = 'map';
+            fallbackInProgressRef.current = true;
             setBaseMap('map');
             setSatelliteLoadFailed(true);
             try {
               map.setStyle(MAP_STYLE_URL);
             } catch {
+              fallbackInProgressRef.current = false;
               setMapFailed(true);
             }
             return;
           }
         }
 
-        if (!loaded) {
+        if (!loaded && !fallbackInProgressRef.current) {
           setMapFailed(true);
           setMapLoaded(false);
         }
@@ -289,6 +298,7 @@ export function RouteMap({ route }: RouteMapProps) {
     return () => {
       active = false;
       mapRef.current = null;
+      fallbackInProgressRef.current = false;
       map?.remove();
     };
   }, [mapAttempt]);
@@ -387,12 +397,14 @@ export function RouteMap({ route }: RouteMapProps) {
     } catch {
       pendingBaseMapRef.current = null;
       baseMapRef.current = 'map';
+      fallbackInProgressRef.current = true;
       setBaseMap('map');
       setStyleSwitching(false);
       setSatelliteLoadFailed(nextBaseMap === 'satellite');
       try {
         map.setStyle(MAP_STYLE_URL);
       } catch {
+        fallbackInProgressRef.current = false;
         setMapFailed(true);
       }
     }
@@ -547,25 +559,14 @@ export function RouteMap({ route }: RouteMapProps) {
                     </span>
                   )}
 
-                  {selectedCheckpointMedia.length > 0 && (
-                    <div className="route-map-gallery">
-                      {selectedCheckpointMedia.map((media) => {
-                        const caption = getLocalizedCaption(media, language);
-
-                        return (
-                          <figure key={media.id}>
-                            <img
-                              src={media.publicUrl}
-                              alt={caption ?? localizedCheckpoint.name}
-                              loading="lazy"
-                              onError={() => hideFailedMedia(media.id)}
-                            />
-                            {caption && <figcaption>{caption}</figcaption>}
-                          </figure>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <CheckpointMediaGallery
+                    key={selectedCheckpoint.id}
+                    media={selectedCheckpointMedia}
+                    fallbackAlt={localizedCheckpoint.name}
+                    language={language}
+                    onMediaError={hideFailedMedia}
+                    compact
+                  />
                 </>
               )}
           </aside>

@@ -17,7 +17,7 @@ type VisitView = 'home' | 'create' | 'join' | 'route';
 export function GroupVisits({ currentUserId }: GroupVisitsProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<VisitView>('home');
-  const [routeTab, setRouteTab] = useState<RouteTab>('information');
+  const [routeTab, setRouteTab] = useState<RouteTab>('recommendations');
   const {
     details,
     loading,
@@ -118,7 +118,7 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
             className="secondary-button"
             type="button"
             onClick={() => {
-              setRouteTab('information');
+              setRouteTab('recommendations');
               setView('route');
             }}
           >

@@ -167,10 +167,12 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '4 hours',
         false,
         null,
-        false
+        false,
+        true
       )
     $$
   ),
@@ -184,9 +186,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '4 hours',
         false,
         null,
+        true,
         true
       )
     )
@@ -239,9 +243,11 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '5 hours',
         false,
         null,
+        true,
         true
       )
     $$
@@ -358,9 +364,11 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '4 hours',
         false,
         null,
+        true,
         true
       )
     $$
@@ -389,9 +397,11 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '4 hours',
         false,
         null,
+        true,
         true
       )
     $$
@@ -483,9 +493,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'expedition_camping'::public.visit_type,
+        pg_catalog.now() + interval '1 day',
         pg_catalog.now() + interval '2 days',
         true,
         'Guia Local',
+        true,
         true
       )
     )
@@ -718,9 +730,11 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '4 hours',
         false,
         null,
+        true,
         true
       )
     $$

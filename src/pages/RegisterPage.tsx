@@ -5,6 +5,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PasswordInput } from '../components/PasswordInput';
 import {
   getAuthErrorMessage,
   getPrivateRequestErrorMessage,
@@ -319,8 +320,7 @@ export function RegisterPage({
 
           <label>
             {t('common.password')}
-            <input
-              type="password"
+            <PasswordInput
               name="password"
               data-field="password"
               autoComplete="new-password"
@@ -347,8 +347,7 @@ export function RegisterPage({
 
           <label>
             {t('auth.confirmPassword')}
-            <input
-              type="password"
+            <PasswordInput
               name="confirmPassword"
               data-field="confirmPassword"
               autoComplete="new-password"

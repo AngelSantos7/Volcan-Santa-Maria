@@ -147,9 +147,11 @@ with created as (
   select *
   from public.create_group_visit(
     'day_hike'::public.visit_type,
+    pg_catalog.now() + interval '1 hour',
     pg_catalog.now() + interval '4 hours',
     true,
     'Guia de Prueba',
+    true,
     true
   )
 )

@@ -156,9 +156,11 @@ select is(
     $$
       select public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.clock_timestamp() - interval '2 hours',
         pg_catalog.clock_timestamp() - interval '1 minute',
         false,
         null,
+        true,
         true
       )
     $$
@@ -173,9 +175,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '6 hours',
         false,
         null,
+        true,
         true
       )
     )
@@ -219,9 +223,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'expedition_camping'::public.visit_type,
+        pg_catalog.now() + interval '1 day',
         pg_catalog.now() + interval '2 days 3 hours',
         true,
         'Guia Campamento',
+        true,
         true
       )
     )
@@ -265,9 +271,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '30 minutes',
         pg_catalog.now() + interval '1 hour',
         false,
         null,
+        true,
         true
       )
     )
@@ -289,7 +297,9 @@ select lives_ok(
 
 reset role;
 update public.visits
-set expected_return_at = pg_catalog.clock_timestamp() - interval '1 minute'
+set
+  planned_start_at = null,
+  expected_return_at = pg_catalog.clock_timestamp() - interval '1 minute'
 where id = (
   select visit_id
   from pg_temp.test_visit_returns

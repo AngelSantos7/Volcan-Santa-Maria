@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PasswordInput } from '../components/PasswordInput';
 import { getAuthErrorMessage } from '../features/auth/auth-errors';
 import { MIN_PASSWORD_LENGTH } from '../features/auth/registration-validation';
 import { useAuth } from '../features/auth/useAuth';
@@ -123,8 +124,7 @@ export function PasswordRecoveryPage({
 
           <label>
             {t('auth.newPassword')}
-            <input
-              type="password"
+            <PasswordInput
               name="password"
               autoComplete="new-password"
               value={password}
@@ -151,8 +151,7 @@ export function PasswordRecoveryPage({
 
           <label>
             {t('auth.confirmNewPassword')}
-            <input
-              type="password"
+            <PasswordInput
               name="confirmPassword"
               autoComplete="new-password"
               value={confirmPassword}

@@ -16,6 +16,7 @@ const resources = {
         lastName: 'Apellido',
         phone: 'Teléfono',
         cancel: 'Cancelar',
+        close: 'Cerrar',
         signOut: 'Cerrar sesión',
         signingOut: 'Cerrando sesión…',
         unavailable: 'No disponible',
@@ -80,6 +81,9 @@ const resources = {
         welcomeGeneric: '¡Bienvenido!',
         authenticated: 'Tu cuenta está autenticada correctamente.',
         editProfile: 'Editar perfil',
+        myProfile: 'Mi perfil',
+        showPassword: 'Mostrar contraseña',
+        hidePassword: 'Ocultar contraseña',
         verificationPersistentNotice:
           'Confirma tu correo para habilitar el registro de ascensos.',
       },
@@ -164,6 +168,9 @@ const resources = {
           expedition_camping: 'Expedición y campamento',
         },
         expectedReturn: 'Retorno estimado',
+        plannedStart: 'Inicio planificado',
+        startDate: 'Fecha planificada de inicio',
+        startTime: 'Hora planificada de inicio',
         returnDate: 'Fecha estimada de regreso',
         returnTime: 'Hora estimada de regreso',
         timePicker: {
@@ -250,6 +257,9 @@ const resources = {
         },
         terms:
           'He leído y acepto las normas y recomendaciones para realizar el ascenso.',
+        recommendationsConsent:
+          'He leído y acepto las recomendaciones para realizar el ascenso.',
+        viewRecommendations: 'Ver recomendaciones',
         create: {
           action: 'Crear ascenso',
           title: 'Crear ascenso',
@@ -303,6 +313,14 @@ const resources = {
           back: 'Volver al inicio',
         },
         validation: {
+          startDateRequired: 'Selecciona una fecha planificada de inicio.',
+          startDatePast: 'La fecha de inicio no puede ser anterior a hoy.',
+          startDateInvalid: 'Ingresa una fecha de inicio válida.',
+          startTimeRequired: 'Selecciona una hora planificada de inicio.',
+          futureStart:
+            'La fecha y hora de inicio deben ser posteriores al momento actual.',
+          startBeforeReturn:
+            'El inicio planificado debe ser anterior al retorno estimado.',
           returnDateRequired: 'Selecciona una fecha estimada de regreso.',
           returnDatePast: 'La fecha de regreso no puede ser anterior a hoy.',
           returnDateInvalid: 'Ingresa una fecha de regreso válida.',
@@ -311,6 +329,8 @@ const resources = {
             'La fecha y hora de regreso deben ser posteriores al momento actual.',
           guideName: 'Ingresa el nombre del guía local.',
           acceptTerms: 'Debes aceptar las normas y recomendaciones.',
+          acceptRecommendations:
+            'Debes leer y aceptar las recomendaciones para continuar.',
           invalidCode: 'Ingresa un código válido de 6 caracteres.',
         },
         errors: {
@@ -333,10 +353,10 @@ const resources = {
         open: 'Ver información de la ruta',
         tabsLabel: 'Secciones de la ruta',
         tabs: {
-          information: 'Información',
+          recommendations: 'Recomendaciones',
           map: 'Mapa',
+          weather: 'Clima',
           references: 'Referencias',
-          photos: 'Fotos',
         },
         loading: 'Cargando información de la ruta…',
         loadError: 'No pudimos cargar la información de la ruta.',
@@ -350,6 +370,12 @@ const resources = {
         noPhotos: 'Aún no hay fotografías publicadas.',
         photosLoadError:
           'No fue posible cargar las fotografías en este momento.',
+        routePhotos: 'Fotografías de la ruta',
+        photos: {
+          previous: 'Fotografía anterior',
+          next: 'Fotografía siguiente',
+          position: '{{current}} de {{total}}',
+        },
         altitude: '{{altitude}} m de altitud',
         map: {
           loading: 'Cargando mapa…',
@@ -382,6 +408,132 @@ const resources = {
           viewpoint: 'Mirador',
           summit: 'Cima',
         },
+        recommendations: {
+          intro:
+            'Prepárate con anticipación y toma decisiones prudentes durante todo el ascenso.',
+          items: {
+            preparation: {
+              title: 'Preparación antes del ascenso',
+              body: 'Revisa la ruta, calcula tiempo suficiente y comunica tu plan a una persona de confianza.',
+            },
+            clothing: {
+              title: 'Vestimenta adecuada',
+              body: 'Usa calzado con buena tracción y lleva capas para cambios de temperatura, viento o lluvia.',
+            },
+            hydration: {
+              title: 'Hidratación y alimentación',
+              body: 'Lleva suficiente agua y alimentos prácticos para la duración prevista del recorrido.',
+            },
+            lighting: {
+              title: 'Linterna e iluminación',
+              body: 'Lleva una linterna funcional y energía de respaldo, especialmente si iniciarás antes del amanecer.',
+            },
+            weather: {
+              title: 'Condiciones climáticas',
+              body: 'Consulta el pronóstico y reconsidera el ascenso si las condiciones cambian de forma desfavorable.',
+            },
+            stayOnRoute: {
+              title: 'Permanecer en la ruta',
+              body: 'Sigue los senderos y referencias reconocibles. Evita atajos o zonas que no conozcas.',
+            },
+            waste: {
+              title: 'Manejo de basura',
+              body: 'Regresa contigo todos tus residuos y evita dejar restos de alimentos en el trayecto.',
+            },
+            environment: {
+              title: 'Respeto al entorno natural',
+              body: 'No extraigas plantas, rocas ni otros elementos, y procura reducir el ruido.',
+            },
+            returnSafety: {
+              title: 'Retorno y seguridad',
+              body: 'Respeta la hora de retorno prevista y utiliza el retorno anticipado si necesitas terminar antes.',
+            },
+            emergency: {
+              title: 'Qué hacer ante una emergencia',
+              body: 'Mantén la calma, permanece con el grupo cuando sea posible y solicita ayuda por los medios disponibles.',
+            },
+          },
+        },
+      },
+      weather: {
+        loading: 'Consultando el pronóstico…',
+        unavailable:
+          'El pronóstico no está disponible en este momento. La aplicación puede seguir utilizándose normalmente.',
+        incomplete: 'El servicio no devolvió datos meteorológicos completos.',
+        cached: 'Mostrando el último pronóstico guardado en este dispositivo.',
+        previousData:
+          'No fue posible actualizar. Se conservan los últimos datos disponibles.',
+        referenceNotice:
+          'Pronóstico de referencia para el área del Volcán Santa María. No garantiza condiciones seguras.',
+        temperature: 'Temperatura',
+        volcanoName: 'Volcán Santa María',
+        feelsLike: 'Sensación de {{value}} °C',
+        humidity: 'Humedad',
+        cloudCover: 'Nubosidad',
+        sunrise: 'Amanecer',
+        sunset: 'Atardecer',
+        rain: 'Probabilidad de lluvia',
+        rainShort: 'lluvia {{value}} %',
+        wind: 'Viento',
+        gusts: 'Ráfagas',
+        nextHours: 'Próximas horas',
+        current: 'Ahora',
+        refresh: 'Actualizar',
+        refreshing: 'Actualizando…',
+        temperatureTrend: 'Tendencia de temperatura',
+        rainTrend: 'Probabilidad de lluvia por hora',
+        updatedAt: 'Actualizado: {{date}}',
+        risk: {
+          favorable: 'Favorable',
+          precaution: 'Precaución',
+          adverse: 'Adverso',
+          unavailable: 'Sin datos',
+        },
+        conditions: {
+          clear: 'Cielo despejado',
+          partlyCloudy: 'Parcialmente nublado',
+          overcast: 'Nublado',
+          fog: 'Niebla',
+          drizzle: 'Llovizna',
+          freezingDrizzle: 'Llovizna helada',
+          rain: 'Lluvia',
+          freezingRain: 'Lluvia helada',
+          snow: 'Nieve',
+          showers: 'Chubascos',
+          thunderstorm: 'Tormenta',
+          unknown: 'Condición no disponible',
+        },
+        hike: {
+          title: 'Pronóstico para tu ascenso',
+          plannedPeriod: 'Según el horario planificado',
+          conditionsTitle: 'Condiciones previstas',
+          departure: 'Salida prevista',
+          during: 'Durante el ascenso',
+          return: 'Retorno previsto',
+          summary:
+            'Hasta {{rain}} % de probabilidad de lluvia y viento de hasta {{wind}} km/h en el periodo previsto.',
+          outOfRange:
+            'El pronóstico todavía no está disponible para esta fecha.',
+          outOfRangeFollowUp:
+            'Se actualizará cuando la fecha esté dentro del rango disponible.',
+          recommendationsTitle: 'Recomendaciones para estas condiciones',
+          referenceFastChange:
+            'Pronóstico de referencia. En alta montaña las condiciones pueden cambiar rápidamente.',
+          advice: {
+            rainProtection:
+              'Lleva protección impermeable y protege el equipo sensible.',
+            moderateGusts:
+              'Prepárate para ráfagas y revisa el ajuste de tu equipo.',
+            strongWind:
+              'Valora posponer el ascenso ante viento o ráfagas fuertes.',
+            rainIncreasingAtReturn:
+              'La lluvia puede aumentar hacia el retorno; conserva margen de tiempo.',
+          },
+        },
+      },
+      announcements: {
+        understood: 'Entendido',
+        dismiss: 'Cerrar aviso',
       },
       validation: {
         required: 'Completa todos los campos.',
@@ -441,6 +593,7 @@ const resources = {
         lastName: 'Last name',
         phone: 'Phone',
         cancel: 'Cancel',
+        close: 'Close',
         signOut: 'Sign out',
         signingOut: 'Signing out…',
         unavailable: 'Unavailable',
@@ -504,6 +657,9 @@ const resources = {
         welcomeGeneric: 'Welcome!',
         authenticated: 'Your account is authenticated.',
         editProfile: 'Edit profile',
+        myProfile: 'My profile',
+        showPassword: 'Show password',
+        hidePassword: 'Hide password',
         verificationPersistentNotice:
           'Confirm your email to enable ascent registration.',
       },
@@ -585,6 +741,9 @@ const resources = {
           expedition_camping: 'Expedition & Camping',
         },
         expectedReturn: 'Estimated return',
+        plannedStart: 'Planned start',
+        startDate: 'Planned start date',
+        startTime: 'Planned start time',
         returnDate: 'Estimated return date',
         returnTime: 'Estimated return time',
         timePicker: {
@@ -672,6 +831,9 @@ const resources = {
         },
         terms:
           'I have read and accept the rules and recommendations for the ascent.',
+        recommendationsConsent:
+          'I have read and accept the recommendations for the hike.',
+        viewRecommendations: 'View recommendations',
         create: {
           action: 'Create ascent',
           title: 'Create ascent',
@@ -724,6 +886,14 @@ const resources = {
           back: 'Back to home',
         },
         validation: {
+          startDateRequired: 'Select a planned start date.',
+          startDatePast: 'The start date cannot be before today.',
+          startDateInvalid: 'Enter a valid start date.',
+          startTimeRequired: 'Select a planned start time.',
+          futureStart:
+            'The start date and time must be later than the current time.',
+          startBeforeReturn:
+            'The planned start must be earlier than the estimated return.',
           returnDateRequired: 'Select an estimated return date.',
           returnDatePast: 'The return date cannot be before today.',
           returnDateInvalid: 'Enter a valid return date.',
@@ -732,6 +902,8 @@ const resources = {
             'The return date and time must be later than the current time.',
           guideName: 'Enter the local guide’s name.',
           acceptTerms: 'You must accept the rules and recommendations.',
+          acceptRecommendations:
+            'You must read and accept the recommendations to continue.',
           invalidCode: 'Enter a valid 6-character code.',
         },
         errors: {
@@ -754,10 +926,10 @@ const resources = {
         open: 'View route information',
         tabsLabel: 'Route sections',
         tabs: {
-          information: 'Information',
+          recommendations: 'Recommendations',
           map: 'Map',
+          weather: 'Weather',
           references: 'References',
-          photos: 'Photos',
         },
         loading: 'Loading route information…',
         loadError: 'We could not load the route information.',
@@ -770,6 +942,12 @@ const resources = {
         noCheckpoints: 'No reference points have been published yet.',
         noPhotos: 'No photos have been published yet.',
         photosLoadError: 'Photos could not be loaded at this time.',
+        routePhotos: 'Route photos',
+        photos: {
+          previous: 'Previous photo',
+          next: 'Next photo',
+          position: '{{current}} of {{total}}',
+        },
         altitude: '{{altitude}} m elevation',
         map: {
           loading: 'Loading map…',
@@ -802,6 +980,131 @@ const resources = {
           viewpoint: 'Viewpoint',
           summit: 'Summit',
         },
+        recommendations: {
+          intro:
+            'Prepare in advance and make prudent decisions throughout the hike.',
+          items: {
+            preparation: {
+              title: 'Preparation before the hike',
+              body: 'Review the route, allow enough time, and share your plan with someone you trust.',
+            },
+            clothing: {
+              title: 'Appropriate clothing',
+              body: 'Wear footwear with good traction and bring layers for changes in temperature, wind, or rain.',
+            },
+            hydration: {
+              title: 'Hydration and food',
+              body: 'Carry enough water and practical food for the expected duration of the hike.',
+            },
+            lighting: {
+              title: 'Flashlight and lighting',
+              body: 'Bring a working flashlight and backup power, especially if you will start before sunrise.',
+            },
+            weather: {
+              title: 'Weather conditions',
+              body: 'Check the forecast and reconsider the hike if conditions change unfavorably.',
+            },
+            stayOnRoute: {
+              title: 'Stay on the route',
+              body: 'Follow recognizable trails and references. Avoid shortcuts or unfamiliar areas.',
+            },
+            waste: {
+              title: 'Waste management',
+              body: 'Take all waste back with you and do not leave food scraps along the trail.',
+            },
+            environment: {
+              title: 'Respect the natural environment',
+              body: 'Do not remove plants, rocks, or other natural elements, and keep noise to a minimum.',
+            },
+            returnSafety: {
+              title: 'Return and safety',
+              body: 'Respect the planned return time and use early return if you need to finish sooner.',
+            },
+            emergency: {
+              title: 'What to do in an emergency',
+              body: 'Stay calm, remain with the group when possible, and request help through available means.',
+            },
+          },
+        },
+      },
+      weather: {
+        loading: 'Checking the forecast…',
+        unavailable:
+          'The forecast is unavailable right now. You can continue using the application normally.',
+        incomplete: 'The service did not return complete weather data.',
+        cached: 'Showing the latest forecast saved on this device.',
+        previousData:
+          'The update failed. The latest available data remains visible.',
+        referenceNotice:
+          'Reference forecast for the Santa María Volcano area. It does not guarantee safe conditions.',
+        temperature: 'Temperature',
+        volcanoName: 'Santa María Volcano',
+        feelsLike: 'Feels like {{value}} °C',
+        humidity: 'Humidity',
+        cloudCover: 'Cloud cover',
+        sunrise: 'Sunrise',
+        sunset: 'Sunset',
+        rain: 'Rain probability',
+        rainShort: 'rain {{value}}%',
+        wind: 'Wind',
+        gusts: 'Gusts',
+        nextHours: 'Next hours',
+        current: 'Now',
+        refresh: 'Refresh',
+        refreshing: 'Refreshing…',
+        temperatureTrend: 'Temperature trend',
+        rainTrend: 'Hourly rain probability',
+        updatedAt: 'Updated: {{date}}',
+        risk: {
+          favorable: 'Favorable',
+          precaution: 'Use caution',
+          adverse: 'Adverse',
+          unavailable: 'No data',
+        },
+        conditions: {
+          clear: 'Clear sky',
+          partlyCloudy: 'Partly cloudy',
+          overcast: 'Overcast',
+          fog: 'Fog',
+          drizzle: 'Drizzle',
+          freezingDrizzle: 'Freezing drizzle',
+          rain: 'Rain',
+          freezingRain: 'Freezing rain',
+          snow: 'Snow',
+          showers: 'Rain showers',
+          thunderstorm: 'Thunderstorm',
+          unknown: 'Condition unavailable',
+        },
+        hike: {
+          title: 'Forecast for your hike',
+          plannedPeriod: 'Based on your planned schedule',
+          conditionsTitle: 'Expected conditions',
+          departure: 'Planned departure',
+          during: 'During the hike',
+          return: 'Planned return',
+          summary:
+            'Up to {{rain}}% chance of rain and wind up to {{wind}} km/h during the planned period.',
+          outOfRange: 'The forecast is not available for this date yet.',
+          outOfRangeFollowUp:
+            'It will update when the date is within the available forecast range.',
+          recommendationsTitle: 'Recommendations for these conditions',
+          referenceFastChange:
+            'Reference forecast. Mountain conditions can change quickly.',
+          advice: {
+            rainProtection:
+              'Bring waterproof protection and keep sensitive gear dry.',
+            moderateGusts:
+              'Prepare for gusts and check that your gear is secure.',
+            strongWind:
+              'Consider postponing the hike when winds or gusts are strong.',
+            rainIncreasingAtReturn:
+              'Rain may increase near your return; keep extra time in reserve.',
+          },
+        },
+      },
+      announcements: {
+        understood: 'Got it',
+        dismiss: 'Dismiss announcement',
       },
       validation: {
         required: 'Complete all fields.',

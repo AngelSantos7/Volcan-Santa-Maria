@@ -1,7 +1,7 @@
 export type RouteCheckpointType =
   'start' | 'reference' | 'rest' | 'viewpoint' | 'summit';
 
-export type RouteTab = 'information' | 'map' | 'references' | 'photos';
+export type RouteTab = 'recommendations' | 'map' | 'weather' | 'references';
 
 export type RouteCheckpoint = {
   id: string;

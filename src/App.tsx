@@ -99,7 +99,7 @@ function App() {
 
   return (
     <>
-      <LanguageSwitcher />
+      {(!session || isPasswordRecovery) && <LanguageSwitcher />}
       {session && !isEmailVerified && !isPasswordRecovery && (
         <aside
           className="verification-notice global-verification-notice"

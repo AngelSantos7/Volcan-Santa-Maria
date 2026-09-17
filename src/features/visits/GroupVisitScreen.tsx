@@ -336,6 +336,10 @@ export function GroupVisitScreen({
           <dd>{t(`visits.types.${details.visitType}`)}</dd>
         </div>
         <div>
+          <dt>{t('visits.plannedStart')}</dt>
+          <dd>{formatExpectedReturn(details.plannedStartAt, language)}</dd>
+        </div>
+        <div>
           <dt>{t('visits.expectedReturn')}</dt>
           <dd>{formatExpectedReturn(details.expectedReturnAt, language)}</dd>
         </div>
@@ -540,7 +544,7 @@ export function GroupVisitScreen({
                 className="secondary-button"
                 type="button"
                 onClick={() =>
-                  onOpenRoute(feature === 'route' ? 'information' : feature)
+                  onOpenRoute(feature === 'route' ? 'recommendations' : feature)
                 }
                 disabled={busy}
               >

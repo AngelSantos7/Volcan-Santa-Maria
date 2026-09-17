@@ -10,6 +10,7 @@ import {
 } from './profile-types';
 import { AuthenticatedPage } from '../../pages/AuthenticatedPage';
 import { ProfileFormPage } from '../../pages/ProfileFormPage';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 
 export function ProfileGate() {
   const { t } = useTranslation();
@@ -48,11 +49,14 @@ export function ProfileGate() {
 
   if (!user || loading) {
     return (
-      <main className="auth-shell">
-        <p className="loading-message" role="status">
-          {t('profile.loading')}
-        </p>
-      </main>
+      <>
+        <LanguageSwitcher />
+        <main className="auth-shell">
+          <p className="loading-message" role="status">
+            {t('profile.loading')}
+          </p>
+        </main>
+      </>
     );
   }
 
@@ -74,34 +78,37 @@ export function ProfileGate() {
     };
 
     return (
-      <main className="auth-shell">
-        <section className="auth-card authenticated-card">
-          <header className="auth-header">
-            <span className="eyebrow">{t('common.brand')}</span>
-            <h1>{t('profile.loadErrorTitle')}</h1>
-            <p>{t('profile.loadErrorSubtitle')}</p>
-          </header>
+      <>
+        <LanguageSwitcher />
+        <main className="auth-shell">
+          <section className="auth-card authenticated-card">
+            <header className="auth-header">
+              <span className="eyebrow">{t('common.brand')}</span>
+              <h1>{t('profile.loadErrorTitle')}</h1>
+              <p>{t('profile.loadErrorSubtitle')}</p>
+            </header>
 
-          {signOutError && (
-            <p className="form-message error-message" role="alert">
-              {signOutError}
-            </p>
-          )}
+            {signOutError && (
+              <p className="form-message error-message" role="alert">
+                {signOutError}
+              </p>
+            )}
 
-          <div className="account-actions">
-            <button className="primary-button" type="button" onClick={retry}>
-              {t('profile.retry')}
-            </button>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={handleSignOut}
-            >
-              {t('common.signOut')}
-            </button>
-          </div>
-        </section>
-      </main>
+            <div className="account-actions">
+              <button className="primary-button" type="button" onClick={retry}>
+                {t('profile.retry')}
+              </button>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleSignOut}
+              >
+                {t('common.signOut')}
+              </button>
+            </div>
+          </section>
+        </main>
+      </>
     );
   }
 
@@ -109,19 +116,22 @@ export function ProfileGate() {
 
   if (!profileComplete || editing) {
     return (
-      <ProfileFormPage
-        userId={user.id}
-        initialData={profile}
-        requiredCompletion={!profileComplete}
-        onSaved={(savedProfile) => {
-          if (!profileComplete) {
-            showToast(t('profile.registrationCompleted'));
-          }
-          setProfile(savedProfile);
-          setEditing(false);
-        }}
-        onCancel={() => setEditing(false)}
-      />
+      <>
+        <LanguageSwitcher />
+        <ProfileFormPage
+          userId={user.id}
+          initialData={profile}
+          requiredCompletion={!profileComplete}
+          onSaved={(savedProfile) => {
+            if (!profileComplete) {
+              showToast(t('profile.registrationCompleted'));
+            }
+            setProfile(savedProfile);
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </>
     );
   }
 

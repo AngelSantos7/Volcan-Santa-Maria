@@ -1,6 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAppLanguage } from '../../i18n';
+import { WeatherPanel } from '../weather/WeatherPanel';
+import { CheckpointMediaGallery } from './components/CheckpointMediaGallery';
+import { RouteRecommendations } from './components/RouteRecommendations';
 import {
   getCachedSummitRouteContent,
   getSummitRouteContent,
@@ -8,6 +11,7 @@ import {
 import type {
   RouteCheckpointType,
   RouteContent,
+  RouteMedia,
   RouteTab,
 } from './route-types';
 
@@ -16,25 +20,30 @@ type RouteInfoScreenProps = {
   onBack: () => void;
 };
 
-const routeTabs: RouteTab[] = ['information', 'map', 'references', 'photos'];
+const routeTabs: RouteTab[] = [
+  'recommendations',
+  'map',
+  'weather',
+  'references',
+];
 const RouteMap = lazy(() =>
   import('./components/RouteMap').then((module) => ({
     default: module.RouteMap,
   }))
 );
 
-function formatDuration(minutes: number, language: string): string {
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  const formatter = new Intl.NumberFormat(language === 'es' ? 'es-GT' : 'en');
-
-  if (hours === 0) return `${formatter.format(remainingMinutes)} min`;
-  if (remainingMinutes === 0) return `${formatter.format(hours)} h`;
-  return `${formatter.format(hours)} h ${formatter.format(remainingMinutes)} min`;
+function sortedMedia(media: RouteMedia[], checkpointId: string | null) {
+  return media
+    .filter((item) => item.checkpointId === checkpointId)
+    .toSorted(
+      (first, second) =>
+        Number(second.isCover) - Number(first.isCover) ||
+        first.sortOrder - second.sortOrder
+    );
 }
 
 export function RouteInfoScreen({
-  initialTab = 'information',
+  initialTab = 'recommendations',
   onBack,
 }: RouteInfoScreenProps) {
   const { t, i18n } = useTranslation();
@@ -55,7 +64,6 @@ export function RouteInfoScreen({
 
   useEffect(() => {
     let active = true;
-
     void getSummitRouteContent()
       .then((nextContent) => {
         if (!active) return;
@@ -68,7 +76,6 @@ export function RouteInfoScreen({
       .finally(() => {
         if (active) setLoading(false);
       });
-
     return () => {
       active = false;
     };
@@ -79,18 +86,10 @@ export function RouteInfoScreen({
       ? content.nameEs
       : content.nameEn
     : t('visits.summitRoute');
-  const description = content
-    ? language === 'es'
-      ? content.descriptionEs
-      : content.descriptionEn
-    : null;
-  const hasRouteFacts = Boolean(
-    content?.difficulty ||
-    content?.distanceKm !== null ||
-    content?.estimatedDurationMinutes !== null ||
-    content?.elevationGainM !== null
-  );
-  const visibleRouteMedia = content
+  const hideFailedMedia = (mediaId: string) => {
+    setFailedPhotoIds((currentIds) => new Set(currentIds).add(mediaId));
+  };
+  const visibleMedia = content
     ? content.media.filter((media) => !failedPhotoIds.has(media.id))
     : [];
 
@@ -132,7 +131,6 @@ export function RouteInfoScreen({
           {t('routes.loading')}
         </p>
       )}
-
       {loadFailed && !content && (
         <div className="route-feedback" role="alert">
           <p>{t('routes.loadError')}</p>
@@ -145,56 +143,20 @@ export function RouteInfoScreen({
           </button>
         </div>
       )}
-
       {loadFailed && content && (
         <p className="route-offline-note" role="status">
           {t('routes.cachedData')}
         </p>
       )}
 
-      {content && activeTab === 'information' && (
+      {content && activeTab === 'recommendations' && (
         <div
           className="route-tab-panel"
-          id="route-panel-information"
+          id="route-panel-recommendations"
           role="tabpanel"
-          aria-labelledby="route-tab-information"
+          aria-labelledby="route-tab-recommendations"
         >
-          {description ? (
-            <p className="route-description">{description}</p>
-          ) : (
-            <p className="route-empty-state">{t('routes.noDescription')}</p>
-          )}
-
-          {hasRouteFacts && (
-            <dl className="route-facts">
-              {content.difficulty && (
-                <div>
-                  <dt>{t('routes.difficulty')}</dt>
-                  <dd>{content.difficulty}</dd>
-                </div>
-              )}
-              {content.distanceKm !== null && (
-                <div>
-                  <dt>{t('routes.distance')}</dt>
-                  <dd>{numberFormatter.format(content.distanceKm)} km</dd>
-                </div>
-              )}
-              {content.estimatedDurationMinutes !== null && (
-                <div>
-                  <dt>{t('routes.duration')}</dt>
-                  <dd>
-                    {formatDuration(content.estimatedDurationMinutes, language)}
-                  </dd>
-                </div>
-              )}
-              {content.elevationGainM !== null && (
-                <div>
-                  <dt>{t('routes.elevationGain')}</dt>
-                  <dd>{numberFormatter.format(content.elevationGainM)} m</dd>
-                </div>
-              )}
-            </dl>
-          )}
+          <RouteRecommendations />
         </div>
       )}
 
@@ -217,6 +179,17 @@ export function RouteInfoScreen({
         </div>
       )}
 
+      {content && activeTab === 'weather' && (
+        <div
+          className="route-tab-panel"
+          id="route-panel-weather"
+          role="tabpanel"
+          aria-labelledby="route-tab-weather"
+        >
+          <WeatherPanel />
+        </div>
+      )}
+
       {content && activeTab === 'references' && (
         <div
           className="route-tab-panel"
@@ -224,33 +197,60 @@ export function RouteInfoScreen({
           role="tabpanel"
           aria-labelledby="route-tab-references"
         >
+          {content.mediaLoadFailed && (
+            <p className="route-media-error" role="status">
+              {t('routes.photosLoadError')}
+            </p>
+          )}
+          {sortedMedia(visibleMedia, null).length > 0 && (
+            <section
+              className="route-general-media"
+              aria-labelledby="route-general-media-title"
+            >
+              <h3 id="route-general-media-title">{t('routes.routePhotos')}</h3>
+              <CheckpointMediaGallery
+                media={sortedMedia(visibleMedia, null)}
+                fallbackAlt={routeName}
+                language={language}
+                onMediaError={hideFailedMedia}
+              />
+            </section>
+          )}
           {content.checkpoints.length === 0 ? (
             <p className="route-empty-state">{t('routes.noCheckpoints')}</p>
           ) : (
-            <ol className="route-checkpoint-list">
+            <ol className="route-checkpoint-list route-reference-list">
               {content.checkpoints.map((checkpoint) => {
                 const name =
                   language === 'es' ? checkpoint.nameEs : checkpoint.nameEn;
-                const checkpointDescription =
+                const description =
                   language === 'es'
                     ? checkpoint.descriptionEs
                     : checkpoint.descriptionEn;
-
+                const media = sortedMedia(visibleMedia, checkpoint.id);
                 return (
                   <li key={checkpoint.id}>
                     <div className="route-checkpoint-marker" aria-hidden="true">
                       {checkpoint.sequence}
                     </div>
-                    <div>
+                    <div className="route-reference-content">
+                      <CheckpointMediaGallery
+                        media={media}
+                        fallbackAlt={name}
+                        language={language}
+                        onMediaError={hideFailedMedia}
+                      />
                       {checkpoint.checkpointType && (
                         <span className="route-checkpoint-type">
                           {t(
-                            `routes.checkpointTypes.${checkpoint.checkpointType as RouteCheckpointType}`
+                            `routes.checkpointTypes.${
+                              checkpoint.checkpointType as RouteCheckpointType
+                            }`
                           )}
                         </span>
                       )}
                       <h3>{name}</h3>
-                      {checkpointDescription && <p>{checkpointDescription}</p>}
+                      {description && <p>{description}</p>}
                       {checkpoint.altitudeM !== null && (
                         <span className="route-checkpoint-altitude">
                           {t('routes.altitude', {
@@ -265,49 +265,6 @@ export function RouteInfoScreen({
                 );
               })}
             </ol>
-          )}
-        </div>
-      )}
-
-      {content && activeTab === 'photos' && (
-        <div
-          className="route-tab-panel"
-          id="route-panel-photos"
-          role="tabpanel"
-          aria-labelledby="route-tab-photos"
-        >
-          {content.mediaLoadFailed && (
-            <p className="route-media-error" role="status">
-              {t('routes.photosLoadError')}
-            </p>
-          )}
-          {visibleRouteMedia.length === 0 ? (
-            <p className="route-empty-state">{t('routes.noPhotos')}</p>
-          ) : (
-            <div className="route-photo-grid">
-              {visibleRouteMedia.map((media) => {
-                const caption =
-                  language === 'es' ? media.captionEs : media.captionEn;
-
-                return (
-                  <figure key={media.id}>
-                    <img
-                      src={media.publicUrl}
-                      alt={caption ?? routeName}
-                      loading="lazy"
-                      onError={() =>
-                        setFailedPhotoIds((currentIds) => {
-                          const nextIds = new Set(currentIds);
-                          nextIds.add(media.id);
-                          return nextIds;
-                        })
-                      }
-                    />
-                    {caption && <figcaption>{caption}</figcaption>}
-                  </figure>
-                );
-              })}
-            </div>
           )}
         </div>
       )}

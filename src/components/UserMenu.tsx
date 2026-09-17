@@ -1,0 +1,87 @@
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+type UserMenuProps = {
+  displayName: string;
+  disabled?: boolean;
+  onEditProfile: () => void;
+  onSignOut: () => void;
+};
+
+export function UserMenu({
+  displayName,
+  disabled = false,
+  onEditProfile,
+  onSignOut,
+}: UserMenuProps) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeWithEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="user-menu" ref={containerRef}>
+      <button
+        className="user-menu-trigger"
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        disabled={disabled}
+      >
+        <span className="user-avatar" aria-hidden="true">
+          ●
+        </span>
+        <span className="user-menu-name">
+          {displayName || t('auth.myProfile')}
+        </span>
+        <span aria-hidden="true">⌄</span>
+      </button>
+      {open && (
+        <div className="user-menu-popover" role="menu">
+          <div className="user-menu-heading">
+            <span>{t('auth.myProfile')}</span>
+            {displayName && <strong>{displayName}</strong>}
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onEditProfile();
+            }}
+          >
+            {t('auth.editProfile')}
+          </button>
+          <hr />
+          <button
+            className="user-menu-signout"
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
+          >
+            {t(disabled ? 'common.signingOut' : 'common.signOut')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

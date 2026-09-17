@@ -74,7 +74,16 @@ set
   document_type = 'passport'::public.document_type,
   document_number = 'MEMBER-' || pg_catalog.right(id::text, 1)
 where id <> 'e9000000-0000-4000-8000-000000000009'::uuid
-  and id::text like 'e%';
+  and id in (
+    'e1000000-0000-4000-8000-000000000001'::uuid,
+    'e2000000-0000-4000-8000-000000000002'::uuid,
+    'e3000000-0000-4000-8000-000000000003'::uuid,
+    'e4000000-0000-4000-8000-000000000004'::uuid,
+    'e5000000-0000-4000-8000-000000000005'::uuid,
+    'e6000000-0000-4000-8000-000000000006'::uuid,
+    'e7000000-0000-4000-8000-000000000007'::uuid,
+    'e8000000-0000-4000-8000-000000000008'::uuid
+  );
 
 insert into public.emergency_contacts (
   user_id,
@@ -91,7 +100,16 @@ select
   '+50255550001'
 from public.profiles as profile
 where profile.id <> 'e9000000-0000-4000-8000-000000000009'::uuid
-  and profile.id::text like 'e%';
+  and profile.id in (
+    'e1000000-0000-4000-8000-000000000001'::uuid,
+    'e2000000-0000-4000-8000-000000000002'::uuid,
+    'e3000000-0000-4000-8000-000000000003'::uuid,
+    'e4000000-0000-4000-8000-000000000004'::uuid,
+    'e5000000-0000-4000-8000-000000000005'::uuid,
+    'e6000000-0000-4000-8000-000000000006'::uuid,
+    'e7000000-0000-4000-8000-000000000007'::uuid,
+    'e8000000-0000-4000-8000-000000000008'::uuid
+  );
 
 update public.user_roles
 set role = 'admin'::public.app_role
@@ -219,9 +237,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
+        pg_catalog.now() + interval '1 hour',
         pg_catalog.now() + interval '8 hours',
         false,
         null,
+        true,
         true
       )
     )
@@ -700,9 +720,11 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'expedition_camping'::public.visit_type,
+        pg_catalog.now() + interval '1 day',
         pg_catalog.now() + interval '2 days',
         false,
         null,
+        true,
         true
       )
     )

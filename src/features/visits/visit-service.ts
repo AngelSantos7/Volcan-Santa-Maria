@@ -38,6 +38,7 @@ type GroupVisitDetailsRow = {
   visit_type: VisitType;
   has_local_guide: boolean;
   guide_name: string | null;
+  planned_start_at: string | null;
   started_at: string | null;
   expected_return_at: string | null;
   completed_at: string | null;
@@ -59,6 +60,7 @@ type VisitHistoryRow = {
   route_name_en: string;
   member_role: GroupVisitMemberRole;
   member_status: VisitMemberStatus;
+  planned_start_at: string | null;
   started_at: string | null;
   expected_return_at: string | null;
   completed_at: string | null;
@@ -103,6 +105,7 @@ function mapDetails(row: GroupVisitDetailsRow): GroupVisitDetails {
     visitType: row.visit_type,
     hasLocalGuide: row.has_local_guide,
     guideName: row.guide_name,
+    plannedStartAt: row.planned_start_at,
     startedAt: row.started_at,
     expectedReturnAt: row.expected_return_at,
     completedAt: row.completed_at,
@@ -140,10 +143,12 @@ export async function createGroupVisit(
 ): Promise<string> {
   const { data, error } = await supabase.rpc('create_group_visit', {
     p_visit_type: input.visitType,
+    p_planned_start_at: input.plannedStartAt,
     p_expected_return_at: input.expectedReturnAt,
     p_has_local_guide: input.hasLocalGuide,
     p_guide_name: input.guideName,
     p_terms_accepted: true,
+    p_recommendations_accepted: input.recommendationsAccepted,
   });
 
   if (error) throw error;
@@ -266,6 +271,7 @@ export async function getMyVisitHistory(
     routeNameEn: row.route_name_en,
     memberRole: row.member_role,
     memberStatus: row.member_status,
+    plannedStartAt: row.planned_start_at,
     startedAt: row.started_at,
     expectedReturnAt: row.expected_return_at,
     completedAt: row.completed_at,

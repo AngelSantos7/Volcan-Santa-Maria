@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AnnouncementBanner } from '../features/announcements/AnnouncementBanner';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { UserMenu } from '../components/UserMenu';
 import { getAuthErrorMessage } from '../features/auth/auth-errors';
 import { useAuth } from '../features/auth/useAuth';
 import { GroupVisits } from '../features/visits/GroupVisits';
@@ -41,6 +44,15 @@ export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
         className="auth-card authenticated-card visits-card"
         aria-labelledby="welcome-title"
       >
+        <div className="authenticated-toolbar">
+          <LanguageSwitcher />
+          <UserMenu
+            displayName={displayName}
+            disabled={submitting}
+            onEditProfile={onEditProfile}
+            onSignOut={() => void handleSignOut()}
+          />
+        </div>
         <header className="auth-header account-header">
           <span className="eyebrow">{t('auth.activeSession')}</span>
           <h1 id="welcome-title">
@@ -51,6 +63,8 @@ export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
           <p>{user?.email ?? t('common.unavailable')}</p>
         </header>
 
+        <AnnouncementBanner placement="login" />
+
         {user && <GroupVisits currentUserId={user.id} />}
 
         {error && (
@@ -58,25 +72,6 @@ export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
             {error}
           </p>
         )}
-
-        <div className="account-actions account-footer-actions">
-          <button
-            className="primary-button"
-            type="button"
-            onClick={onEditProfile}
-            disabled={submitting}
-          >
-            {t('auth.editProfile')}
-          </button>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={handleSignOut}
-            disabled={submitting}
-          >
-            {t(submitting ? 'common.signingOut' : 'common.signOut')}
-          </button>
-        </div>
       </section>
     </main>
   );
