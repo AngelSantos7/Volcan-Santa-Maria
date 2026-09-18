@@ -10,6 +10,7 @@ import type {
   VisitHistoryMember,
   VisitMemberStatus,
   VisitType,
+  VisitStartMode,
 } from './visit-types';
 
 type ActiveVisitRow = {
@@ -21,6 +22,9 @@ type ParticipantRow = {
   user_id: string;
   first_name: string;
   last_name: string;
+  avatar_kind: 'uploaded' | 'preset' | 'initials' | null;
+  avatar_path: string | null;
+  avatar_preset: GroupVisitParticipant['avatarPreset'];
   member_role: GroupVisitMemberRole;
   member_status: VisitMemberStatus;
   joined_at: string;
@@ -36,6 +40,7 @@ type GroupVisitDetailsRow = {
   status: GroupVisitStatus;
   join_code: string | null;
   visit_type: VisitType;
+  start_mode: VisitStartMode;
   has_local_guide: boolean;
   guide_name: string | null;
   planned_start_at: string | null;
@@ -86,6 +91,9 @@ function mapParticipant(row: ParticipantRow): GroupVisitParticipant {
     userId: row.user_id,
     firstName: row.first_name,
     lastName: row.last_name,
+    avatarKind: row.avatar_kind,
+    avatarPath: row.avatar_path,
+    avatarPreset: row.avatar_preset,
     memberRole: row.member_role,
     memberStatus: row.member_status,
     joinedAt: row.joined_at,
@@ -103,6 +111,7 @@ function mapDetails(row: GroupVisitDetailsRow): GroupVisitDetails {
     status: row.status,
     joinCode: row.join_code,
     visitType: row.visit_type,
+    startMode: row.start_mode,
     hasLocalGuide: row.has_local_guide,
     guideName: row.guide_name,
     plannedStartAt: row.planned_start_at,
@@ -143,6 +152,7 @@ export async function createGroupVisit(
 ): Promise<string> {
   const { data, error } = await supabase.rpc('create_group_visit', {
     p_visit_type: input.visitType,
+    p_start_mode: input.startMode,
     p_planned_start_at: input.plannedStartAt,
     p_expected_return_at: input.expectedReturnAt,
     p_has_local_guide: input.hasLocalGuide,

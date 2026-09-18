@@ -39,6 +39,7 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [resetRequestSent, setResetRequestSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loginImageAvailable, setLoginImageAvailable] = useState(true);
 
   const setEmailValue = (value: string) => {
     setEmail(value);
@@ -243,117 +244,134 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
   const fieldErrorCount = Object.keys(fieldErrors).length;
 
   return (
-    <main className="auth-shell">
-      <div className="auth-page-stack">
-        <AnnouncementBanner placement="login" />
-        <section className="auth-card" aria-labelledby="login-title">
-          <header className="auth-header">
-            <span className="eyebrow">{t('common.brand')}</span>
-            <h1 id="login-title">{t('auth.loginTitle')}</h1>
-            <p>{t('auth.loginSubtitle')}</p>
-          </header>
+    <main className="auth-shell auth-shell--login">
+      <div
+        className={`login-layout${loginImageAvailable ? '' : ' login-layout--fallback'}`}
+      >
+        {loginImageAvailable && (
+          <section className="login-visual" aria-label={t('common.brand')}>
+            <img
+              src="/images/volcan-santa-maria-login.jpg"
+              alt=""
+              onError={() => setLoginImageAvailable(false)}
+            />
+            <div>
+              <strong>{t('common.brand')}</strong>
+              <span>{t('auth.loginHeroSubtitle')}</span>
+            </div>
+          </section>
+        )}
+        <div className="auth-page-stack login-form-column">
+          <AnnouncementBanner placement="login" />
+          <section className="auth-card" aria-labelledby="login-title">
+            <header className="auth-header">
+              <span className="eyebrow">{t('common.brand')}</span>
+              <h1 id="login-title">{t('auth.loginTitle')}</h1>
+              <p>{t('auth.loginSubtitle')}</p>
+            </header>
 
-          <form
-            className="auth-form"
-            onSubmit={handleSubmit}
-            noValidate
-            ref={formRef}
-          >
-            {fieldErrorCount > 0 && (
-              <p className="form-message error-message" role="alert">
-                {t('validation.completeRequiredFields')}
-              </p>
-            )}
-
-            <label>
-              {t('common.email')}
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(event) => setEmailValue(event.target.value)}
-                onBlur={() => setEmailValue(normalizeEmail(email))}
-                disabled={submitting}
-                aria-invalid={Boolean(fieldErrors.email)}
-                aria-describedby={
-                  fieldErrors.email ? 'login-email-error' : undefined
-                }
-                maxLength={254}
-                required
-              />
-              {fieldErrors.email && (
-                <span
-                  className="field-error"
-                  id="login-email-error"
-                  role="alert"
-                >
-                  {t(fieldErrors.email)}
-                </span>
+            <form
+              className="auth-form"
+              onSubmit={handleSubmit}
+              noValidate
+              ref={formRef}
+            >
+              {fieldErrorCount > 0 && (
+                <p className="form-message error-message" role="alert">
+                  {t('validation.completeRequiredFields')}
+                </p>
               )}
-            </label>
 
-            <label>
-              {t('common.password')}
-              <PasswordInput
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPasswordValue(event.target.value)}
+              <label>
+                {t('common.email')}
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(event) => setEmailValue(event.target.value)}
+                  onBlur={() => setEmailValue(normalizeEmail(email))}
+                  disabled={submitting}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={
+                    fieldErrors.email ? 'login-email-error' : undefined
+                  }
+                  maxLength={254}
+                  required
+                />
+                {fieldErrors.email && (
+                  <span
+                    className="field-error"
+                    id="login-email-error"
+                    role="alert"
+                  >
+                    {t(fieldErrors.email)}
+                  </span>
+                )}
+              </label>
+
+              <label>
+                {t('common.password')}
+                <PasswordInput
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPasswordValue(event.target.value)}
+                  disabled={submitting}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={
+                    fieldErrors.password ? 'login-password-error' : undefined
+                  }
+                  required
+                />
+                {fieldErrors.password && (
+                  <span
+                    className="field-error"
+                    id="login-password-error"
+                    role="alert"
+                  >
+                    {t(fieldErrors.password)}
+                  </span>
+                )}
+              </label>
+
+              <button
+                className="auth-text-button"
+                type="button"
+                onClick={showForgotPassword}
                 disabled={submitting}
-                aria-invalid={Boolean(fieldErrors.password)}
-                aria-describedby={
-                  fieldErrors.password ? 'login-password-error' : undefined
-                }
-                required
-              />
-              {fieldErrors.password && (
-                <span
-                  className="field-error"
-                  id="login-password-error"
-                  role="alert"
-                >
-                  {t(fieldErrors.password)}
-                </span>
+              >
+                {t('auth.forgotPassword')}
+              </button>
+
+              {error && (
+                <p className="form-message error-message" role="alert">
+                  {error}
+                </p>
               )}
-            </label>
 
-            <button
-              className="auth-text-button"
-              type="button"
-              onClick={showForgotPassword}
-              disabled={submitting}
-            >
-              {t('auth.forgotPassword')}
-            </button>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={submitting}
+              >
+                {t(submitting ? 'auth.loggingIn' : 'auth.loginSubmit')}
+              </button>
+            </form>
 
-            {error && (
-              <p className="form-message error-message" role="alert">
-                {error}
-              </p>
-            )}
-
-            <button
-              className="primary-button"
-              type="submit"
-              disabled={submitting}
-            >
-              {t(submitting ? 'auth.loggingIn' : 'auth.loginSubmit')}
-            </button>
-          </form>
-
-          <p className="auth-switch">
-            {t('auth.noAccount')}{' '}
-            <button
-              type="button"
-              onClick={onShowRegister}
-              disabled={submitting}
-            >
-              {t('auth.createAccountLink')}
-            </button>
-          </p>
-        </section>
+            <p className="auth-switch">
+              {t('auth.noAccount')}{' '}
+              <button
+                type="button"
+                onClick={onShowRegister}
+                disabled={submitting}
+              >
+                {t('auth.createAccountLink')}
+              </button>
+            </p>
+          </section>
+        </div>
       </div>
     </main>
   );

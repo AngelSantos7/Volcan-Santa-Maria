@@ -135,5 +135,10 @@ export function ProfileGate() {
     );
   }
 
-  return <AuthenticatedPage onEditProfile={() => setEditing(true)} />;
+  return (
+    <AuthenticatedPage
+      profile={profile}
+      onEditProfile={() => setEditing(true)}
+    />
+  );
 }

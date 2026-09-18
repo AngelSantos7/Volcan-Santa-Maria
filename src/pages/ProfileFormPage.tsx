@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
   type FormEvent,
@@ -8,6 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { CountrySelect } from '../components/CountrySelect';
 import { DatePicker } from '../components/DatePicker';
 import { InternationalPhoneInput } from '../components/InternationalPhoneInput';
+import { UserAvatar } from '../components/UserAvatar';
+import {
+  AVATAR_PRESETS,
+  processAvatarImage,
+} from '../features/profile/avatar-utils';
 import { getCountryOptions } from '../features/profile/country-data';
 import { saveTouristProfile } from '../features/profile/profile-service';
 import {
@@ -31,6 +37,9 @@ type ProfileFormPageProps = {
 };
 
 type ProfileField =
+  | 'firstName'
+  | 'lastName'
+  | 'avatar'
   | 'nationalityCountryCode'
   | 'dateOfBirth'
   | 'phone'
@@ -117,7 +126,16 @@ export function ProfileFormPage({
 }: ProfileFormPageProps) {
   const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<TouristProfileData>(initialData);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState<TouristProfileData>(() => ({
+    ...initialData,
+    avatarKind: initialData.avatarKind ?? 'initials',
+  }));
+  const [processedAvatar, setProcessedAvatar] = useState<{
+    blob: Blob;
+    previewUrl: string;
+  } | null>(null);
+  const [avatarProcessing, setAvatarProcessing] = useState(false);
   const suggestedPhoneCountry = getSuggestedPhoneCountry(
     initialData.nationalityCountryCode
   );
@@ -146,6 +164,13 @@ export function ProfileFormPage({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (processedAvatar) URL.revokeObjectURL(processedAvatar.previewUrl);
+    },
+    [processedAvatar]
+  );
 
   const clearFieldError = (field: ProfileField) => {
     setFieldErrors((current) => {
@@ -211,6 +236,23 @@ export function ProfileFormPage({
   const validate = (): ProfileFieldErrors => {
     const errors: ProfileFieldErrors = {};
     const nationality = form.nationalityCountryCode.toUpperCase();
+
+    if (!isValidPersonName(form.firstName)) {
+      errors.firstName = t('validation.invalidFirstName');
+    }
+    if (!isValidPersonName(form.lastName)) {
+      errors.lastName = t('validation.invalidLastName');
+    }
+    if (
+      form.avatarKind === 'uploaded' &&
+      !processedAvatar &&
+      !form.avatarPath
+    ) {
+      errors.avatar = t('profile.avatar.photoRequired');
+    }
+    if (form.avatarKind === 'preset' && !form.avatarPreset) {
+      errors.avatar = t('profile.avatar.presetRequired');
+    }
 
     if (!nationality || !ISO_COUNTRY_CODES.has(nationality)) {
       errors.nationalityCountryCode = t(
@@ -311,6 +353,8 @@ export function ProfileFormPage({
 
     const normalized: TouristProfileData = {
       ...form,
+      firstName: normalizeSpaces(form.firstName),
+      lastName: normalizeSpaces(form.lastName),
       nationalityCountryCode: form.nationalityCountryCode.toUpperCase(),
       phone: e164Phone,
       documentNumber: normalizeSpaces(form.documentNumber),
@@ -323,7 +367,11 @@ export function ProfileFormPage({
     setSubmitting(true);
 
     try {
-      const savedProfile = await saveTouristProfile(userId, normalized);
+      const savedProfile = await saveTouristProfile(
+        userId,
+        normalized,
+        processedAvatar?.blob
+      );
       onSaved(savedProfile);
     } catch {
       setSubmissionError(t('validation.saveProfile'));
@@ -366,6 +414,197 @@ export function ProfileFormPage({
               {t('validation.completeRequiredFields')}
             </p>
           )}
+
+          <fieldset>
+            <legend>{t('profile.identity')}</legend>
+            <div className="profile-identity-editor">
+              <UserAvatar
+                firstName={form.firstName}
+                lastName={form.lastName}
+                avatarKind={form.avatarKind}
+                avatarPath={form.avatarPath}
+                avatarPreset={form.avatarPreset}
+                avatarUrl={processedAvatar?.previewUrl ?? form.avatarUrl}
+                className="profile-avatar--editor"
+              />
+              <div className="form-grid">
+                <div
+                  className={`form-control${fieldErrors.firstName ? ' has-error' : ''}`}
+                >
+                  <label htmlFor="firstName">{t('common.firstName')}</label>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    autoComplete="given-name"
+                    value={form.firstName}
+                    maxLength={80}
+                    aria-invalid={Boolean(fieldErrors.firstName)}
+                    aria-describedby={
+                      fieldErrors.firstName ? 'firstName-error' : undefined
+                    }
+                    onChange={(event) => {
+                      setField('firstName', event.target.value);
+                      clearFieldError('firstName');
+                    }}
+                    disabled={submitting}
+                    required
+                  />
+                  {fieldErrors.firstName && (
+                    <p id="firstName-error" className="field-error">
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
+                </div>
+                <div
+                  className={`form-control${fieldErrors.lastName ? ' has-error' : ''}`}
+                >
+                  <label htmlFor="lastName">{t('common.lastName')}</label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    autoComplete="family-name"
+                    value={form.lastName}
+                    maxLength={80}
+                    aria-invalid={Boolean(fieldErrors.lastName)}
+                    aria-describedby={
+                      fieldErrors.lastName ? 'lastName-error' : undefined
+                    }
+                    onChange={(event) => {
+                      setField('lastName', event.target.value);
+                      clearFieldError('lastName');
+                    }}
+                    disabled={submitting}
+                    required
+                  />
+                  {fieldErrors.lastName && (
+                    <p id="lastName-error" className="field-error">
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="avatar-kind-options" data-field-name="avatar">
+              {(['uploaded', 'preset', 'initials'] as const).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  aria-pressed={form.avatarKind === kind}
+                  onClick={() => {
+                    setField('avatarKind', kind);
+                    clearFieldError('avatar');
+                    if (
+                      kind === 'uploaded' &&
+                      !form.avatarPath &&
+                      !processedAvatar
+                    ) {
+                      avatarInputRef.current?.click();
+                    }
+                    if (kind === 'preset' && !form.avatarPreset) {
+                      setField('avatarPreset', AVATAR_PRESETS[0]);
+                    }
+                  }}
+                  disabled={submitting || avatarProcessing}
+                >
+                  {t(`profile.avatar.kinds.${kind}`)}
+                </button>
+              ))}
+            </div>
+
+            {form.avatarKind === 'uploaded' && (
+              <div className="avatar-upload-row">
+                <input
+                  ref={avatarInputRef}
+                  className="visually-hidden"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = '';
+                    if (!file) return;
+                    setAvatarProcessing(true);
+                    clearFieldError('avatar');
+                    void processAvatarImage(file)
+                      .then((blob) => {
+                        const previewUrl = URL.createObjectURL(blob);
+                        setProcessedAvatar((current) => {
+                          if (current) URL.revokeObjectURL(current.previewUrl);
+                          return { blob, previewUrl };
+                        });
+                        setForm((current) => ({
+                          ...current,
+                          avatarKind: 'uploaded',
+                          avatarPreset: null,
+                        }));
+                      })
+                      .catch((error: unknown) => {
+                        const code =
+                          error instanceof Error ? error.message : '';
+                        setFieldErrors((current) => ({
+                          ...current,
+                          avatar:
+                            code === 'file_too_large'
+                              ? t('profile.avatar.tooLarge')
+                              : code === 'unsupported_type'
+                                ? t('profile.avatar.unsupported')
+                                : t('profile.avatar.processingFailed'),
+                        }));
+                      })
+                      .finally(() => setAvatarProcessing(false));
+                  }}
+                  disabled={submitting || avatarProcessing}
+                />
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={submitting || avatarProcessing}
+                >
+                  {t(
+                    avatarProcessing
+                      ? 'profile.avatar.processing'
+                      : 'profile.avatar.choosePhoto'
+                  )}
+                </button>
+                <small>{t('profile.avatar.photoHelp')}</small>
+              </div>
+            )}
+
+            {form.avatarKind === 'preset' && (
+              <div className="avatar-preset-grid">
+                {AVATAR_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    aria-label={t(`profile.avatar.presets.${preset}`)}
+                    aria-pressed={form.avatarPreset === preset}
+                    onClick={() => {
+                      setField('avatarPreset', preset);
+                      clearFieldError('avatar');
+                    }}
+                    disabled={submitting}
+                  >
+                    <UserAvatar
+                      firstName={form.firstName}
+                      lastName={form.lastName}
+                      avatarKind="preset"
+                      avatarPreset={preset}
+                    />
+                    <span>{t(`profile.avatar.presets.${preset}`)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {fieldErrors.avatar && (
+              <p className="field-error" role="alert">
+                {fieldErrors.avatar}
+              </p>
+            )}
+          </fieldset>
 
           <fieldset>
             <legend>{t('profile.personalInformation')}</legend>

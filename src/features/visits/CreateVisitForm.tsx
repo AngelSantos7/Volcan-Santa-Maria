@@ -1,14 +1,15 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../components/DatePicker';
 import { ReturnTimePicker } from '../../components/ReturnTimePicker';
 import { AnnouncementBanner } from '../announcements/AnnouncementBanner';
 import { RouteRecommendations } from '../routes/components/RouteRecommendations';
 import { HikeForecastCard } from '../weather/HikeForecastCard';
+import { getGuatemalaLocalTime } from '../weather/weather-service';
 import { normalizeSpaces } from '../../lib/text';
 import { getVisitErrorMessage } from './visit-errors';
 import { createGroupVisit } from './visit-service';
-import type { VisitType } from './visit-types';
+import type { VisitStartMode, VisitType } from './visit-types';
 
 type CreateVisitFormProps = {
   onCreated: (visitId: string) => Promise<void>;
@@ -18,6 +19,7 @@ type CreateVisitFormProps = {
 const VISIT_TYPES: VisitType[] = ['day_hike', 'expedition_camping'];
 
 type CreateVisitField =
+  | 'startMode'
   | 'startDate'
   | 'startTime'
   | 'plannedStart'
@@ -26,19 +28,18 @@ type CreateVisitField =
   | 'expectedReturn'
   | 'schedule'
   | 'guideName'
-  | 'recommendationsAccepted'
-  | 'termsAccepted';
+  | 'recommendationsAccepted';
 
 type CreateVisitErrors = Partial<Record<CreateVisitField, string>>;
 
 const FIELD_FOCUS_ORDER: CreateVisitField[] = [
+  'startMode',
   'startDate',
   'startTime',
   'returnDate',
   'returnTime',
   'guideName',
   'recommendationsAccepted',
-  'termsAccepted',
 ];
 
 function getLocalDateValue(date = new Date()): string {
@@ -112,6 +113,7 @@ function focusFirstInvalidField(
 
 export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
   const { t } = useTranslation();
+  const [startMode, setStartMode] = useState<VisitStartMode>('now');
   const [visitType, setVisitType] = useState<VisitType>('day_hike');
   const [startDate, setStartDate] = useState(getLocalDateValue);
   const [startTime, setStartTime] = useState('');
@@ -121,10 +123,18 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
   const [guideName, setGuideName] = useState('');
   const [recommendationsAccepted, setRecommendationsAccepted] = useState(false);
   const [recommendationsOpen, setRecommendationsOpen] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [nowReference, setNowReference] = useState(getGuatemalaLocalTime);
   const [fieldErrors, setFieldErrors] = useState<CreateVisitErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const interval = window.setInterval(
+      () => setNowReference(getGuatemalaLocalTime()),
+      60_000
+    );
+    return () => window.clearInterval(interval);
+  }, []);
 
   const updateVisibleFieldError = (
     field: CreateVisitField,
@@ -168,14 +178,16 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
       delete next.expectedReturn;
       delete next.schedule;
 
-      if (!nextStartDate) {
-        next.startDate = t('visits.validation.startDateRequired');
-      } else if (nextStartDate < getLocalDateValue()) {
-        next.startDate = t('visits.validation.startDatePast');
-      }
+      if (startMode === 'scheduled') {
+        if (!nextStartDate) {
+          next.startDate = t('visits.validation.startDateRequired');
+        } else if (nextStartDate < getLocalDateValue()) {
+          next.startDate = t('visits.validation.startDatePast');
+        }
 
-      if (!nextStartTime) {
-        next.startTime = t('visits.validation.startTimeRequired');
+        if (!nextStartTime) {
+          next.startTime = t('visits.validation.startTimeRequired');
+        }
       }
 
       if (!nextReturnDate) {
@@ -189,9 +201,9 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
       }
 
       const plannedStartAt =
-        next.startDate || next.startTime
-          ? null
-          : toVisitTimestamp(nextStartDate, nextStartTime);
+        startMode === 'scheduled' && !next.startDate && !next.startTime
+          ? toVisitTimestamp(nextStartDate, nextStartTime)
+          : null;
       const expectedReturnAt =
         next.returnDate || next.returnTime
           ? null
@@ -226,14 +238,16 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
     const today = getLocalDateValue();
     const normalizedGuideName = normalizeSpaces(guideName);
 
-    if (!startDate) {
-      errors.startDate = t('visits.validation.startDateRequired');
-    } else if (startDate < today) {
-      errors.startDate = t('visits.validation.startDatePast');
-    }
+    if (startMode === 'scheduled') {
+      if (!startDate) {
+        errors.startDate = t('visits.validation.startDateRequired');
+      } else if (startDate < today) {
+        errors.startDate = t('visits.validation.startDatePast');
+      }
 
-    if (!startTime) {
-      errors.startTime = t('visits.validation.startTimeRequired');
+      if (!startTime) {
+        errors.startTime = t('visits.validation.startTimeRequired');
+      }
     }
 
     if (!returnDate) {
@@ -247,15 +261,16 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
     }
 
     const plannedStartAt =
-      errors.startDate || errors.startTime
-        ? null
-        : toVisitTimestamp(startDate, startTime);
+      startMode === 'scheduled' && !errors.startDate && !errors.startTime
+        ? toVisitTimestamp(startDate, startTime)
+        : null;
     const expectedReturnAt =
       errors.returnDate || errors.returnTime
         ? null
         : toVisitTimestamp(returnDate, returnTime);
 
     if (
+      startMode === 'scheduled' &&
       !errors.startDate &&
       !errors.startTime &&
       (!plannedStartAt || new Date(plannedStartAt) <= new Date())
@@ -289,15 +304,11 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
       );
     }
 
-    if (!termsAccepted) {
-      errors.termsAccepted = t('visits.validation.acceptTerms');
-    }
-
     setFieldErrors(errors);
 
     if (
       Object.keys(errors).length > 0 ||
-      !plannedStartAt ||
+      (startMode === 'scheduled' && !plannedStartAt) ||
       !expectedReturnAt
     ) {
       window.requestAnimationFrame(() => focusFirstInvalidField(form, errors));
@@ -309,6 +320,7 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
     try {
       const visitId = await createGroupVisit({
         visitType,
+        startMode,
         plannedStartAt,
         expectedReturnAt,
         hasLocalGuide,
@@ -335,17 +347,25 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
     fieldErrors.returnTime || fieldErrors.expectedReturn || fieldErrors.schedule
   );
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
+  const forecastStartDate =
+    startMode === 'now' ? nowReference.slice(0, 10) : startDate;
+  const forecastStartTime =
+    startMode === 'now' ? nowReference.slice(11, 16) : startTime;
+  const forecastStartAt =
+    startMode === 'now'
+      ? Date.parse(nowReference)
+      : Date.parse(toVisitTimestamp(startDate, startTime) ?? '');
+  const forecastReturnAt = Date.parse(
+    toVisitTimestamp(returnDate, returnTime) ?? ''
+  );
   const forecastEnabled = Boolean(
-    startDate &&
-    startTime &&
+    (startMode === 'now' || (startDate && startTime)) &&
     returnDate &&
     returnTime &&
-    toVisitTimestamp(startDate, startTime) &&
-    toVisitTimestamp(returnDate, returnTime) &&
-    toVisitTimestamp(startDate, startTime)! <
-      toVisitTimestamp(returnDate, returnTime)!
+    Number.isFinite(forecastStartAt) &&
+    Number.isFinite(forecastReturnAt) &&
+    forecastStartAt < forecastReturnAt
   );
-
   return (
     <section aria-labelledby="create-visit-title">
       <header className="visit-section-header">
@@ -374,6 +394,36 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
           <strong>{t('visits.summitRoute')}</strong>
         </div>
 
+        <fieldset className="visit-type-fieldset" data-field-name="startMode">
+          <legend>{t('visits.startMode.title')}</legend>
+          <div className="start-mode-options">
+            {(['now', 'scheduled'] as const).map((mode) => (
+              <button
+                key={mode}
+                className="start-mode-card"
+                type="button"
+                aria-pressed={startMode === mode}
+                onClick={() => {
+                  setStartMode(mode);
+                  setFieldErrors((current) => {
+                    const next = { ...current };
+                    delete next.startMode;
+                    delete next.startDate;
+                    delete next.startTime;
+                    delete next.plannedStart;
+                    delete next.schedule;
+                    return next;
+                  });
+                }}
+                disabled={submitting}
+              >
+                <strong>{t(`visits.startMode.${mode}.title`)}</strong>
+                <span>{t(`visits.startMode.${mode}.description`)}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
         <fieldset className="visit-type-fieldset">
           <legend>{t('visits.tripType')}</legend>
           <div className="visit-type-options">
@@ -392,72 +442,81 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
           </div>
         </fieldset>
 
-        <div className="schedule-fields">
-          <DatePicker
-            id="startDate"
-            name="startDate"
-            label={t('visits.startDate')}
-            value={startDate}
-            min={getLocalDateValue()}
-            onChange={(nextValue) => {
-              setStartDate(nextValue);
-              updateVisibleScheduleErrors(
-                nextValue,
-                startTime,
-                returnDate,
-                returnTime
-              );
-            }}
-            error={fieldErrors.startDate}
-            invalid={startDateInvalid}
-            invalidDateMessage={t('visits.validation.startDateInvalid')}
-            describedBy={describedBy(
-              Boolean(fieldErrors.plannedStart) && 'plannedStart-error',
-              Boolean(fieldErrors.schedule) && 'schedule-error'
-            )}
-            className="visit-field visit-datetime-field return-date-field"
-            dataFieldName="startDate"
-            disabled={submitting}
-            required
-          />
+        {startMode === 'now' ? (
+          <div className="visit-now-summary">
+            <span>{t('visits.startMode.start')}</span>
+            <strong>{t('visits.startMode.todayNow')}</strong>
+          </div>
+        ) : (
+          <>
+            <div className="schedule-fields">
+              <DatePicker
+                id="startDate"
+                name="startDate"
+                label={t('visits.startDate')}
+                value={startDate}
+                min={getLocalDateValue()}
+                onChange={(nextValue) => {
+                  setStartDate(nextValue);
+                  updateVisibleScheduleErrors(
+                    nextValue,
+                    startTime,
+                    returnDate,
+                    returnTime
+                  );
+                }}
+                error={fieldErrors.startDate}
+                invalid={startDateInvalid}
+                invalidDateMessage={t('visits.validation.startDateInvalid')}
+                describedBy={describedBy(
+                  Boolean(fieldErrors.plannedStart) && 'plannedStart-error',
+                  Boolean(fieldErrors.schedule) && 'schedule-error'
+                )}
+                className="visit-field visit-datetime-field return-date-field"
+                dataFieldName="startDate"
+                disabled={submitting}
+                required
+              />
 
-          <ReturnTimePicker
-            id="startTime"
-            name="startTime"
-            value={startTime}
-            label={t('visits.startTime')}
-            hourLabel={t('visits.timePicker.hour')}
-            minuteLabel={t('visits.timePicker.minute')}
-            onChange={(nextValue) => {
-              setStartTime(nextValue);
-              updateVisibleScheduleErrors(
-                startDate,
-                nextValue,
-                returnDate,
-                returnTime
-              );
-            }}
-            invalid={startTimeInvalid}
-            describedBy={describedBy(
-              Boolean(fieldErrors.startTime) && 'startTime-error',
-              Boolean(fieldErrors.plannedStart) && 'plannedStart-error',
-              Boolean(fieldErrors.schedule) && 'schedule-error'
-            )}
-            error={fieldErrors.startTime}
-            errorId="startTime-error"
-            disabled={submitting}
-            required
-          />
-        </div>
+              <ReturnTimePicker
+                id="startTime"
+                name="startTime"
+                value={startTime}
+                label={t('visits.startTime')}
+                hourLabel={t('visits.timePicker.hour')}
+                minuteLabel={t('visits.timePicker.minute')}
+                onChange={(nextValue) => {
+                  setStartTime(nextValue);
+                  updateVisibleScheduleErrors(
+                    startDate,
+                    nextValue,
+                    returnDate,
+                    returnTime
+                  );
+                }}
+                invalid={startTimeInvalid}
+                describedBy={describedBy(
+                  Boolean(fieldErrors.startTime) && 'startTime-error',
+                  Boolean(fieldErrors.plannedStart) && 'plannedStart-error',
+                  Boolean(fieldErrors.schedule) && 'schedule-error'
+                )}
+                error={fieldErrors.startTime}
+                errorId="startTime-error"
+                disabled={submitting}
+                required
+              />
+            </div>
 
-        {fieldErrors.plannedStart && (
-          <p
-            id="plannedStart-error"
-            className="field-error-message"
-            role="alert"
-          >
-            {fieldErrors.plannedStart}
-          </p>
+            {fieldErrors.plannedStart && (
+              <p
+                id="plannedStart-error"
+                className="field-error-message"
+                role="alert"
+              >
+                {fieldErrors.plannedStart}
+              </p>
+            )}
+          </>
         )}
 
         <div className="schedule-fields">
@@ -536,8 +595,8 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
 
         {forecastEnabled && (
           <HikeForecastCard
-            startDate={startDate}
-            startTime={startTime}
+            startDate={forecastStartDate}
+            startTime={forecastStartTime}
             returnDate={returnDate}
             returnTime={returnTime}
             enabled
@@ -596,39 +655,6 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
               </span>
             )}
           </label>
-        )}
-
-        <label className="terms-row" htmlFor="createVisitTerms">
-          <input
-            id="createVisitTerms"
-            name="termsAccepted"
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(event) => {
-              setTermsAccepted(event.target.checked);
-              updateVisibleFieldError(
-                'termsAccepted',
-                event.target.checked ? null : t('visits.validation.acceptTerms')
-              );
-            }}
-            aria-invalid={Boolean(fieldErrors.termsAccepted)}
-            aria-describedby={
-              fieldErrors.termsAccepted ? 'termsAccepted-error' : undefined
-            }
-            disabled={submitting}
-            required
-          />
-          <span>{t('visits.terms')}</span>
-        </label>
-
-        {fieldErrors.termsAccepted && (
-          <p
-            id="termsAccepted-error"
-            className="field-error-message"
-            role="alert"
-          >
-            {fieldErrors.termsAccepted}
-          </p>
         )}
 
         <div

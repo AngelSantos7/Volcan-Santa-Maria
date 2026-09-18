@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
+import { UserAvatar } from '../../components/UserAvatar';
 import { getAppLanguage } from '../../i18n';
 import type { RouteTab } from '../routes/route-types';
+import { HikeForecastCard } from '../weather/HikeForecastCard';
+import { getGuatemalaLocalTime } from '../weather/weather-service';
 import { EarlyReturnForm } from './EarlyReturnForm';
 import { getVisitErrorMessage } from './visit-errors';
 import {
@@ -88,6 +91,11 @@ export function GroupVisitScreen({
     useState<EarlyReturnTarget | null>(null);
   const [pendingConfirmation, setPendingConfirmation] =
     useState<PendingConfirmation | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(interval);
+  }, []);
   const language = getAppLanguage(i18n.resolvedLanguage);
   const routeName =
     language === 'es' ? details.routeNameEs : details.routeNameEn;
@@ -98,6 +106,19 @@ export function GroupVisitScreen({
   const participantCount = details.participants.filter(
     (participant) => participant.memberStatus !== 'withdrawn_before_start'
   ).length;
+  const scheduledStartLocked =
+    details.startMode === 'scheduled' &&
+    Boolean(details.plannedStartAt) &&
+    now < Date.parse(details.plannedStartAt!);
+  const forecastStart =
+    details.status === 'in_progress' && details.startedAt
+      ? getGuatemalaLocalTime(new Date(details.startedAt))
+      : details.startMode === 'scheduled' && details.plannedStartAt
+        ? getGuatemalaLocalTime(new Date(details.plannedStartAt))
+        : getGuatemalaLocalTime(new Date(now));
+  const forecastReturn = details.expectedReturnAt
+    ? getGuatemalaLocalTime(new Date(details.expectedReturnAt))
+    : null;
 
   const copyCode = async () => {
     if (!details.joinCode) return;
@@ -335,10 +356,12 @@ export function GroupVisitScreen({
           <dt>{t('visits.tripType')}</dt>
           <dd>{t(`visits.types.${details.visitType}`)}</dd>
         </div>
-        <div>
-          <dt>{t('visits.plannedStart')}</dt>
-          <dd>{formatExpectedReturn(details.plannedStartAt, language)}</dd>
-        </div>
+        {details.startMode === 'scheduled' && (
+          <div>
+            <dt>{t('visits.plannedStart')}</dt>
+            <dd>{formatExpectedReturn(details.plannedStartAt, language)}</dd>
+          </div>
+        )}
         <div>
           <dt>{t('visits.expectedReturn')}</dt>
           <dd>{formatExpectedReturn(details.expectedReturnAt, language)}</dd>
@@ -347,7 +370,7 @@ export function GroupVisitScreen({
           details.status === 'completed') && (
           <div>
             <dt>{t('visits.inProgress.startedAt')}</dt>
-            <dd>{formatTime(details.startedAt, language)}</dd>
+            <dd>{formatExpectedReturn(details.startedAt, language)}</dd>
           </div>
         )}
         {details.hasLocalGuide && details.guideName && (
@@ -388,6 +411,16 @@ export function GroupVisitScreen({
         </div>
       )}
 
+      {forecastReturn && details.status !== 'completed' && (
+        <HikeForecastCard
+          startDate={forecastStart.slice(0, 10)}
+          startTime={forecastStart.slice(11, 16)}
+          returnDate={forecastReturn.slice(0, 10)}
+          returnTime={forecastReturn.slice(11, 16)}
+          enabled
+        />
+      )}
+
       <section
         className="participants-section"
         aria-labelledby="participants-title"
@@ -411,6 +444,14 @@ export function GroupVisitScreen({
 
             return (
               <li key={participant.userId}>
+                <UserAvatar
+                  firstName={participant.firstName}
+                  lastName={participant.lastName}
+                  avatarKind={participant.avatarKind}
+                  avatarPath={participant.avatarPath}
+                  avatarPreset={participant.avatarPreset}
+                  className="profile-avatar--participant"
+                />
                 <div className="participant-details">
                   <div className="participant-name">
                     <span>{participantName(participant)}</span>
@@ -419,7 +460,10 @@ export function GroupVisitScreen({
                     )}
                   </div>
                   <small>
-                    {t(`visits.memberStatus.${participant.memberStatus}`)}
+                    {participant.memberStatus === 'active' &&
+                    details.status === 'forming'
+                      ? t('visits.memberStatus.ready')
+                      : t(`visits.memberStatus.${participant.memberStatus}`)}
                     {statusTime && ` · ${formatTime(statusTime, language)}`}
                   </small>
                 </div>
@@ -436,9 +480,54 @@ export function GroupVisitScreen({
                     {t('visits.members.remove')}
                   </button>
                 )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-                {canManageParticipant && details.status === 'in_progress' && (
+      {details.status === 'in_progress' && (
+        <div className="future-actions ascent-route-actions">
+          {(['route', 'map', 'references'] as const).map((feature) => (
+            <button
+              key={feature}
+              className="secondary-button"
+              type="button"
+              onClick={() =>
+                onOpenRoute(feature === 'route' ? 'recommendations' : feature)
+              }
+              disabled={busy}
+            >
+              {t(`visits.inProgress.${feature}`)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {details.status === 'in_progress' && (
+        <details className="ascent-options">
+          <summary>{t('visits.options.title')}</summary>
+          <div className="ascent-options-content">
+            {currentParticipant?.memberStatus === 'active' && (
+              <button
+                className="early-return-button"
+                type="button"
+                onClick={() => setEarlyReturnTarget({ mode: 'self' })}
+                disabled={busy}
+              >
+                {t('visits.earlyReturn.action')}
+              </button>
+            )}
+            {isOrganizer &&
+              details.participants
+                .filter(
+                  (participant) =>
+                    participant.userId !== currentUserId &&
+                    participant.memberStatus === 'active'
+                )
+                .map((participant) => (
                   <button
+                    key={participant.userId}
                     className="participant-action"
                     type="button"
                     onClick={() =>
@@ -450,14 +539,14 @@ export function GroupVisitScreen({
                     }
                     disabled={busy}
                   >
-                    {t('visits.members.markEarlyReturn')}
+                    {t('visits.members.markEarlyReturnFor', {
+                      name: participantName(participant),
+                    })}
                   </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+                ))}
+          </div>
+        </details>
+      )}
 
       {earlyReturnTarget && (
         <EarlyReturnForm
@@ -497,19 +586,6 @@ export function GroupVisitScreen({
         )}
 
       {details.status === 'in_progress' &&
-        currentParticipant?.memberStatus === 'active' &&
-        !earlyReturnTarget && (
-          <button
-            className="danger-outline-button member-primary-action"
-            type="button"
-            onClick={() => setEarlyReturnTarget({ mode: 'self' })}
-            disabled={busy}
-          >
-            {t('visits.earlyReturn.action')}
-          </button>
-        )}
-
-      {details.status === 'in_progress' &&
         currentParticipant?.memberStatus === 'returning_early' && (
           <button
             className="primary-button member-primary-action"
@@ -523,7 +599,19 @@ export function GroupVisitScreen({
 
       {details.status === 'forming' && isOrganizer && (
         <div className="organizer-actions">
-          <SlideToStart onComplete={handleStart} disabled={busy} />
+          {details.startMode === 'scheduled' && scheduledStartLocked && (
+            <div className="scheduled-start-notice" role="status">
+              <strong>{t('visits.start.scheduled')}</strong>
+              <span>{t('visits.start.availableAt')}</span>
+              <time dateTime={details.plannedStartAt ?? undefined}>
+                {formatExpectedReturn(details.plannedStartAt, language)}
+              </time>
+            </div>
+          )}
+          <SlideToStart
+            onComplete={handleStart}
+            disabled={busy || scheduledStartLocked}
+          />
           <button
             className="danger-text-button"
             type="button"
@@ -537,21 +625,6 @@ export function GroupVisitScreen({
 
       {details.status === 'in_progress' && (
         <div className="in-progress-actions">
-          <div className="future-actions">
-            {(['route', 'map', 'references'] as const).map((feature) => (
-              <button
-                key={feature}
-                className="secondary-button"
-                type="button"
-                onClick={() =>
-                  onOpenRoute(feature === 'route' ? 'recommendations' : feature)
-                }
-                disabled={busy}
-              >
-                {t(`visits.inProgress.${feature}`)}
-              </button>
-            ))}
-          </div>
           {isOrganizer && (
             <button
               className="primary-button complete-visit-button"

@@ -1991,10 +1991,6 @@ button:disabled {
   color: #765400;
   background: #fff1bd;
 }
-.weather-risk--adverse {
-  color: #8d2929;
-  background: #fde2e2;
-}
 .weather-risk--unavailable {
   color: var(--text-muted);
   background: var(--input-bg);
@@ -2068,6 +2064,505 @@ button:disabled {
   .weather-footer button {
     width: 100%;
     min-height: 44px;
+  }
+}
+
+/* Profile identity */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--accent-soft), var(--surface));
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profile-avatar--volcano,
+.profile-avatar--summit {
+  background: linear-gradient(145deg, #f2e4d6, #fff9ef);
+  color: #8b4b2d;
+}
+
+.profile-avatar--pine,
+.profile-avatar--forest {
+  background: linear-gradient(145deg, #dcece1, #f5faf6);
+  color: #245e3e;
+}
+
+.profile-avatar--compass,
+.profile-avatar--hiking {
+  background: linear-gradient(145deg, #dfeae9, #f5f9f8);
+  color: #265c5a;
+}
+
+.profile-avatar--sunrise {
+  background: linear-gradient(145deg, #fff0c7, #fff9eb);
+  color: #9a6117;
+}
+
+.profile-avatar--editor {
+  width: 88px;
+  height: 88px;
+  font-size: 1.45rem;
+}
+
+.profile-avatar--menu {
+  width: 44px;
+  height: 44px;
+}
+
+.profile-avatar--participant {
+  width: 42px;
+  height: 42px;
+}
+
+.profile-identity-editor {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-identity-editor .form-grid {
+  width: 100%;
+}
+
+.avatar-kind-options,
+.start-mode-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.avatar-kind-options button,
+.start-mode-card {
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text-heading);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.avatar-kind-options button[aria-pressed='true'],
+.start-mode-card[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.avatar-upload-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.avatar-upload-row small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.avatar-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.avatar-preset-grid > button {
+  min-width: 0;
+  padding: 10px 6px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.avatar-preset-grid > button[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+}
+
+.user-menu-heading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.user-menu-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.user-menu-heading strong,
+.user-menu-heading span {
+  overflow-wrap: anywhere;
+}
+
+.user-menu-popover {
+  width: min(290px, calc(100vw - 28px));
+}
+
+/* Start mode and in-progress hierarchy */
+.start-mode-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.start-mode-card {
+  min-height: 104px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  text-align: left;
+}
+
+.start-mode-card strong {
+  font-size: 1rem;
+}
+
+.start-mode-card span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.visit-now-summary,
+.scheduled-start-notice {
+  padding: 15px 16px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+.visit-now-summary span,
+.scheduled-start-notice span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.scheduled-start-notice time {
+  color: var(--text-heading);
+  font-weight: 800;
+}
+
+.start-slider[aria-disabled='true'] {
+  border-color: var(--border-strong);
+  background: var(--input-bg);
+  opacity: 0.62;
+}
+
+.participants-list li {
+  justify-content: flex-start;
+}
+
+.participants-list .participant-action {
+  margin-left: auto;
+}
+
+.ascent-route-actions {
+  margin: 4px 0 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ascent-options {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+.ascent-options summary {
+  padding: 14px 16px;
+  color: var(--text-heading);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.ascent-options-content {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 9px;
+}
+
+.early-return-button,
+.amber-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #c98d2f;
+  border-radius: 10px;
+  background: #fff4da;
+  color: #755016;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.ascent-options .participant-action {
+  max-width: none;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.early-return-reasons {
+  display: grid;
+  gap: 8px;
+}
+
+.early-return-reasons label {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.early-return-reasons input {
+  accent-color: #b8781f;
+}
+
+/* Weather containment */
+.weather-panel,
+.weather-hero,
+.weather-hourly,
+.weather-chart-grid,
+.weather-mini-chart,
+.hike-forecast-card,
+.hike-forecast-stages,
+.weather-condition-summary {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.weather-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.weather-risk--unfavorable {
+  color: #8a4714;
+  background: #ffe5ca;
+}
+
+.weather-risk--not_recommended {
+  color: #8d2929;
+  background: #fde2e2;
+}
+
+.weather-guidance-disclaimer {
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.visits-card:has(.route-screen) {
+  width: min(100%, 960px);
+}
+
+.route-recommendation-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.route-recommendation-sections section {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.route-recommendation-sections h3 {
+  margin: 0 0 9px;
+  color: var(--text-heading);
+  font-size: 0.95rem;
+}
+
+.route-recommendation-sections ul {
+  margin: 0;
+  padding-left: 19px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+/* Login image is optional: the component collapses to the existing card if it fails. */
+.login-layout {
+  width: min(100%, 980px);
+  min-height: min(680px, calc(100svh - 64px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(400px, 0.88fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.login-layout--fallback {
+  width: min(100%, 440px);
+  min-height: 0;
+  display: block;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.login-visual {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  background: #193f2f;
+}
+
+.login-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(7 24 16 / 68%), transparent 62%);
+}
+
+.login-visual img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.login-visual > div {
+  position: absolute;
+  z-index: 1;
+  right: 34px;
+  bottom: 36px;
+  left: 34px;
+  display: grid;
+  gap: 4px;
+  color: #fff;
+}
+
+.login-visual strong {
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+}
+
+.login-visual span {
+  font-size: 0.95rem;
+}
+
+.login-form-column {
+  width: 100%;
+  padding: 36px;
+  align-content: center;
+  box-sizing: border-box;
+}
+
+.login-form-column > .auth-card {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.login-layout--fallback .login-form-column {
+  padding: 0;
+}
+
+.login-layout--fallback .login-form-column > .auth-card {
+  padding: 40px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 760px) {
+  .login-layout {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .login-visual {
+    min-height: 150px;
+    max-height: 190px;
+  }
+
+  .login-visual > div {
+    right: 22px;
+    bottom: 18px;
+    left: 22px;
+  }
+
+  .login-form-column {
+    padding: 26px 22px;
+  }
+}
+
+@media (max-width: 620px) {
+  .profile-identity-editor {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .avatar-kind-options,
+  .start-mode-options,
+  .route-recommendation-sections,
+  .ascent-route-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar-preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weather-metric-chips div {
+    flex: 1 1 calc(50% - 8px);
   }
 }
 
@@ -3430,4 +3925,21 @@ button:disabled {
     max-height: calc(100svh - 20px);
     padding: 18px;
   }
+}
+
+/* Final component overrides kept after the legacy blocks above. */
+.user-menu-popover {
+  width: min(290px, calc(100vw - 28px));
+}
+
+.user-menu-heading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.user-menu-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
 }

@@ -33,6 +33,7 @@ const resources = {
         checkingSession: 'Verificando sesión…',
         loginTitle: 'Iniciar sesión',
         loginSubtitle: 'Ingresa con tu correo electrónico para continuar.',
+        loginHeroSubtitle: 'Guía para su ascenso',
         loginSubmit: 'Ingresar',
         loggingIn: 'Ingresando…',
         noAccount: '¿Aún no tienes una cuenta?',
@@ -97,6 +98,33 @@ const resources = {
         subtitle:
           'Comparte únicamente la información esencial para identificarte y atender una emergencia.',
         personalInformation: 'Información personal',
+        identity: 'Identidad visual',
+        avatar: {
+          kinds: {
+            uploaded: 'Subir fotografía',
+            preset: 'Elegir avatar',
+            initials: 'Usar iniciales',
+          },
+          choosePhoto: 'Seleccionar fotografía',
+          processing: 'Procesando fotografía…',
+          photoHelp:
+            'JPG, PNG o WebP. Máximo 8 MB; se recorta y convierte a WebP.',
+          photoRequired: 'Seleccione una fotografía para usar esta opción.',
+          presetRequired: 'Seleccione un avatar prediseñado.',
+          tooLarge: 'La fotografía supera el límite de 8 MB.',
+          unsupported: 'Utilice una fotografía JPG, PNG o WebP.',
+          processingFailed: 'No fue posible procesar la fotografía.',
+          presets: {
+            mountain: 'Montaña',
+            volcano: 'Volcán',
+            pine: 'Pino',
+            compass: 'Brújula',
+            hiking: 'Senderismo',
+            sunrise: 'Amanecer',
+            forest: 'Bosque',
+            summit: 'Cima',
+          },
+        },
         nationality: 'Nacionalidad',
         dateOfBirth: 'Fecha de nacimiento',
         documentType: 'Tipo de documento',
@@ -163,6 +191,20 @@ const resources = {
         route: 'Ruta',
         summitRoute: 'Ascenso a la Cima',
         tripType: 'Tipo de ascenso',
+        startMode: {
+          title: '¿Cuándo desea ascender?',
+          start: 'Inicio',
+          todayNow: 'Hoy · ahora',
+          now: {
+            title: 'Ascender ahora',
+            description:
+              'Forme el grupo y registre el inicio real cuando esté listo.',
+          },
+          scheduled: {
+            title: 'Planificar ascenso',
+            description: 'Defina una fecha y hora para iniciar más adelante.',
+          },
+        },
         types: {
           day_hike: 'Ascenso de un día',
           expedition_camping: 'Expedición y campamento',
@@ -182,6 +224,7 @@ const resources = {
         participants: 'Participantes',
         organizer: 'Organizador',
         memberStatus: {
+          ready: 'En el grupo',
           active: 'En recorrido',
           returning_early: 'Regresando antes',
           returned_early: 'Retorno anticipado confirmado',
@@ -196,13 +239,14 @@ const resources = {
           removeConfirm:
             '¿Retirar a {{name}} del grupo? Su registro se conservará en el historial.',
           markEarlyReturn: 'Registrar retorno anticipado',
+          markEarlyReturnFor: 'Retorno anticipado de {{name}}',
         },
         earlyReturn: {
-          action: 'Necesito regresar antes',
-          title: 'Finalizar mi participación antes',
+          action: 'Retorno anticipado',
+          title: 'Retorno anticipado',
           organizerTitle: 'Retorno anticipado de {{name}}',
           reason: 'Motivo',
-          selectReason: 'Selecciona un motivo',
+          selectReason: 'Seleccione el motivo:',
           reasons: {
             physical_discomfort: 'Malestar físico',
             injury: 'Lesión',
@@ -210,13 +254,16 @@ const resources = {
             personal_decision: 'Decisión personal',
             other: 'Otro',
           },
-          notes: 'Observaciones opcionales',
+          notes: 'Observaciones (opcional)',
           reasonRequired: 'Selecciona un motivo para continuar.',
-          confirm: 'Iniciar mi regreso',
-          organizerConfirm: 'Registrar regreso',
+          confirm: 'Confirmar retorno anticipado',
+          organizerConfirm: 'Confirmar retorno anticipado',
           saving: 'Guardando…',
           checkout: 'Ya llegué al punto de control',
           checkoutConfirm: '¿Confirmas que ya llegaste al punto de control?',
+        },
+        options: {
+          title: 'Opciones del ascenso',
         },
         history: {
           title: 'Historial de ascensos',
@@ -288,6 +335,8 @@ const resources = {
         start: {
           slide: 'Desliza para iniciar',
           starting: 'Iniciando…',
+          scheduled: 'Ascenso programado',
+          availableAt: 'Podrá iniciarlo a partir de:',
         },
         inProgress: {
           status: 'En curso',
@@ -342,6 +391,8 @@ const resources = {
           accessDenied: 'No tienes acceso a ese grupo.',
           emailVerificationRequired:
             'Debes confirmar tu correo antes de registrar un ascenso.',
+          scheduledStartNotReached:
+            'El ascenso programado todavía no puede iniciarse.',
           copyFailed: 'No se pudo copiar el código.',
           shareFailed: 'No se pudo compartir el código.',
           generic: 'No se pudo completar la acción. Inténtalo de nuevo.',
@@ -410,8 +461,33 @@ const resources = {
         },
         recommendations: {
           intro:
-            'Prepárate con anticipación y toma decisiones prudentes durante todo el ascenso.',
+            'Prepárese con anticipación y tome decisiones prudentes durante todo el ascenso.',
+          sections: {
+            preparation: 'Preparación',
+            safety: 'Seguridad',
+            weather: 'Clima',
+            environment: 'Protección del entorno',
+          },
           items: {
+            waterFood: 'Lleve suficiente agua y alimentos para el recorrido.',
+            footwear: 'Utilice calzado adecuado para senderismo.',
+            properClothing: 'Lleve ropa apropiada para frío, viento y lluvia.',
+            flashlight: 'Lleve linterna y suficiente batería.',
+            localGuide:
+              'Considere realizar el ascenso con un guía local, especialmente si no conoce la ruta.',
+            whistle: 'Lleve un silbato.',
+            firstAid: 'Lleve un botiquín básico de primeros auxilios.',
+            remainOnRoute: 'Permanezca en la ruta establecida.',
+            checkForecast: 'Consulte el pronóstico antes de iniciar.',
+            fastChanges:
+              'Las condiciones en montaña pueden cambiar rápidamente.',
+            weatherHazards:
+              'Preste especial atención a lluvia, viento y tormentas eléctricas.',
+            leaveNoWaste: 'No deje basura en el trayecto.',
+            floraFauna: 'Respete la flora y la fauna.',
+            noFires: 'Evite fogatas.',
+            noLoudAudio: 'Evite equipos de sonido de alto volumen.',
+            noAlcohol: 'No consuma bebidas alcohólicas durante el ascenso.',
             preparation: {
               title: 'Preparación antes del ascenso',
               body: 'Revisa la ruta, calcula tiempo suficiente y comunica tu plan a una persona de confianza.',
@@ -486,7 +562,8 @@ const resources = {
         risk: {
           favorable: 'Favorable',
           precaution: 'Precaución',
-          adverse: 'Adverso',
+          unfavorable: 'Condiciones desfavorables',
+          not_recommended: 'No recomendable',
           unavailable: 'Sin datos',
         },
         conditions: {
@@ -519,15 +596,17 @@ const resources = {
           recommendationsTitle: 'Recomendaciones para estas condiciones',
           referenceFastChange:
             'Pronóstico de referencia. En alta montaña las condiciones pueden cambiar rápidamente.',
+          guidanceDisclaimer:
+            'La clasificación es orientativa y no sustituye avisos oficiales ni la evaluación de las condiciones en el lugar.',
           advice: {
             rainProtection:
-              'Lleva protección impermeable y protege el equipo sensible.',
+              'Lleve protección impermeable y proteja su equipo sensible.',
             moderateGusts:
-              'Prepárate para ráfagas y revisa el ajuste de tu equipo.',
+              'Prepárese para ráfagas y revise el ajuste de su equipo.',
             strongWind:
-              'Valora posponer el ascenso ante viento o ráfagas fuertes.',
+              'Considere posponer el ascenso ante viento o ráfagas fuertes.',
             rainIncreasingAtReturn:
-              'La lluvia puede aumentar hacia el retorno; conserva margen de tiempo.',
+              'La probabilidad de lluvia puede aumentar hacia la hora de retorno. Conserve un margen de tiempo suficiente.',
           },
         },
       },
@@ -610,6 +689,7 @@ const resources = {
         checkingSession: 'Checking session…',
         loginTitle: 'Sign in',
         loginSubtitle: 'Enter your email address to continue.',
+        loginHeroSubtitle: 'A guide for your ascent',
         loginSubmit: 'Sign in',
         loggingIn: 'Signing in…',
         noAccount: "Don't have an account yet?",
@@ -673,6 +753,33 @@ const resources = {
         subtitle:
           'Share only the essential information needed to identify you and assist in an emergency.',
         personalInformation: 'Personal information',
+        identity: 'Visual identity',
+        avatar: {
+          kinds: {
+            uploaded: 'Upload photo',
+            preset: 'Choose avatar',
+            initials: 'Use initials',
+          },
+          choosePhoto: 'Select photo',
+          processing: 'Processing photo…',
+          photoHelp:
+            'JPG, PNG, or WebP. Maximum 8 MB; cropped and converted to WebP.',
+          photoRequired: 'Select a photo to use this option.',
+          presetRequired: 'Select a preset avatar.',
+          tooLarge: 'The photo exceeds the 8 MB limit.',
+          unsupported: 'Use a JPG, PNG, or WebP photo.',
+          processingFailed: 'The photo could not be processed.',
+          presets: {
+            mountain: 'Mountain',
+            volcano: 'Volcano',
+            pine: 'Pine',
+            compass: 'Compass',
+            hiking: 'Hiking',
+            sunrise: 'Sunrise',
+            forest: 'Forest',
+            summit: 'Summit',
+          },
+        },
         nationality: 'Nationality',
         dateOfBirth: 'Date of birth',
         documentType: 'Document type',
@@ -736,6 +843,20 @@ const resources = {
         route: 'Route',
         summitRoute: 'Summit Route',
         tripType: 'Trip type',
+        startMode: {
+          title: 'When do you want to ascend?',
+          start: 'Start',
+          todayNow: 'Today · now',
+          now: {
+            title: 'Start now',
+            description:
+              'Form the group and record the actual start when you are ready.',
+          },
+          scheduled: {
+            title: 'Schedule ascent',
+            description: 'Set a date and time to start later.',
+          },
+        },
         types: {
           day_hike: 'Day Hike',
           expedition_camping: 'Expedition & Camping',
@@ -755,6 +876,7 @@ const resources = {
         participants: 'Participants',
         organizer: 'Organizer',
         memberStatus: {
+          ready: 'In the group',
           active: 'On route',
           returning_early: 'Returning early',
           returned_early: 'Early return confirmed',
@@ -769,13 +891,14 @@ const resources = {
           removeConfirm:
             'Remove {{name}} from the group? Their history record will be kept.',
           markEarlyReturn: 'Record early return',
+          markEarlyReturnFor: 'Early return for {{name}}',
         },
         earlyReturn: {
-          action: 'I need to return early',
-          title: 'End my participation early',
+          action: 'Early return',
+          title: 'Early return',
           organizerTitle: 'Early return for {{name}}',
           reason: 'Reason',
-          selectReason: 'Select a reason',
+          selectReason: 'Select the reason:',
           reasons: {
             physical_discomfort: 'Physical discomfort',
             injury: 'Injury',
@@ -783,14 +906,17 @@ const resources = {
             personal_decision: 'Personal decision',
             other: 'Other',
           },
-          notes: 'Optional notes',
+          notes: 'Notes (optional)',
           reasonRequired: 'Select a reason to continue.',
-          confirm: 'Start my return',
-          organizerConfirm: 'Record return',
+          confirm: 'Confirm early return',
+          organizerConfirm: 'Confirm early return',
           saving: 'Saving…',
           checkout: 'I arrived at the checkpoint',
           checkoutConfirm:
             'Do you confirm that you have arrived at the checkpoint?',
+        },
+        options: {
+          title: 'Ascent options',
         },
         history: {
           title: 'Hike history',
@@ -862,6 +988,8 @@ const resources = {
         start: {
           slide: 'Slide to start',
           starting: 'Starting…',
+          scheduled: 'Scheduled ascent',
+          availableAt: 'You can start it from:',
         },
         inProgress: {
           status: 'In progress',
@@ -915,6 +1043,8 @@ const resources = {
           accessDenied: 'You do not have access to that group.',
           emailVerificationRequired:
             'You must confirm your email before registering an ascent.',
+          scheduledStartNotReached:
+            'The scheduled ascent cannot be started yet.',
           copyFailed: 'The code could not be copied.',
           shareFailed: 'The code could not be shared.',
           generic: 'The action could not be completed. Try again.',
@@ -983,7 +1113,31 @@ const resources = {
         recommendations: {
           intro:
             'Prepare in advance and make prudent decisions throughout the hike.',
+          sections: {
+            preparation: 'Preparation',
+            safety: 'Safety',
+            weather: 'Weather',
+            environment: 'Environmental protection',
+          },
           items: {
+            waterFood: 'Carry enough water and food for the route.',
+            footwear: 'Wear appropriate hiking footwear.',
+            properClothing: 'Bring suitable clothing for cold, wind, and rain.',
+            flashlight: 'Bring a flashlight and sufficient battery power.',
+            localGuide:
+              'Consider ascending with a local guide, especially if you do not know the route.',
+            whistle: 'Bring a whistle.',
+            firstAid: 'Bring a basic first-aid kit.',
+            remainOnRoute: 'Remain on the established route.',
+            checkForecast: 'Check the forecast before starting.',
+            fastChanges: 'Mountain conditions can change quickly.',
+            weatherHazards:
+              'Pay special attention to rain, wind, and thunderstorms.',
+            leaveNoWaste: 'Do not leave waste along the route.',
+            floraFauna: 'Respect the flora and fauna.',
+            noFires: 'Avoid fires.',
+            noLoudAudio: 'Avoid high-volume sound equipment.',
+            noAlcohol: 'Do not consume alcoholic beverages during the ascent.',
             preparation: {
               title: 'Preparation before the hike',
               body: 'Review the route, allow enough time, and share your plan with someone you trust.',
@@ -1058,7 +1212,8 @@ const resources = {
         risk: {
           favorable: 'Favorable',
           precaution: 'Use caution',
-          adverse: 'Adverse',
+          unfavorable: 'Unfavorable conditions',
+          not_recommended: 'Not recommended',
           unavailable: 'No data',
         },
         conditions: {
@@ -1090,6 +1245,8 @@ const resources = {
           recommendationsTitle: 'Recommendations for these conditions',
           referenceFastChange:
             'Reference forecast. Mountain conditions can change quickly.',
+          guidanceDisclaimer:
+            'This classification is guidance only and does not replace official alerts or an on-site assessment of conditions.',
           advice: {
             rainProtection:
               'Bring waterproof protection and keep sensitive gear dry.',

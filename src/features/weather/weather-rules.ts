@@ -1,18 +1,23 @@
 import type { WeatherHour } from './weather-types';
 
 export type WeatherRisk =
-  'favorable' | 'precaution' | 'adverse' | 'unavailable';
+  | 'favorable'
+  | 'precaution'
+  | 'unfavorable'
+  | 'not_recommended'
+  | 'unavailable';
 
 export type WeatherAdviceKey =
   'rainProtection' | 'moderateGusts' | 'strongWind' | 'rainIncreasingAtReturn';
 
 export const WEATHER_THRESHOLDS = {
-  rain: { precaution: 40, adverse: 70 },
-  wind: { precaution: 20, adverse: 35 },
-  gust: { precaution: 35, adverse: 50 },
+  rain: { precaution: 40, unfavorable: 70 },
+  wind: { precaution: 20, unfavorable: 35 },
+  gust: { precaution: 35, unfavorable: 50 },
 } as const;
 
-const ADVERSE_CODES = new Set([56, 57, 65, 66, 67, 75, 82, 86, 95, 96, 99]);
+const NOT_RECOMMENDED_CODES = new Set([95, 96, 99]);
+const UNFAVORABLE_CODES = new Set([56, 57, 65, 66, 67, 75, 82, 86]);
 const PRECAUTION_CODES = new Set([
   45, 48, 51, 53, 55, 61, 63, 71, 73, 77, 80, 81, 85,
 ]);
@@ -20,7 +25,8 @@ const RISK_WEIGHT: Record<WeatherRisk, number> = {
   unavailable: 0,
   favorable: 1,
   precaution: 2,
-  adverse: 3,
+  unfavorable: 3,
+  not_recommended: 4,
 };
 
 function reaches(value: number | null, threshold: number): boolean {
@@ -36,13 +42,20 @@ export function classifyWeatherHour(hour: WeatherHour): WeatherRisk {
   ].some((value) => value !== null);
   if (!hasData) return 'unavailable';
 
+  if (NOT_RECOMMENDED_CODES.has(hour.weatherCode ?? -1)) {
+    return 'not_recommended';
+  }
+
   if (
-    ADVERSE_CODES.has(hour.weatherCode ?? -1) ||
-    reaches(hour.precipitationProbability, WEATHER_THRESHOLDS.rain.adverse) ||
-    reaches(hour.windSpeedKmh, WEATHER_THRESHOLDS.wind.adverse) ||
-    reaches(hour.windGustKmh, WEATHER_THRESHOLDS.gust.adverse)
+    UNFAVORABLE_CODES.has(hour.weatherCode ?? -1) ||
+    reaches(
+      hour.precipitationProbability,
+      WEATHER_THRESHOLDS.rain.unfavorable
+    ) ||
+    reaches(hour.windSpeedKmh, WEATHER_THRESHOLDS.wind.unfavorable) ||
+    reaches(hour.windGustKmh, WEATHER_THRESHOLDS.gust.unfavorable)
   ) {
-    return 'adverse';
+    return 'unfavorable';
   }
 
   if (
@@ -101,8 +114,8 @@ export function getWeatherRecommendations(
     recommendations.push('rainProtection');
   }
   if (
-    maxWind >= WEATHER_THRESHOLDS.wind.adverse ||
-    maxGust >= WEATHER_THRESHOLDS.gust.adverse
+    maxWind >= WEATHER_THRESHOLDS.wind.unfavorable ||
+    maxGust >= WEATHER_THRESHOLDS.gust.unfavorable
   ) {
     recommendations.push('strongWind');
   } else if (

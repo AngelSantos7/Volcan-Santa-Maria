@@ -4,6 +4,7 @@ export type GroupVisitStatus =
 export type GroupVisitMemberRole = 'leader' | 'member';
 
 export type VisitType = 'day_hike' | 'expedition_camping';
+export type VisitStartMode = 'now' | 'scheduled';
 
 export type VisitMemberStatus =
   | 'active'
@@ -23,6 +24,18 @@ export type GroupVisitParticipant = {
   userId: string;
   firstName: string;
   lastName: string;
+  avatarKind: 'uploaded' | 'preset' | 'initials' | null;
+  avatarPath: string | null;
+  avatarPreset:
+    | 'mountain'
+    | 'volcano'
+    | 'pine'
+    | 'compass'
+    | 'hiking'
+    | 'sunrise'
+    | 'forest'
+    | 'summit'
+    | null;
   memberRole: GroupVisitMemberRole;
   memberStatus: VisitMemberStatus;
   joinedAt: string;
@@ -38,6 +51,7 @@ export type GroupVisitDetails = {
   status: GroupVisitStatus;
   joinCode: string | null;
   visitType: VisitType;
+  startMode: VisitStartMode;
   hasLocalGuide: boolean;
   guideName: string | null;
   plannedStartAt: string | null;
@@ -50,7 +64,8 @@ export type GroupVisitDetails = {
 
 export type CreateGroupVisitInput = {
   visitType: VisitType;
-  plannedStartAt: string;
+  startMode: VisitStartMode;
+  plannedStartAt: string | null;
   expectedReturnAt: string;
   hasLocalGuide: boolean;
   guideName: string | null;

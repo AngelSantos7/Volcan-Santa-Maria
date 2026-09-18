@@ -141,7 +141,8 @@ select is(
         false,
         null,
         true,
-        true
+        true,
+        'scheduled'
       )
     $$
   ),
@@ -161,7 +162,8 @@ select lives_ok(
         false,
         null,
         true,
-        true
+        true,
+        'scheduled'
       ) as created
     )
     update planned_schedule

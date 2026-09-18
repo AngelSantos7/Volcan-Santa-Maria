@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getShortName, maskEmail } from '../features/profile/avatar-utils';
+import type { AvatarIdentity } from '../features/profile/profile-types';
+import { UserAvatar } from './UserAvatar';
 
 type UserMenuProps = {
-  displayName: string;
+  identity: AvatarIdentity;
+  email: string;
   disabled?: boolean;
   onEditProfile: () => void;
   onSignOut: () => void;
 };
 
 export function UserMenu({
-  displayName,
+  identity,
+  email,
   disabled = false,
   onEditProfile,
   onSignOut,
@@ -17,6 +22,8 @@ export function UserMenu({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullName = `${identity.firstName} ${identity.lastName}`.trim();
+  const shortName = getShortName(identity.firstName, identity.lastName, email);
 
   useEffect(() => {
     if (!open) return;
@@ -34,6 +41,11 @@ export function UserMenu({
     };
   }, [open]);
 
+  const editProfile = () => {
+    setOpen(false);
+    onEditProfile();
+  };
+
   return (
     <div className="user-menu" ref={containerRef}>
       <button
@@ -44,28 +56,25 @@ export function UserMenu({
         aria-haspopup="menu"
         disabled={disabled}
       >
-        <span className="user-avatar" aria-hidden="true">
-          ●
-        </span>
+        <UserAvatar {...identity} />
         <span className="user-menu-name">
-          {displayName || t('auth.myProfile')}
+          {shortName || t('auth.myProfile')}
         </span>
         <span aria-hidden="true">⌄</span>
       </button>
       {open && (
         <div className="user-menu-popover" role="menu">
           <div className="user-menu-heading">
-            <span>{t('auth.myProfile')}</span>
-            {displayName && <strong>{displayName}</strong>}
+            <UserAvatar {...identity} className="profile-avatar--menu" />
+            <div>
+              <strong>{fullName || email}</strong>
+              <span>{maskEmail(email)}</span>
+            </div>
           </div>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onEditProfile();
-            }}
-          >
+          <button type="button" role="menuitem" onClick={editProfile}>
+            {t('auth.myProfile')}
+          </button>
+          <button type="button" role="menuitem" onClick={editProfile}>
             {t('auth.editProfile')}
           </button>
           <hr />

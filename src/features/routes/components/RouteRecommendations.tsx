@@ -1,17 +1,17 @@
 import { useTranslation } from 'react-i18next';
 
-const RECOMMENDATION_KEYS = [
-  'preparation',
-  'clothing',
-  'hydration',
-  'lighting',
-  'weather',
-  'stayOnRoute',
-  'waste',
-  'environment',
-  'returnSafety',
-  'emergency',
-] as const;
+const SECTIONS = {
+  preparation: ['waterFood', 'footwear', 'properClothing', 'flashlight'],
+  safety: ['localGuide', 'whistle', 'firstAid', 'remainOnRoute'],
+  weather: ['checkForecast', 'fastChanges', 'weatherHazards'],
+  environment: [
+    'leaveNoWaste',
+    'floraFauna',
+    'noFires',
+    'noLoudAudio',
+    'noAlcohol',
+  ],
+} as const;
 
 export function RouteRecommendations() {
   const { t } = useTranslation();
@@ -21,15 +21,16 @@ export function RouteRecommendations() {
       <p className="route-recommendations-intro">
         {t('routes.recommendations.intro')}
       </p>
-      <div className="route-recommendation-grid">
-        {RECOMMENDATION_KEYS.map((key, index) => (
-          <article key={key}>
-            <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-            <div>
-              <h3>{t(`routes.recommendations.items.${key}.title`)}</h3>
-              <p>{t(`routes.recommendations.items.${key}.body`)}</p>
-            </div>
-          </article>
+      <div className="route-recommendation-sections">
+        {Object.entries(SECTIONS).map(([section, items]) => (
+          <section key={section}>
+            <h3>{t(`routes.recommendations.sections.${section}`)}</h3>
+            <ul>
+              {items.map((item) => (
+                <li key={item}>{t(`routes.recommendations.items.${item}`)}</li>
+              ))}
+            </ul>
+          </section>
         ))}
       </div>
     </div>

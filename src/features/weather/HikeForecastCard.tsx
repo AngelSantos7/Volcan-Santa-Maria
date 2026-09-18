@@ -30,6 +30,24 @@ type HikeForecastCardProps = {
   enabled: boolean;
 };
 
+const RISK_ICONS: Record<WeatherRisk, string> = {
+  favorable: '✓',
+  precaution: '!',
+  unfavorable: '▲',
+  not_recommended: '⊘',
+  unavailable: '?',
+};
+
+function WeatherRiskBadge({ risk }: { risk: WeatherRisk }) {
+  const { t } = useTranslation();
+  return (
+    <span className={`weather-risk weather-risk--${risk}`}>
+      <span aria-hidden="true">{RISK_ICONS[risk]}</span>
+      {t(`weather.risk.${risk}`)}
+    </span>
+  );
+}
+
 function ForecastStage({
   label,
   hour,
@@ -58,9 +76,7 @@ function ForecastStage({
           })}
         </small>
       )}
-      <span className={`weather-risk weather-risk--${risk}`}>
-        {t(`weather.risk.${risk}`)}
-      </span>
+      <WeatherRiskBadge risk={risk} />
     </article>
   );
 }
@@ -130,9 +146,7 @@ export function HikeForecastCard({
           <span>{t('weather.hike.plannedPeriod')}</span>
         </div>
         {summary && !summary.unavailable && (
-          <span className={`weather-risk weather-risk--${summary.periodRisk}`}>
-            {t(`weather.risk.${summary.periodRisk}`)}
-          </span>
+          <WeatherRiskBadge risk={summary.periodRisk} />
         )}
       </div>
       {!forecast && !failed && <p role="status">{t('weather.loading')}</p>}
@@ -173,26 +187,26 @@ export function HikeForecastCard({
             <dl>
               <div>
                 <dt>{t('weather.hike.departure')}</dt>
-                <dd
-                  className={`weather-risk weather-risk--${classifyWeatherHour(summary.departure)}`}
-                >
-                  {t(`weather.risk.${classifyWeatherHour(summary.departure)}`)}
+                <dd>
+                  <WeatherRiskBadge
+                    risk={classifyWeatherHour(summary.departure)}
+                  />
                 </dd>
               </div>
               <div>
                 <dt>{t('weather.hike.during')}</dt>
-                <dd
-                  className={`weather-risk weather-risk--${classifyWeatherHour(summary.during)}`}
-                >
-                  {t(`weather.risk.${classifyWeatherHour(summary.during)}`)}
+                <dd>
+                  <WeatherRiskBadge
+                    risk={classifyWeatherHour(summary.during)}
+                  />
                 </dd>
               </div>
               <div>
                 <dt>{t('weather.hike.return')}</dt>
-                <dd
-                  className={`weather-risk weather-risk--${classifyWeatherHour(summary.returning)}`}
-                >
-                  {t(`weather.risk.${classifyWeatherHour(summary.returning)}`)}
+                <dd>
+                  <WeatherRiskBadge
+                    risk={classifyWeatherHour(summary.returning)}
+                  />
                 </dd>
               </div>
             </dl>
@@ -225,6 +239,9 @@ export function HikeForecastCard({
         </small>
       )}
       <small>{t('weather.hike.referenceFastChange')}</small>
+      <small className="weather-guidance-disclaimer">
+        {t('weather.hike.guidanceDisclaimer')}
+      </small>
     </aside>
   );
 }

@@ -56,25 +56,23 @@ export function EarlyReturnForm({
             })}
       </h3>
 
-      <label className="visit-field" htmlFor="earlyReturnReason">
-        {t('visits.earlyReturn.reason')}
-        <select
-          id="earlyReturnReason"
-          value={reason}
-          onChange={(event) =>
-            setReason(event.target.value as EarlyReturnReason | '')
-          }
-          disabled={submitting}
-          required
-        >
-          <option value="">{t('visits.earlyReturn.selectReason')}</option>
-          {REASONS.map((option) => (
-            <option key={option} value={option}>
-              {t(`visits.earlyReturn.reasons.${option}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="early-return-reasons">
+        <legend>{t('visits.earlyReturn.selectReason')}</legend>
+        {REASONS.map((option) => (
+          <label key={option}>
+            <input
+              type="radio"
+              name="earlyReturnReason"
+              value={option}
+              checked={reason === option}
+              onChange={() => setReason(option)}
+              disabled={submitting}
+              required
+            />
+            <span>{t(`visits.earlyReturn.reasons.${option}`)}</span>
+          </label>
+        ))}
+      </fieldset>
 
       <label className="visit-field" htmlFor="earlyReturnNotes">
         {t('visits.earlyReturn.notes')}
@@ -103,7 +101,7 @@ export function EarlyReturnForm({
         >
           {t('common.cancel')}
         </button>
-        <button className="primary-button" type="submit" disabled={submitting}>
+        <button className="amber-button" type="submit" disabled={submitting}>
           {t(
             submitting
               ? 'visits.earlyReturn.saving'

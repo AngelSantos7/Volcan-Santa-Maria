@@ -6,25 +6,24 @@ import { UserMenu } from '../components/UserMenu';
 import { getAuthErrorMessage } from '../features/auth/auth-errors';
 import { useAuth } from '../features/auth/useAuth';
 import { GroupVisits } from '../features/visits/GroupVisits';
+import { getShortName } from '../features/profile/avatar-utils';
+import type { TouristProfileData } from '../features/profile/profile-types';
 
 type AuthenticatedPageProps = {
+  profile: TouristProfileData;
   onEditProfile: () => void;
 };
 
-export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
+export function AuthenticatedPage({
+  profile,
+  onEditProfile,
+}: AuthenticatedPageProps) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const firstName =
-    typeof user?.user_metadata.first_name === 'string'
-      ? user.user_metadata.first_name
-      : '';
-  const lastName =
-    typeof user?.user_metadata.last_name === 'string'
-      ? user.user_metadata.last_name
-      : '';
-  const displayName = `${firstName} ${lastName}`.trim();
+  const email = user?.email ?? '';
+  const displayName = getShortName(profile.firstName, profile.lastName, email);
 
   const handleSignOut = async () => {
     setError(null);
@@ -47,7 +46,8 @@ export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
         <div className="authenticated-toolbar">
           <LanguageSwitcher />
           <UserMenu
-            displayName={displayName}
+            identity={profile}
+            email={email}
             disabled={submitting}
             onEditProfile={onEditProfile}
             onSignOut={() => void handleSignOut()}
@@ -60,7 +60,7 @@ export function AuthenticatedPage({ onEditProfile }: AuthenticatedPageProps) {
               ? t('auth.welcome', { name: displayName })
               : t('auth.welcomeGeneric')}
           </h1>
-          <p>{user?.email ?? t('common.unavailable')}</p>
+          <p>{email || t('common.unavailable')}</p>
         </header>
 
         <AnnouncementBanner placement="login" />

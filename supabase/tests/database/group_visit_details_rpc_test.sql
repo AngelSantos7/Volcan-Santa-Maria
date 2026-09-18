@@ -244,6 +244,9 @@ select ok(
       'user_id',
       'first_name',
       'last_name',
+      'avatar_kind',
+      'avatar_path',
+      'avatar_preset',
       'member_role',
       'member_status',
       'joined_at',
@@ -260,9 +263,9 @@ select ok(
     where (
       select count(*)
       from jsonb_object_keys(participant)
-    ) <> 8
+    ) <> 11
   ),
-  'participant objects contain only the eight explicitly allowed fields'
+  'participant objects contain only the eleven explicitly allowed fields'
 );
 
 select ok(

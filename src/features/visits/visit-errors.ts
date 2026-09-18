@@ -43,6 +43,10 @@ export function getVisitErrorMessage(error: unknown): string {
     return i18n.t('visits.validation.futureReturn');
   }
 
+  if (errorText.includes('scheduled_start_not_reached')) {
+    return i18n.t('visits.errors.scheduledStartNotReached');
+  }
+
   return error instanceof TypeError
     ? i18n.t('errors.network')
     : i18n.t('visits.errors.generic');

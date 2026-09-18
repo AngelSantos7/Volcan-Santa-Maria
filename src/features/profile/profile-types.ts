@@ -1,6 +1,27 @@
 export type DocumentType = 'dpi' | 'passport' | 'other';
 
-export type TouristProfileData = {
+export type AvatarKind = 'uploaded' | 'preset' | 'initials';
+
+export type AvatarPreset =
+  | 'mountain'
+  | 'volcano'
+  | 'pine'
+  | 'compass'
+  | 'hiking'
+  | 'sunrise'
+  | 'forest'
+  | 'summit';
+
+export type AvatarIdentity = {
+  firstName: string;
+  lastName: string;
+  avatarKind: AvatarKind | null;
+  avatarPath: string | null;
+  avatarPreset: AvatarPreset | null;
+  avatarUrl: string | null;
+};
+
+export type TouristProfileData = AvatarIdentity & {
   nationalityCountryCode: string;
   dateOfBirth: string;
   phone: string;
