@@ -3394,6 +3394,36 @@ button:disabled {
   font-size: 0.8rem;
   font-weight: 750;
   cursor: pointer;
+  max-width: min(100%, 280px);
+}
+
+.user-menu-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform 180ms ease;
+}
+
+.user-menu-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-menu-chevron {
+    transition: none;
+  }
 }
 
 .user-avatar {

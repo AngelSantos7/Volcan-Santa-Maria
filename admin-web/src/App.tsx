@@ -63,13 +63,14 @@ export default function App() {
 
   const isAdmin = adminSession.role === 'admin'
   const canView = isAdmin || Boolean(adminSession.permissions.can_view_visitors)
+  const canVisitors = canView || Boolean(adminSession.permissions.can_register_walk_in_visitors)
   const canAscents = canView || Boolean(adminSession.permissions.can_manage_visits)
   const canReturns = canView || Boolean(adminSession.permissions.can_confirm_returns)
   let content
   if (page === 'dashboard') content = canView ? <DashboardPage/> : <AccessMessage title="Permiso requerido" detail="Solicite el permiso para ver visitantes." signOut={signOut}/>
-  else if (page === 'visitors') content = canView ? <VisitorsPage session={adminSession}/> : <AccessMessage title="Permiso requerido" detail="Solicite el permiso para ver visitantes." signOut={signOut}/>
-  else if (page === 'ascents') content = canAscents ? <AscentsPage/> : <AccessMessage title="Permiso requerido" detail="No tiene acceso a los ascensos." signOut={signOut}/>
-  else if (page === 'returns') content = canReturns ? <ReturnsPage/> : <AccessMessage title="Permiso requerido" detail="No tiene acceso al control de retornos." signOut={signOut}/>
+  else if (page === 'visitors') content = canVisitors ? <VisitorsPage session={adminSession}/> : <AccessMessage title="Permiso requerido" detail="Solicite permiso para consultar o registrar visitantes." signOut={signOut}/>
+  else if (page === 'ascents') content = canAscents ? <AscentsPage session={adminSession}/> : <AccessMessage title="Permiso requerido" detail="No tiene acceso a los ascensos." signOut={signOut}/>
+  else if (page === 'returns') content = canReturns ? <ReturnsPage session={adminSession}/> : <AccessMessage title="Permiso requerido" detail="No tiene acceso al control de retornos." signOut={signOut}/>
   else if (!isAdmin) content = <AccessMessage title="Solo administradores" detail="Esta sección requiere el rol Administrador." signOut={signOut}/>
   else if (page === 'staff') content = <StaffPage managePermissions={(userId) => { setPermissionUserId(userId); setPage('permissions') }}/>
   else if (page === 'permissions') content = <PermissionsPage initialUserId={permissionUserId}/>

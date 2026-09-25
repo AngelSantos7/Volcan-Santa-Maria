@@ -20,6 +20,7 @@ import type {
   VisitorRow,
   VisitorSummary,
 } from '../types';
+import { VisitorRegistrationModal } from '../components/AdministrativeModals';
 
 function maskPhone(phone?: string | null) {
   if (!phone) return '••••••••';
@@ -114,6 +115,11 @@ function VisitorDrawer({
                 </span>
               </div>
               <StatusBadge value={summary.member_status} />
+            </div>
+            <div className="provenance-row">
+              {summary.registration_origin === 'administrative' && <span className="provenance-badge">Registrado por administración</span>}
+              {summary.creation_origin === 'administrative' && <span className="provenance-badge">Creado por administración</span>}
+              {summary.finalized_by_administration && <span className="provenance-badge">Finalizado por administración</span>}
             </div>
             <section className="detail-section">
               <h3>Información personal</h3>
@@ -261,6 +267,12 @@ function VisitorDrawer({
                           item.started_at ?? item.planned_start_at
                         )}
                       </span>
+                      {item.creation_origin === 'administrative' && (
+                        <span className="provenance-badge">Creado por administración</span>
+                      )}
+                      {item.finalized_by_administration && (
+                        <span className="provenance-badge">Finalizado por administración</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -274,10 +286,13 @@ function VisitorDrawer({
 }
 
 export function VisitorsPage({ session }: { session: AdminSession }) {
+  const canView = session.role === 'admin' || Boolean(session.permissions.can_view_visitors);
   const [rows, setRows] = useState<VisitorRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(canView);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<VisitorRow | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [notice, setNotice] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
@@ -312,6 +327,9 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
   );
 
   useEffect(() => {
+    if (!canView) {
+      return;
+    }
     let current = true;
     void searchVisitors({ status: 'all' })
       .then((result) => {
@@ -326,7 +344,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
     return () => {
       current = false;
     };
-  }, []);
+  }, [canView]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -334,8 +352,13 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
   }
   return (
     <>
-      <PageHeader eyebrow="Operación" title="Visitantes" />
-      <Panel>
+      <PageHeader eyebrow="Operación" title="Visitantes">
+        {(session.role === 'admin' || session.permissions.can_register_walk_in_visitors) && (
+          <button type="button" className="primary-action" onClick={() => setRegistering(true)}>Registrar visitante</button>
+        )}
+      </PageHeader>
+      {notice && <div className="alert success" role="status">{notice}</div>}
+      {canView ? <><Panel>
         <form className="filters" onSubmit={submit}>
           <label>
             Buscar por nombre
@@ -454,12 +477,24 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
             </table>
           </div>
         )}
-      </Panel>
+      </Panel></> : <Panel><EmptyState title="Registro presencial habilitado" detail="Puede registrar visitantes. Su perfil no incluye permiso para consultar expedientes existentes."/></Panel>}
       {selected && (
         <VisitorDrawer
           visitor={selected}
           session={session}
           close={() => setSelected(null)}
+        />
+      )}
+      {registering && (
+        <VisitorRegistrationModal
+          close={() => setRegistering(false)}
+          onRegistered={(visitor) => {
+            setRegistering(false);
+            const name = 'full_name' in visitor
+              ? visitor.full_name
+              : `${visitor.first_name} ${visitor.last_name}`;
+            setNotice(`${name}: expediente listo para asociarlo a un ascenso.`);
+          }}
         />
       )}
     </>

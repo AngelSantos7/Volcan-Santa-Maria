@@ -60,7 +60,13 @@ export function UserMenu({
         <span className="user-menu-name">
           {shortName || t('auth.myProfile')}
         </span>
-        <span aria-hidden="true">⌄</span>
+        <svg
+          className={`user-menu-chevron${open ? ' is-open' : ''}`}
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <path d="m5 7.5 5 5 5-5" />
+        </svg>
       </button>
       {open && (
         <div className="user-menu-popover" role="menu">

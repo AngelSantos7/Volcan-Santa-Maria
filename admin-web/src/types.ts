@@ -87,12 +87,21 @@ export interface VisitorSummary {
   return_started_at: string | null
   checked_out_at: string | null
   participant_count: number
+  registration_origin: 'self' | 'administrative'
+  registered_by: string | null
+  registered_at: string | null
+  creation_origin: 'tourist' | 'administrative'
+  created_by_staff: string | null
+  administrative_created_at: string | null
+  finalized_by_administration: boolean
+  administrative_return_recorded_at: string | null
   history: Array<Record<string, string | null>>
 }
 
 export interface SensitiveDetails {
   date_of_birth: string | null
   phone: string | null
+  alternate_phone: string | null
   document_type: string | null
   document_number: string | null
   emergency_contact: {
@@ -114,6 +123,8 @@ export interface AscentRow {
   expected_return_at: string | null
   completed_at: string | null
   visit_status: string
+  creation_origin: 'tourist' | 'administrative'
+  finalized_by_administration: boolean
 }
 
 export interface ReturnRow {
@@ -127,6 +138,45 @@ export interface ReturnRow {
   return_started_at: string | null
   checked_out_at: string | null
   attention_state: string
+  participant_count: number
+  creation_origin: 'tourist' | 'administrative'
+  finalized_by_administration: boolean
+}
+
+export interface VisitorDirectoryRow {
+  visitor_id: string
+  full_name: string
+  nationality_country_code: string | null
+  registration_origin: 'self' | 'administrative'
+  registered_at: string
+  latest_visit_id: string | null
+  latest_visit_status: string | null
+  latest_member_status: string | null
+}
+
+export interface RegisteredVisitor {
+  visitor_id: string
+  first_name: string
+  last_name: string
+  registration_origin: 'administrative'
+  registered_at: string
+}
+
+export interface AdministrativeVisitResult {
+  visit_id: string
+  join_code: string
+  participant_count: number
+  creation_origin: 'administrative'
+}
+
+export interface AscentMemberRow {
+  visit_id: string
+  user_id: string
+  visitor_name: string
+  member_role: 'leader' | 'member'
+  member_status: string
+  checked_out_at: string | null
+  finalized_by_administration: boolean
 }
 
 export interface StaffRow {

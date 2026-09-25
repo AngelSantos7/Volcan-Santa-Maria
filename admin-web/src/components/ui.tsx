@@ -32,6 +32,7 @@ const statusLabels: Record<string, string> = {
   withdrawn_before_start: 'Retirado antes', overdue: 'Hora estimada superada', due_soon: 'Próximo a retornar',
   on_route: 'En recorrido', early_return: 'Retorno anticipado', early_return_completed: 'Retorno confirmado',
   active_access: 'Activo', inactive_access: 'Desactivado',
+  administratively_completed: 'Completado',
 }
 
 export function StatusBadge({ value }: { value: string }) {
