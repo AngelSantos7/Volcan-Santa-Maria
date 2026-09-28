@@ -3,8 +3,6 @@ import { getVisitErrorMessage } from './visit-errors';
 import { getGroupVisitDetails, getMyActiveGroupVisit } from './visit-service';
 import type { GroupVisitDetails } from './visit-types';
 
-const REFRESH_INTERVAL_MS = 10_000;
-
 export function useActiveGroupVisit(currentUserId: string) {
   const [details, setDetails] = useState<GroupVisitDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,14 +94,16 @@ export function useActiveGroupVisit(currentUserId: string) {
   }, []);
 
   useEffect(() => {
-    if (!details) return;
-
-    const intervalId = window.setInterval(() => {
-      void refreshDetails();
-    }, REFRESH_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [details, refreshDetails]);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshActiveVisit();
+    };
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshActiveVisit]);
 
   return {
     details,

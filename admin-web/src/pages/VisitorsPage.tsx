@@ -106,7 +106,11 @@ function VisitorDrawer({
         ) : (
           <div className="drawer-body">
             <div className="profile-heading">
-              <Avatar name={visitor.full_name} preset={visitor.avatar_preset} path={visitor.avatar_path} />
+              <Avatar
+                name={visitor.full_name}
+                preset={visitor.avatar_preset}
+                path={visitor.avatar_path}
+              />
               <div>
                 <strong>{visitor.full_name}</strong>
                 <span>
@@ -117,9 +121,21 @@ function VisitorDrawer({
               <StatusBadge value={summary.member_status} />
             </div>
             <div className="provenance-row">
-              {summary.registration_origin === 'administrative' && <span className="provenance-badge">Registrado por administración</span>}
-              {summary.creation_origin === 'administrative' && <span className="provenance-badge">Creado por administración</span>}
-              {summary.finalized_by_administration && <span className="provenance-badge">Finalizado por administración</span>}
+              {summary.registration_origin === 'administrative' && (
+                <span className="provenance-badge">
+                  Registrado por administración
+                </span>
+              )}
+              {summary.creation_origin === 'administrative' && (
+                <span className="provenance-badge">
+                  Creado por administración
+                </span>
+              )}
+              {summary.finalized_by_administration && (
+                <span className="provenance-badge">
+                  Finalizado por administración
+                </span>
+              )}
             </div>
             <section className="detail-section">
               <h3>Información personal</h3>
@@ -268,10 +284,14 @@ function VisitorDrawer({
                         )}
                       </span>
                       {item.creation_origin === 'administrative' && (
-                        <span className="provenance-badge">Creado por administración</span>
+                        <span className="provenance-badge">
+                          Creado por administración
+                        </span>
                       )}
                       {item.finalized_by_administration && (
-                        <span className="provenance-badge">Finalizado por administración</span>
+                        <span className="provenance-badge">
+                          Finalizado por administración
+                        </span>
                       )}
                     </div>
                   ))}
@@ -286,7 +306,8 @@ function VisitorDrawer({
 }
 
 export function VisitorsPage({ session }: { session: AdminSession }) {
-  const canView = session.role === 'admin' || Boolean(session.permissions.can_view_visitors);
+  const canView =
+    session.role === 'admin' || Boolean(session.permissions.can_view_visitors);
   const [rows, setRows] = useState<VisitorRow[]>([]);
   const [loading, setLoading] = useState(canView);
   const [failed, setFailed] = useState(false);
@@ -353,131 +374,155 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
   return (
     <>
       <PageHeader eyebrow="Operación" title="Visitantes">
-        {(session.role === 'admin' || session.permissions.can_register_walk_in_visitors) && (
-          <button type="button" className="primary-action" onClick={() => setRegistering(true)}>Registrar visitante</button>
+        {(session.role === 'admin' ||
+          session.permissions.can_register_walk_in_visitors) && (
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => setRegistering(true)}
+          >
+            Registrar visitante
+          </button>
         )}
       </PageHeader>
-      {notice && <div className="alert success" role="status">{notice}</div>}
-      {canView ? <><Panel>
-        <form className="filters" onSubmit={submit}>
-          <label>
-            Buscar por nombre
-            <input
-              type="search"
-              placeholder="Nombre o apellido"
-              value={filters.search}
-              onChange={(event) =>
-                setFilters({ ...filters, search: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Estado
-            <select
-              value={filters.status}
-              onChange={(event) =>
-                setFilters({ ...filters, status: event.target.value })
-              }
-            >
-              <option value="all">Todos</option>
-              <option value="active">En recorrido</option>
-              <option value="returning_early">Retorno anticipado</option>
-              <option value="returned_early">Retornó antes</option>
-              <option value="completed">Completado</option>
-            </select>
-          </label>
-          <label>
-            Desde
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(event) =>
-                setFilters({ ...filters, from: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Hasta
-            <input
-              type="date"
-              min={filters.from}
-              value={filters.to}
-              onChange={(event) =>
-                setFilters({ ...filters, to: event.target.value })
-              }
-            />
-          </label>
-          <button type="submit">Aplicar filtros</button>
-        </form>
-      </Panel>
-      <Panel>
-        {loading ? (
-          <LoadingState rows={6} />
-        ) : failed ? (
-          <ErrorState retry={() => void load()} />
-        ) : rows.length === 0 ? (
+      {notice && (
+        <div className="alert success" role="status">
+          {notice}
+        </div>
+      )}
+      {canView ? (
+        <>
+          <Panel>
+            <form className="filters" onSubmit={submit}>
+              <label>
+                Buscar por nombre
+                <input
+                  type="search"
+                  placeholder="Nombre o apellido"
+                  value={filters.search}
+                  onChange={(event) =>
+                    setFilters({ ...filters, search: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Estado
+                <select
+                  value={filters.status}
+                  onChange={(event) =>
+                    setFilters({ ...filters, status: event.target.value })
+                  }
+                >
+                  <option value="all">Todos</option>
+                  <option value="active">En recorrido</option>
+                  <option value="returning_early">Retorno anticipado</option>
+                  <option value="returned_early">Retornó antes</option>
+                  <option value="completed">Completado</option>
+                </select>
+              </label>
+              <label>
+                Desde
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(event) =>
+                    setFilters({ ...filters, from: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Hasta
+                <input
+                  type="date"
+                  min={filters.from}
+                  value={filters.to}
+                  onChange={(event) =>
+                    setFilters({ ...filters, to: event.target.value })
+                  }
+                />
+              </label>
+              <button type="submit">Aplicar filtros</button>
+            </form>
+          </Panel>
+          <Panel>
+            {loading ? (
+              <LoadingState rows={6} />
+            ) : failed ? (
+              <ErrorState retry={() => void load()} />
+            ) : rows.length === 0 ? (
+              <EmptyState
+                title="Sin visitantes"
+                detail="No hay registros que coincidan con estos filtros."
+              />
+            ) : (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Visitante</th>
+                      <th>Nacionalidad</th>
+                      <th>Modalidad</th>
+                      <th>Estado</th>
+                      <th>Inicio</th>
+                      <th>Retorno estimado</th>
+                      <th>
+                        <span className="sr-only">Acción</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={`${row.visit_id}-${row.user_id}`}>
+                        <td>
+                          <div className="person-cell">
+                            <Avatar
+                              name={row.full_name}
+                              preset={row.avatar_preset}
+                              path={row.avatar_path}
+                            />
+                            <strong>{row.full_name}</strong>
+                          </div>
+                        </td>
+                        <td>{row.nationality_country_code ?? '—'}</td>
+                        <td>
+                          {row.group_type === 'group'
+                            ? `Grupo · ${row.participant_count}`
+                            : 'Individual'}
+                        </td>
+                        <td>
+                          <StatusBadge value={row.member_status} />
+                        </td>
+                        <td>
+                          {formatDateTime(
+                            row.started_at ?? row.planned_start_at
+                          )}
+                        </td>
+                        <td>{formatDateTime(row.expected_return_at)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="table-action"
+                            onClick={() => setSelected(row)}
+                          >
+                            Ver expediente
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </>
+      ) : (
+        <Panel>
           <EmptyState
-            title="Sin visitantes"
-            detail="No hay registros que coincidan con estos filtros."
+            title="Registro presencial habilitado"
+            detail="Puede registrar visitantes. Su perfil no incluye permiso para consultar expedientes existentes."
           />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Visitante</th>
-                  <th>Nacionalidad</th>
-                  <th>Modalidad</th>
-                  <th>Estado</th>
-                  <th>Inicio</th>
-                  <th>Retorno estimado</th>
-                  <th>
-                    <span className="sr-only">Acción</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={`${row.visit_id}-${row.user_id}`}>
-                    <td>
-                      <div className="person-cell">
-                        <Avatar
-                          name={row.full_name}
-                          preset={row.avatar_preset}
-                          path={row.avatar_path}
-                        />
-                        <strong>{row.full_name}</strong>
-                      </div>
-                    </td>
-                    <td>{row.nationality_country_code ?? '—'}</td>
-                    <td>
-                      {row.group_type === 'group'
-                        ? `Grupo · ${row.participant_count}`
-                        : 'Individual'}
-                    </td>
-                    <td>
-                      <StatusBadge value={row.member_status} />
-                    </td>
-                    <td>
-                      {formatDateTime(row.started_at ?? row.planned_start_at)}
-                    </td>
-                    <td>{formatDateTime(row.expected_return_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="table-action"
-                        onClick={() => setSelected(row)}
-                      >
-                        Ver expediente
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel></> : <Panel><EmptyState title="Registro presencial habilitado" detail="Puede registrar visitantes. Su perfil no incluye permiso para consultar expedientes existentes."/></Panel>}
+        </Panel>
+      )}
       {selected && (
         <VisitorDrawer
           visitor={selected}
@@ -490,10 +535,14 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
           close={() => setRegistering(false)}
           onRegistered={(visitor) => {
             setRegistering(false);
-            const name = 'full_name' in visitor
-              ? visitor.full_name
-              : `${visitor.first_name} ${visitor.last_name}`;
-            setNotice(`${name}: expediente listo para asociarlo a un ascenso.`);
+            const name =
+              'full_name' in visitor
+                ? visitor.full_name
+                : `${visitor.first_name} ${visitor.last_name}`;
+            setNotice('Visitante registrado correctamente.');
+            const nextFilters = { ...filters, search: name, status: 'all' };
+            setFilters(nextFilters);
+            void load(nextFilters);
           }}
         />
       )}

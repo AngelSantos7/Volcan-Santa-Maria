@@ -7,6 +7,7 @@ import { GroupVisitScreen } from './GroupVisitScreen';
 import { JoinVisitForm } from './JoinVisitForm';
 import { useActiveGroupVisit } from './useActiveGroupVisit';
 import { VisitHistory } from './VisitHistory';
+import { useToast } from '../../components/toast-context';
 
 type GroupVisitsProps = {
   currentUserId: string;
@@ -16,6 +17,7 @@ type VisitView = 'home' | 'create' | 'join' | 'route';
 
 export function GroupVisits({ currentUserId }: GroupVisitsProps) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [view, setView] = useState<VisitView>('home');
   const [routeTab, setRouteTab] = useState<RouteTab>('recommendations');
   const {
@@ -49,9 +51,10 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
         details={details}
         loadError={error}
         onRefresh={refreshDetails}
-        onVisitClosed={() => {
+        onVisitClosed={(message) => {
           clearVisit();
           setView('home');
+          if (message) showToast(message, 'success');
         }}
         onOpenRoute={(tab) => {
           setRouteTab(tab);

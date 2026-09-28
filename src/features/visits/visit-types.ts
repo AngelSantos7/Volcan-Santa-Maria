@@ -88,6 +88,8 @@ export type VisitHistoryItem = {
   returnStartedAt: string | null;
   checkedOutAt: string | null;
   participantCount: number;
+  creationOrigin: 'tourist' | 'administrative';
+  completionMethod: 'normal' | 'administrative' | 'pending';
 };
 
 export type VisitHistoryMember = {

@@ -259,6 +259,14 @@ export function VisitHistory() {
                     {isGroup && item.memberRole === 'leader' && (
                       <span>{t('visits.history.organizer')}</span>
                     )}
+                    {item.creationOrigin === 'administrative' && (
+                      <span>{t('visits.history.createdByAdministration')}</span>
+                    )}
+                    {item.completionMethod === 'administrative' && (
+                      <span>
+                        {t('visits.history.finalizedByAdministration')}
+                      </span>
+                    )}
                   </div>
 
                   {didStart && item.startedAt && (

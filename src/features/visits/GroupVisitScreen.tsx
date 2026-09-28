@@ -10,7 +10,7 @@ import { EarlyReturnForm } from './EarlyReturnForm';
 import { getVisitErrorMessage } from './visit-errors';
 import {
   cancelGroupVisit,
-  completeGroupVisit,
+  completeMyVisitParticipation,
   confirmMyEarlyCheckout,
   markMemberReturningEarly,
   removeMemberBeforeStart,
@@ -30,7 +30,7 @@ type GroupVisitScreenProps = {
   details: GroupVisitDetails;
   loadError: string | null;
   onRefresh: () => Promise<void>;
-  onVisitClosed: () => void;
+  onVisitClosed: (message?: string) => void;
   onOpenRoute: (tab: RouteTab) => void;
 };
 
@@ -99,10 +99,10 @@ export function GroupVisitScreen({
   const language = getAppLanguage(i18n.resolvedLanguage);
   const routeName =
     language === 'es' ? details.routeNameEs : details.routeNameEn;
-  const isOrganizer = details.createdBy === currentUserId;
   const currentParticipant = details.participants.find(
     (participant) => participant.userId === currentUserId
   );
+  const isOrganizer = currentParticipant?.memberRole === 'leader';
   const participantCount = details.participants.filter(
     (participant) => participant.memberStatus !== 'withdrawn_before_start'
   ).length;
@@ -192,8 +192,8 @@ export function GroupVisitScreen({
     setActionError(null);
 
     try {
-      await completeGroupVisit(details.visitId);
-      await onRefresh();
+      await completeMyVisitParticipation(details.visitId);
+      onVisitClosed(t('visits.complete.success'));
     } catch (completeError) {
       setActionError(getVisitErrorMessage(completeError));
     } finally {
@@ -625,7 +625,7 @@ export function GroupVisitScreen({
 
       {details.status === 'in_progress' && (
         <div className="in-progress-actions">
-          {isOrganizer && (
+          {currentParticipant?.memberStatus === 'active' && (
             <button
               className="primary-button complete-visit-button"
               type="button"
@@ -644,7 +644,7 @@ export function GroupVisitScreen({
         <button
           className="secondary-button completed-back-button"
           type="button"
-          onClick={onVisitClosed}
+          onClick={() => onVisitClosed()}
         >
           {t('visits.complete.back')}
         </button>

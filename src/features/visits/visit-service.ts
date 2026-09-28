@@ -72,6 +72,8 @@ type VisitHistoryRow = {
   return_started_at: string | null;
   checked_out_at: string | null;
   participant_count: number;
+  creation_origin: 'tourist' | 'administrative';
+  completion_method: 'normal' | 'administrative' | 'pending';
 };
 
 type VisitHistoryMemberRow = {
@@ -184,7 +186,9 @@ export async function joinGroupVisit(joinCode: string): Promise<string> {
 
 async function runVisitAction(
   functionName:
-    'start_group_visit' | 'complete_group_visit' | 'cancel_group_visit',
+    | 'start_group_visit'
+    | 'complete_my_visit_participation'
+    | 'cancel_group_visit',
   visitId: string
 ): Promise<void> {
   const { error } = await supabase.rpc(functionName, { visit_id: visitId });
@@ -195,8 +199,8 @@ export function startGroupVisit(visitId: string): Promise<void> {
   return runVisitAction('start_group_visit', visitId);
 }
 
-export function completeGroupVisit(visitId: string): Promise<void> {
-  return runVisitAction('complete_group_visit', visitId);
+export function completeMyVisitParticipation(visitId: string): Promise<void> {
+  return runVisitAction('complete_my_visit_participation', visitId);
 }
 
 export function cancelGroupVisit(visitId: string): Promise<void> {
@@ -288,6 +292,8 @@ export async function getMyVisitHistory(
     returnStartedAt: row.return_started_at,
     checkedOutAt: row.checked_out_at,
     participantCount: row.participant_count,
+    creationOrigin: row.creation_origin,
+    completionMethod: row.completion_method,
   }));
 }
 
