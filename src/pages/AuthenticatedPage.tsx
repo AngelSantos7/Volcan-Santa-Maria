@@ -8,6 +8,7 @@ import { useAuth } from '../features/auth/useAuth';
 import { GroupVisits } from '../features/visits/GroupVisits';
 import { getShortName } from '../features/profile/avatar-utils';
 import type { TouristProfileData } from '../features/profile/profile-types';
+import { NotificationCenter } from '../features/notifications/NotificationCenter';
 
 type AuthenticatedPageProps = {
   profile: TouristProfileData;
@@ -24,6 +25,8 @@ export function AuthenticatedPage({
   const [submitting, setSubmitting] = useState(false);
   const email = user?.email ?? '';
   const displayName = getShortName(profile.firstName, profile.lastName, email);
+  const fullName =
+    `${profile.firstName} ${profile.lastName}`.trim() || displayName;
 
   const handleSignOut = async () => {
     setError(null);
@@ -44,6 +47,7 @@ export function AuthenticatedPage({
         aria-labelledby="welcome-title"
       >
         <div className="authenticated-toolbar">
+          <NotificationCenter />
           <LanguageSwitcher />
           <UserMenu
             identity={profile}
@@ -65,7 +69,9 @@ export function AuthenticatedPage({
 
         <AnnouncementBanner placement="login" />
 
-        {user && <GroupVisits currentUserId={user.id} />}
+        {user && (
+          <GroupVisits currentUserId={user.id} currentUserName={fullName} />
+        )}
 
         {error && (
           <p className="form-message error-message" role="alert">

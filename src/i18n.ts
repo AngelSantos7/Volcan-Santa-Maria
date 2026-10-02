@@ -126,6 +126,8 @@ const resources = {
           },
         },
         nationality: 'Nacionalidad',
+        sex: 'Sexo',
+        sexOptions: { male: 'Masculino', female: 'Femenino' },
         dateOfBirth: 'Fecha de nacimiento',
         documentType: 'Tipo de documento',
         documentNumber: 'Número de documento',
@@ -151,6 +153,7 @@ const resources = {
         },
         validation: {
           nationalityRequired: 'Selecciona una nacionalidad.',
+          sexRequired: 'Selecciona el sexo.',
           dateOfBirthRequired: 'Selecciona una fecha de nacimiento.',
           dateOfBirthInvalid:
             'Selecciona una fecha de nacimiento válida y razonable.',
@@ -184,6 +187,32 @@ const resources = {
         localNumber: 'Número local',
       },
       visits: {
+        minors: {
+          question: '¿Viajan menores de edad?',
+          responsibleHelp:
+            'Cada menor debe viajar con un adulto responsable del mismo ascenso.',
+          responsibleCurrentUser: 'Adulto responsable: organizador del ascenso',
+          responsible: 'Responsable',
+          item: 'Menor {{number}}',
+          fullName: 'Nombre completo',
+          age: 'Edad',
+          relationship: 'Parentesco',
+          relationshipExample: 'Ej. Hijo/a, hermano/a, sobrino/a',
+          selectRelationship: 'Seleccione parentesco',
+          relationshipDetail: 'Especifique parentesco',
+          relationships: {
+            child: 'Hijo/a',
+            sibling: 'Hermano/a',
+            niece_nephew: 'Sobrino/a',
+            grandchild: 'Nieto/a',
+            cousin: 'Primo/a',
+            other: 'Otro',
+          },
+          add: 'Agregar otro menor',
+          remove: 'Retirar menor',
+          validation:
+            'Complete correctamente los datos de todos los menores (edad entre 0 y 17 años).',
+        },
         loading: 'Buscando tu ascenso activo…',
         title: 'Ascenso al Volcán Santa María',
         subtitle: 'Crea un grupo o ingresa el código que te compartieron.',
@@ -313,6 +342,10 @@ const resources = {
           action: 'Crear ascenso',
           title: 'Crear ascenso',
           localGuideQuestion: '¿Viajas con guía local?',
+          cancelMessage:
+            '¿Desea cancelar la creación del ascenso?\n\nLa información ingresada se perderá.',
+          continueEditing: 'Continuar editando',
+          discard: 'Descartar',
           submit: 'Crear grupo',
           creating: 'Creando grupo…',
         },
@@ -444,16 +477,47 @@ const resources = {
           satelliteLoadError:
             'No fue posible cargar Satélite. Se restauró la vista Mapa.',
           recenter: 'Volver a centrar en el volcán',
+          myLocation: 'Mi ubicación',
+          locating: 'Buscando su ubicación…',
+          youAreHere: 'Usted está aquí',
+          accuracy: 'Precisión aproximada: ±{{accuracy}} m',
+          locationPrivacy:
+            'Su ubicación se utiliza únicamente como referencia mientras mantiene abierto el mapa. No se almacena ni se comparte.',
+          locationUnavailable:
+            'La ubicación no está disponible en este navegador o contexto. Puede continuar consultando la ruta normalmente.',
+          locationErrors: {
+            permissionDenied:
+              'No se pudo acceder a su ubicación. Puede continuar consultando la ruta normalmente.',
+            positionUnavailable:
+              'No fue posible determinar su ubicación en este momento. Inténtelo nuevamente.',
+            timeout:
+              'La ubicación tardó demasiado en responder. Puede intentarlo nuevamente.',
+          },
           selectedPoint: 'Información del punto seleccionado',
           closeDetails: 'Cerrar información',
           volcanoReference: 'Referencia del volcán',
           summitMarkerLabel: 'Ver información del Volcán Santa María',
+          startMarkerLabel: 'Inicio de la ruta de ascenso',
+          routeStart: 'Inicio',
           checkpointMarkerLabel: 'Ver punto de referencia: {{name}}',
           trackPending: 'Trazado detallado pendiente de incorporar.',
           noCheckpoints:
             'Aún no hay puntos de referencia con coordenadas para mostrar.',
           mediaLoadError:
             'El mapa está disponible, pero no fue posible cargar sus fotografías.',
+        },
+        stats: {
+          title: 'Ruta de ascenso a la cima',
+          distance: 'Distancia aproximada de ascenso',
+          gain: 'Desnivel positivo',
+          time: 'Tiempo registrado de referencia',
+          disclaimer:
+            'El tiempo corresponde a un recorrido de referencia y puede variar según las condiciones climáticas, el terreno y el ritmo del grupo.',
+        },
+        santiaguito: {
+          title: 'Área restringida — Volcán Santiaguito',
+          body: 'No intente ascender hacia el complejo volcánico Santiaguito. Está prohibido ingresar o acercarse a la zona de restricción de 5 km alrededor de sus domos. La actividad volcánica puede generar explosiones, ceniza, flujos piroclásticos y otros peligros graves.',
+          source: 'Fuente: CONRED / INSIVUMEH.',
         },
         checkpointTypes: {
           start: 'Inicio',
@@ -784,6 +848,8 @@ const resources = {
           },
         },
         nationality: 'Nationality',
+        sex: 'Sex',
+        sexOptions: { male: 'Male', female: 'Female' },
         dateOfBirth: 'Date of birth',
         documentType: 'Document type',
         documentNumber: 'Document number',
@@ -809,6 +875,7 @@ const resources = {
         },
         validation: {
           nationalityRequired: 'Select a nationality.',
+          sexRequired: 'Select sex.',
           dateOfBirthRequired: 'Select a date of birth.',
           dateOfBirthInvalid: 'Select a valid and reasonable date of birth.',
           phoneRequired: 'Enter your phone number.',
@@ -839,6 +906,32 @@ const resources = {
         localNumber: 'Local number',
       },
       visits: {
+        minors: {
+          question: 'Are minors traveling?',
+          responsibleHelp:
+            'Every minor must travel with a responsible adult on the same ascent.',
+          responsibleCurrentUser: 'Responsible adult: ascent organizer',
+          responsible: 'Responsible adult',
+          item: 'Minor {{number}}',
+          fullName: 'Full name',
+          age: 'Age',
+          relationship: 'Relationship',
+          relationshipExample: 'E.g. child, sibling, niece/nephew',
+          selectRelationship: 'Select relationship',
+          relationshipDetail: 'Specify relationship',
+          relationships: {
+            child: 'Child',
+            sibling: 'Sibling',
+            niece_nephew: 'Niece/nephew',
+            grandchild: 'Grandchild',
+            cousin: 'Cousin',
+            other: 'Other',
+          },
+          add: 'Add another minor',
+          remove: 'Remove minor',
+          validation:
+            'Complete all minor details correctly (age from 0 to 17).',
+        },
         loading: 'Looking for your active ascent…',
         title: 'Santa María Volcano Ascent',
         subtitle: 'Create a group or enter the code shared with you.',
@@ -969,6 +1062,10 @@ const resources = {
           action: 'Create ascent',
           title: 'Create ascent',
           localGuideQuestion: 'Are you traveling with a local guide?',
+          cancelMessage:
+            'Do you want to cancel creating this ascent?\n\nThe information entered will be lost.',
+          continueEditing: 'Continue editing',
+          discard: 'Discard',
           submit: 'Create group',
           creating: 'Creating group…',
         },
@@ -1098,16 +1195,46 @@ const resources = {
           satelliteLoadError:
             'Satellite could not be loaded. The Map view was restored.',
           recenter: 'Recenter on the volcano',
+          myLocation: 'My location',
+          locating: 'Finding your location…',
+          youAreHere: 'You are here',
+          accuracy: 'Approximate accuracy: ±{{accuracy}} m',
+          locationPrivacy:
+            'Your location is used only as a reference while you keep the map open. It is not stored or shared.',
+          locationUnavailable:
+            'Location is unavailable in this browser or context. You can continue viewing the route normally.',
+          locationErrors: {
+            permissionDenied:
+              'We could not access your location. You can continue viewing the route normally.',
+            positionUnavailable:
+              'Your location could not be determined right now. Please try again.',
+            timeout: 'Location took too long to respond. You can try again.',
+          },
           selectedPoint: 'Selected point information',
           closeDetails: 'Close information',
           volcanoReference: 'Volcano reference',
           summitMarkerLabel: 'View Santa María Volcano information',
+          startMarkerLabel: 'Start of the ascent route',
+          routeStart: 'Start',
           checkpointMarkerLabel: 'View reference point: {{name}}',
           trackPending: 'Detailed route track pending.',
           noCheckpoints:
             'There are no reference points with coordinates to display yet.',
           mediaLoadError:
             'The map is available, but its photos could not be loaded.',
+        },
+        stats: {
+          title: 'Summit ascent route',
+          distance: 'Approximate ascent distance',
+          gain: 'Elevation gain',
+          time: 'Recorded reference time',
+          disclaimer:
+            'This time is from a reference recording and may vary with weather, terrain, and the group’s pace.',
+        },
+        santiaguito: {
+          title: 'Restricted area — Santiaguito Volcano',
+          body: 'Do not attempt to climb toward the Santiaguito volcanic complex. Entry into or approach to the 5 km restriction zone around its domes is prohibited. Volcanic activity can produce explosions, ash, pyroclastic flows, and other severe hazards.',
+          source: 'Source: CONRED / INSIVUMEH.',
         },
         checkpointTypes: {
           start: 'Start',

@@ -10,6 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview"
+    ,"generate:route": "node scripts/process-gpx.mjs"
+    ,"test:gpx": "node scripts/process-gpx.mjs --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

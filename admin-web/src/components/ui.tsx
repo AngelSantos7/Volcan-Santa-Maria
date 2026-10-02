@@ -27,12 +27,13 @@ export function ErrorState({ retry }: { retry?: () => void }) {
 }
 
 const statusLabels: Record<string, string> = {
-  forming: 'Programado', in_progress: 'En curso', completed: 'Finalizado', cancelled: 'Cancelado',
+  forming: 'En preparación', in_preparation: 'En preparación', scheduled_today: 'Planificado hoy', scheduled_future: 'Planificado', in_progress: 'En recorrido', completed: 'Completado', cancelled: 'Cancelado',
   active: 'En recorrido', returning_early: 'Retorno anticipado', returned_early: 'Retornó antes',
   withdrawn_before_start: 'Retirado antes', overdue: 'Hora estimada superada', due_soon: 'Próximo a retornar',
   on_route: 'En recorrido', early_return: 'Retorno anticipado', early_return_completed: 'Retorno confirmado',
   active_access: 'Activo', inactive_access: 'Desactivado',
   administratively_completed: 'Completado',
+  no_active_ascent: 'Sin ascenso activo',
 }
 
 export function StatusBadge({ value }: { value: string }) {

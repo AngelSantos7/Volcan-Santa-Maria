@@ -8,6 +8,7 @@ export type PageId =
   | 'ascents'
   | 'returns'
   | 'reports'
+  | 'notifications'
   | 'staff'
   | 'permissions'
   | 'audit';
@@ -18,6 +19,7 @@ const mainNav: Array<[PageId, string, string]> = [
   ['ascents', 'Ascensos', 'ascent'],
   ['returns', 'Control de retornos', 'returns'],
   ['reports', 'Reportes', 'dashboard'],
+  ['notifications', 'Notificaciones', 'audit'],
 ];
 
 const adminNav: Array<[PageId, string, string]> = [
@@ -40,6 +42,8 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const isAdmin = session.role === 'admin';
+  const canManageNotifications =
+    isAdmin || Boolean(session.permissions.can_manage_notifications);
   const name =
     [session.first_name, session.last_name].filter(Boolean).join(' ') ||
     session.email ||
@@ -56,7 +60,7 @@ export function AdminShell({
         </div>
         <nav aria-label="Navegación principal">
           <p className="nav-label">Operación</p>
-          {mainNav.map(([id, label, icon]) => (
+          {mainNav.filter(([id]) => id !== 'notifications' || canManageNotifications).map(([id, label, icon]) => (
             <button
               type="button"
               key={id}

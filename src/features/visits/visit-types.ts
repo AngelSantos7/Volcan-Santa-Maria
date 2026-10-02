@@ -70,6 +70,12 @@ export type CreateGroupVisitInput = {
   hasLocalGuide: boolean;
   guideName: string | null;
   recommendationsAccepted: boolean;
+  minors: Array<{
+    fullName: string;
+    age: number;
+    sex: 'male' | 'female';
+    relationship: string;
+  }>;
 };
 
 export type VisitHistoryItem = {
@@ -98,4 +104,15 @@ export type VisitHistoryMember = {
   memberRole: GroupVisitMemberRole;
   memberStatus: VisitMemberStatus;
   checkedOutAt: string | null;
+};
+
+export type VisitMinor = {
+  id: string;
+  fullName: string;
+  age: number;
+  sex: 'male' | 'female';
+  relationship: string;
+  responsibleMemberId: string;
+  responsibleName: string;
+  operationalStatus: VisitMemberStatus;
 };

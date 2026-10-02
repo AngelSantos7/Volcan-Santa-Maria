@@ -9,6 +9,7 @@ import { StaffPage } from './pages/StaffPage';
 import { PermissionsPage } from './pages/PermissionsPage';
 import { AuditPage } from './pages/AuditPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { getAdminSession } from './services/admin-service';
 import { supabase } from './lib/supabase';
 import type { AdminSession } from './types';
@@ -181,6 +182,8 @@ export default function App() {
     canView || Boolean(adminSession.permissions.can_confirm_returns);
   const canReports =
     isAdmin || Boolean(adminSession.permissions.can_export_reports);
+  const canNotifications =
+    isAdmin || Boolean(adminSession.permissions.can_manage_notifications);
   let content;
   if (page === 'dashboard')
     content = canView ? (
@@ -231,6 +234,12 @@ export default function App() {
         detail="No tiene autorización para generar reportes."
         signOut={signOut}
       />
+    );
+  else if (page === 'notifications')
+    content = canNotifications ? (
+      <NotificationsPage />
+    ) : (
+      <AccessMessage title="Permiso requerido" detail="No tiene autorización para gestionar notificaciones." signOut={signOut} />
     );
   else if (!isAdmin)
     content = (

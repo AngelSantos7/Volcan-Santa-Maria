@@ -17,11 +17,13 @@ import {
   startEarlyReturn,
   startGroupVisit,
   withdrawFromGroup,
+  getVisitMinors,
 } from './visit-service';
 import type {
   EarlyReturnReason,
   GroupVisitDetails,
   GroupVisitParticipant,
+  VisitMinor,
 } from './visit-types';
 import { SlideToStart } from './SlideToStart';
 
@@ -75,6 +77,14 @@ function participantName(participant: GroupVisitParticipant): string {
   return `${participant.firstName} ${participant.lastName}`.trim();
 }
 
+function minorRelationshipLabel(
+  relationship: string,
+  translate: (key: string) => string
+): string {
+  if (relationship.startsWith('other:')) return relationship.slice(6);
+  return translate(`visits.minors.relationships.${relationship}`);
+}
+
 export function GroupVisitScreen({
   currentUserId,
   details,
@@ -87,6 +97,7 @@ export function GroupVisitScreen({
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [minors, setMinors] = useState<VisitMinor[]>([]);
   const [earlyReturnTarget, setEarlyReturnTarget] =
     useState<EarlyReturnTarget | null>(null);
   const [pendingConfirmation, setPendingConfirmation] =
@@ -96,6 +107,17 @@ export function GroupVisitScreen({
     const interval = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(interval);
   }, []);
+  useEffect(() => {
+    let active = true;
+    void getVisitMinors(details.visitId)
+      .then((rows) => {
+        if (active) setMinors(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [details.visitId]);
   const language = getAppLanguage(i18n.resolvedLanguage);
   const routeName =
     language === 'es' ? details.routeNameEs : details.routeNameEn;
@@ -485,6 +507,46 @@ export function GroupVisitScreen({
           })}
         </ul>
       </section>
+
+      {minors.length > 0 && (
+        <section
+          className="participants-section"
+          aria-labelledby="minors-title"
+        >
+          <div className="participants-heading">
+            <h3 id="minors-title">
+              {language === 'es'
+                ? 'Menores acompañantes'
+                : 'Accompanying minors'}
+            </h3>
+            <span>{minors.length}</span>
+          </div>
+          <ul className="participants-list">
+            {minors.map((minor) => (
+              <li key={minor.id}>
+                <div className="participant-details">
+                  <div className="participant-name">
+                    <span>{minor.fullName}</span>
+                    <strong>
+                      {language === 'es'
+                        ? 'Menor acompañado'
+                        : 'Accompanied minor'}
+                    </strong>
+                  </div>
+                  <small>
+                    {minor.age} {language === 'es' ? 'años' : 'years'} ·{' '}
+                    {minorRelationshipLabel(minor.relationship, t)}
+                  </small>
+                  <small>
+                    {language === 'es' ? 'Responsable' : 'Responsible'}:{' '}
+                    {minor.responsibleName}
+                  </small>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {details.status === 'in_progress' && (
         <div className="future-actions ascent-route-actions">

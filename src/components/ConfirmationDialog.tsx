@@ -5,6 +5,7 @@ type ConfirmationDialogProps = {
   open: boolean;
   message: string;
   confirmLabel: string;
+  cancelLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -14,6 +15,7 @@ export function ConfirmationDialog({
   open,
   message,
   confirmLabel,
+  cancelLabel,
   danger = false,
   onConfirm,
   onCancel,
@@ -58,7 +60,7 @@ export function ConfirmationDialog({
         <p id={descriptionId}>{message}</p>
         <div className="dialog-actions">
           <button className="secondary-button" type="button" onClick={onCancel}>
-            {t('common.cancel')}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             ref={confirmButtonRef}

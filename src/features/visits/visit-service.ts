@@ -11,6 +11,7 @@ import type {
   VisitMemberStatus,
   VisitType,
   VisitStartMode,
+  VisitMinor,
 } from './visit-types';
 
 type ActiveVisitRow = {
@@ -88,6 +89,33 @@ function firstRow<Row>(data: unknown): Row | null {
   return Array.isArray(data) && data.length > 0 ? (data[0] as Row) : null;
 }
 
+export async function getVisitMinors(visitId: string): Promise<VisitMinor[]> {
+  const { data, error } = await supabase.rpc('get_visit_minors', {
+    p_visit_id: visitId,
+  });
+  if (error) throw error;
+  return (
+    (data ?? []) as Array<{
+      id: string;
+      full_name: string;
+      age: number;
+      sex: 'male' | 'female';
+      relationship: string;
+      responsible_member_id: string;
+      responsible_name: string;
+      operational_status: VisitMinor['operationalStatus'];
+    }>
+  ).map((row) => ({
+    id: row.id,
+    fullName: row.full_name,
+    age: row.age,
+    sex: row.sex,
+    relationship: row.relationship,
+    responsibleMemberId: row.responsible_member_id,
+    responsibleName: row.responsible_name,
+    operationalStatus: row.operational_status,
+  }));
+}
 function mapParticipant(row: ParticipantRow): GroupVisitParticipant {
   return {
     userId: row.user_id,
@@ -152,7 +180,7 @@ export async function getGroupVisitDetails(
 export async function createGroupVisit(
   input: CreateGroupVisitInput
 ): Promise<string> {
-  const { data, error } = await supabase.rpc('create_group_visit', {
+  const { data, error } = await supabase.rpc('create_group_visit_with_minors', {
     p_visit_type: input.visitType,
     p_start_mode: input.startMode,
     p_planned_start_at: input.plannedStartAt,
@@ -161,6 +189,12 @@ export async function createGroupVisit(
     p_guide_name: input.guideName,
     p_terms_accepted: true,
     p_recommendations_accepted: input.recommendationsAccepted,
+    p_minors: input.minors.map((minor) => ({
+      full_name: minor.fullName,
+      age: minor.age,
+      sex: minor.sex,
+      relationship: minor.relationship,
+    })),
   });
 
   if (error) throw error;

@@ -9,6 +9,7 @@ export type PermissionKey =
   | 'can_register_walk_in_visitors'
   | 'can_export_reports'
   | 'can_manage_announcements'
+  | 'can_manage_notifications'
   | 'can_manage_route'
   | 'can_manage_users'
   | 'can_manage_staff';
@@ -26,6 +27,9 @@ export interface AdminSession {
 }
 
 export interface DashboardStats {
+  adults_count: number;
+  minors_count: number;
+  total_visitors: number;
   visitors_registered: number;
   entries_registered: number;
   exits_registered: number;
@@ -207,6 +211,8 @@ export interface AscentMemberRow {
   member_status: string;
   checked_out_at: string | null;
   finalized_by_administration: boolean;
+  is_minor: boolean;
+  responsible_name: string | null;
 }
 
 export interface StaffRow {
@@ -237,4 +243,24 @@ export interface AuditRow {
   target_type: string;
   target_id: string | null;
   metadata: Record<string, unknown>;
+}
+
+export type NotificationPriority = 'info' | 'caution' | 'urgent';
+export type NotificationStatus = 'draft' | 'scheduled' | 'published' | 'expired' | 'cancelled';
+export type NotificationAudience = 'all_users' | 'in_progress' | 'planned' | 'specific_visit' | 'specific_user';
+
+export interface NotificationRow {
+  id: string;
+  title_es: string;
+  body_es: string;
+  title_en: string | null;
+  body_en: string | null;
+  priority: NotificationPriority;
+  status: NotificationStatus;
+  audience: NotificationAudience;
+  image_path: string | null;
+  scheduled_at: string | null;
+  published_at: string | null;
+  expires_at: string | null;
+  created_at: string;
 }

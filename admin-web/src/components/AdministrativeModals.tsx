@@ -137,6 +137,7 @@ interface VisitorDraft {
   lastName: string;
   nationality: CountryCode;
   dateOfBirth: string;
+  sex: 'male' | 'female';
   phone: PhoneValue;
   alternatePhone: PhoneValue;
   documentType: 'dpi' | 'passport' | 'other';
@@ -152,6 +153,7 @@ const blankVisitorDraft = (): VisitorDraft => ({
   lastName: '',
   nationality: 'GT',
   dateOfBirth: '',
+  sex: 'male',
   phone: emptyPhone(),
   alternatePhone: emptyPhone(),
   documentType: 'dpi',
@@ -254,6 +256,7 @@ export function VisitorRegistrationModal({
         lastName: draft.lastName,
         nationalityCountryCode: draft.nationality,
         dateOfBirth: draft.dateOfBirth,
+        sex: draft.sex,
         phone: formatted[0] ?? '',
         alternatePhone: formatted[1] ?? '',
         documentType: draft.documentType,
@@ -344,6 +347,13 @@ export function VisitorRegistrationModal({
             max={today}
             disabled={saving}
           />
+          <label>
+            Sexo
+            <select value={draft.sex} onChange={(event) => setDraft({ ...draft, sex: event.target.value as 'male' | 'female' })} required>
+              <option value="male">Masculino</option>
+              <option value="female">Femenino</option>
+            </select>
+          </label>
           <PhoneField
             label="Teléfono propio (opcional)"
             value={draft.phone}
@@ -896,12 +906,14 @@ export function AscentDetailsModal({
               <div key={member.user_id}>
                 <div>
                   <strong>{member.visitor_name}</strong>
+                  {member.is_minor && <span className="provenance-badge">Menor acompañado</span>}
                   <span>
                     {member.member_role === 'leader'
                       ? 'Organizador'
                       : 'Integrante'}{' '}
                     · {member.member_status}
                   </span>
+                  {member.is_minor && <span>Responsable: {member.responsible_name}</span>}
                 </div>
                 <div className="provenance-row">
                   {member.finalized_by_administration && (
@@ -916,6 +928,7 @@ export function AscentDetailsModal({
                   )}
                 </div>
                 {canConfirmReturns &&
+                  !member.is_minor &&
                   ascent.visit_status === 'in_progress' &&
                   ['active', 'returning_early'].includes(
                     member.member_status

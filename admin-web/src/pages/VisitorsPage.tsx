@@ -306,6 +306,7 @@ function VisitorDrawer({
 }
 
 export function VisitorsPage({ session }: { session: AdminSession }) {
+  const [referenceTime] = useState(() => Date.now());
   const canView =
     session.role === 'admin' || Boolean(session.permissions.can_view_visitors);
   const [rows, setRows] = useState<VisitorRow[]>([]);
@@ -490,7 +491,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                             : 'Individual'}
                         </td>
                         <td>
-                          <StatusBadge value={row.member_status} />
+                          <StatusBadge value={row.visit_status === 'in_progress' && row.started_at && ['active', 'returning_early'].includes(row.member_status) ? row.member_status : row.visit_status === 'forming' ? (row.planned_start_at && Date.parse(row.planned_start_at) > referenceTime ? 'scheduled_future' : 'in_preparation') : 'no_active_ascent'} />
                         </td>
                         <td>
                           {formatDateTime(

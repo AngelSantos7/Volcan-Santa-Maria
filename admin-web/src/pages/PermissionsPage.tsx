@@ -54,6 +54,11 @@ const permissionLabels: Array<[PermissionKey, string, string]> = [
     'Gestionar avisos',
     'Reservado para la siguiente fase.',
   ],
+  [
+    'can_manage_notifications',
+    'Gestionar notificaciones',
+    'Permite crear, programar y publicar mensajes dirigidos.',
+  ],
   ['can_manage_route', 'Gestionar ruta', 'Reservado para la siguiente fase.'],
   [
     'can_manage_users',

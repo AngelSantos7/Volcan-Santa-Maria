@@ -78,9 +78,6 @@ export function UserMenu({
             </div>
           </div>
           <button type="button" role="menuitem" onClick={editProfile}>
-            {t('auth.myProfile')}
-          </button>
-          <button type="button" role="menuitem" onClick={editProfile}>
             {t('auth.editProfile')}
           </button>
           <hr />

@@ -27,18 +27,70 @@ const DEFAULT_STYLE_URL = SATELLITE_STYLE_URL ?? MAP_STYLE_URL;
 const ROUTE_SOURCE_ID = 'summit-route-path';
 const ROUTE_CASING_LAYER_ID = 'summit-route-path-casing';
 const ROUTE_LAYER_ID = 'summit-route-path-line';
+const ACCURACY_SOURCE_ID = 'user-location-accuracy';
+const ACCURACY_FILL_LAYER_ID = 'user-location-accuracy-fill';
+const ACCURACY_LINE_LAYER_ID = 'user-location-accuracy-line';
 const VOLCANO_CENTER: [number, number] = [-91.552, 14.757];
 const INITIAL_ZOOM = 13;
 const VOLCANO_ALTITUDE_M = 3745;
 
 type MapSelection =
-  { kind: 'summit' } | { kind: 'checkpoint'; checkpointId: string } | null;
+  | { kind: 'start' }
+  | { kind: 'summit' }
+  | { kind: 'checkpoint'; checkpointId: string }
+  | null;
 
 type RouteMapProps = {
   route: RouteContent;
 };
 
 type BaseMap = 'map' | 'satellite';
+type LivePosition = { longitude: number; latitude: number; accuracy: number };
+
+function createAccuracyCircle(position: LivePosition): GeoJSON {
+  const points = 64;
+  const latitudeRadians = (position.latitude * Math.PI) / 180;
+  const latitudeDegrees = position.accuracy / 111_320;
+  const longitudeDegrees =
+    position.accuracy / (111_320 * Math.max(Math.cos(latitudeRadians), 0.01));
+  const coordinates = Array.from({ length: points + 1 }, (_, index) => {
+    const angle = (index / points) * Math.PI * 2;
+    return [
+      position.longitude + Math.cos(angle) * longitudeDegrees,
+      position.latitude + Math.sin(angle) * latitudeDegrees,
+    ];
+  });
+  return {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'Polygon', coordinates: [coordinates] },
+  };
+}
+
+function syncAccuracyLayer(map: Map, accuracyGeoJson: GeoJSON | null): void {
+  if (!accuracyGeoJson) return;
+  const source = map.getSource<GeoJSONSource>(ACCURACY_SOURCE_ID);
+  if (source) void source.setData(accuracyGeoJson);
+  else
+    map.addSource(ACCURACY_SOURCE_ID, {
+      type: 'geojson',
+      data: accuracyGeoJson,
+    });
+  if (!map.getLayer(ACCURACY_FILL_LAYER_ID))
+    map.addLayer({
+      id: ACCURACY_FILL_LAYER_ID,
+      type: 'fill',
+      source: ACCURACY_SOURCE_ID,
+      paint: { 'fill-color': '#2d9cdb', 'fill-opacity': 0.16 },
+    });
+  if (!map.getLayer(ACCURACY_LINE_LAYER_ID))
+    map.addLayer({
+      id: ACCURACY_LINE_LAYER_ID,
+      type: 'line',
+      source: ACCURACY_SOURCE_ID,
+      paint: { 'line-color': '#1685c1', 'line-width': 2, 'line-opacity': 0.75 },
+    });
+}
 
 function hasLineGeometry(geoJson: GeoJSON): boolean {
   switch (geoJson.type) {
@@ -164,6 +216,16 @@ export function RouteMap({ route }: RouteMapProps) {
   const [styleSwitching, setStyleSwitching] = useState(false);
   const [satelliteLoadFailed, setSatelliteLoadFailed] = useState(false);
   const [selection, setSelection] = useState<MapSelection>(null);
+  const [locationStatus, setLocationStatus] = useState<
+    'idle' | 'locating' | 'active' | 'error'
+  >('idle');
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [livePosition, setLivePosition] = useState<LivePosition | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const userMarkerRef = useRef<Marker | null>(null);
+  const latestPositionRef = useRef<LivePosition | null>(null);
+  const accuracyGeoJsonRef = useRef<GeoJSON | null>(null);
+  const centerOnFirstPositionRef = useRef(true);
   const [failedMediaIds, setFailedMediaIds] = useState<Set<string>>(
     () => new Set()
   );
@@ -242,6 +304,7 @@ export function RouteMap({ route }: RouteMapProps) {
         const appliedBaseMap = pendingBaseMapRef.current ?? baseMapRef.current;
         baseMapRef.current = appliedBaseMap;
         syncRouteLayers(map, routeGeoJsonRef.current, appliedBaseMap);
+        syncAccuracyLayer(map, accuracyGeoJsonRef.current);
 
         if (fallbackInProgressRef.current && appliedBaseMap === 'map') {
           fallbackInProgressRef.current = false;
@@ -297,6 +360,15 @@ export function RouteMap({ route }: RouteMapProps) {
 
     return () => {
       active = false;
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      latestPositionRef.current = null;
+      accuracyGeoJsonRef.current = null;
+      centerOnFirstPositionRef.current = true;
       mapRef.current = null;
       fallbackInProgressRef.current = false;
       map?.remove();
@@ -328,9 +400,24 @@ export function RouteMap({ route }: RouteMapProps) {
     });
     markers.push(
       new Marker({ element: summitButton, anchor: 'bottom' })
-        .setLngLat(VOLCANO_CENTER)
+        .setLngLat(route.summitCoordinate ?? VOLCANO_CENTER)
         .addTo(map)
     );
+    if (route.startCoordinate) {
+      const startButton = document.createElement('button');
+      startButton.type = 'button';
+      startButton.className = 'route-map-marker route-start-marker';
+      startButton.setAttribute('aria-label', t('routes.map.startMarkerLabel'));
+      startButton.textContent = '●';
+      startButton.addEventListener('click', () =>
+        setSelection({ kind: 'start' })
+      );
+      markers.push(
+        new Marker({ element: startButton, anchor: 'bottom' })
+          .setLngLat(route.startCoordinate)
+          .addTo(map)
+      );
+    }
 
     locatedCheckpoints.forEach((checkpoint) => {
       if (checkpoint.latitude === null || checkpoint.longitude === null) return;
@@ -361,7 +448,14 @@ export function RouteMap({ route }: RouteMapProps) {
     return () => {
       markers.forEach((marker) => marker.remove());
     };
-  }, [language, locatedCheckpoints, mapLoaded, t]);
+  }, [
+    language,
+    locatedCheckpoints,
+    mapLoaded,
+    route.startCoordinate,
+    route.summitCoordinate,
+    t,
+  ]);
 
   const recenterMap = () => {
     mapRef.current?.easeTo({
@@ -369,6 +463,81 @@ export function RouteMap({ route }: RouteMapProps) {
       zoom: INITIAL_ZOOM,
       duration: 700,
     });
+  };
+
+  const centerOnPosition = (position: LivePosition) => {
+    mapRef.current?.easeTo({
+      center: [position.longitude, position.latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 15),
+      duration: 700,
+    });
+  };
+
+  const activateLocation = () => {
+    const currentPosition = latestPositionRef.current;
+    if (watchIdRef.current !== null) {
+      if (currentPosition) centerOnPosition(currentPosition);
+      return;
+    }
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setLocationStatus('error');
+      setLocationError(t('routes.map.locationUnavailable'));
+      return;
+    }
+    setLocationStatus('locating');
+    setLocationError(null);
+    centerOnFirstPositionRef.current = true;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      ({ coords }) => {
+        const position = {
+          longitude: coords.longitude,
+          latitude: coords.latitude,
+          accuracy: coords.accuracy,
+        };
+        latestPositionRef.current = position;
+        const accuracyGeoJson = createAccuracyCircle(position);
+        accuracyGeoJsonRef.current = accuracyGeoJson;
+        setLivePosition(position);
+        setLocationStatus('active');
+        setLocationError(null);
+        const map = mapRef.current;
+        if (!map) return;
+        if (!userMarkerRef.current) {
+          const markerElement = document.createElement('div');
+          markerElement.className = 'route-user-location-marker';
+          markerElement.setAttribute('role', 'img');
+          markerElement.setAttribute('aria-label', t('routes.map.youAreHere'));
+          markerElement.title = t('routes.map.youAreHere');
+          userMarkerRef.current = new Marker({ element: markerElement })
+            .setLngLat([position.longitude, position.latitude])
+            .addTo(map);
+        } else
+          userMarkerRef.current.setLngLat([
+            position.longitude,
+            position.latitude,
+          ]);
+        if (map.isStyleLoaded()) syncAccuracyLayer(map, accuracyGeoJson);
+        if (centerOnFirstPositionRef.current) {
+          centerOnFirstPositionRef.current = false;
+          centerOnPosition(position);
+        }
+      },
+      (error) => {
+        setLocationStatus('error');
+        const key =
+          error.code === error.PERMISSION_DENIED
+            ? 'permissionDenied'
+            : error.code === error.POSITION_UNAVAILABLE
+              ? 'positionUnavailable'
+              : 'timeout';
+        setLocationError(t(`routes.map.locationErrors.${key}`));
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 }
+    );
   };
 
   const changeBaseMap = (nextBaseMap: BaseMap) => {
@@ -506,6 +675,18 @@ export function RouteMap({ route }: RouteMapProps) {
           </button>
         )}
 
+        {mapLoaded && (
+          <button
+            className="route-map-my-location"
+            type="button"
+            onClick={activateLocation}
+            disabled={locationStatus === 'locating'}
+          >
+            <span aria-hidden="true">●</span>
+            {t('routes.map.myLocation')}
+          </button>
+        )}
+
         {selection && mapLoaded && (
           <aside
             className="route-map-details"
@@ -533,6 +714,14 @@ export function RouteMap({ route }: RouteMapProps) {
                 <span className="route-checkpoint-altitude">
                   {t('routes.altitude', { altitude: VOLCANO_ALTITUDE_M })}
                 </span>
+              </>
+            )}
+            {selection.kind === 'start' && (
+              <>
+                <span className="route-checkpoint-type">
+                  {t('routes.map.routeStart')}
+                </span>
+                <h3>{t('routes.map.startMarkerLabel')}</h3>
               </>
             )}
 
@@ -572,6 +761,50 @@ export function RouteMap({ route }: RouteMapProps) {
           </aside>
         )}
       </div>
+
+      <div className="route-location-status" aria-live="polite">
+        {locationStatus === 'locating' && <p>{t('routes.map.locating')}</p>}
+        {livePosition && (
+          <p>
+            {t('routes.map.accuracy', {
+              accuracy: Math.round(livePosition.accuracy),
+            })}
+          </p>
+        )}
+        {locationError && (
+          <p className="route-location-error">{locationError}</p>
+        )}
+        <small>{t('routes.map.locationPrivacy')}</small>
+      </div>
+
+      <section className="route-stats-card">
+        <h3>{t('routes.stats.title')}</h3>
+        <div>
+          <strong>{route.distanceKm?.toFixed(1) ?? '6.1'} km</strong>
+          <span>{t('routes.stats.distance')}</span>
+        </div>
+        <div>
+          <strong>+{Math.round(route.elevationGainM ?? 934)} m</strong>
+          <span>{t('routes.stats.gain')}</span>
+        </div>
+        <div>
+          <strong>
+            {Math.floor((route.estimatedDurationMinutes ?? 185) / 60)} h{' '}
+            {String((route.estimatedDurationMinutes ?? 185) % 60).padStart(
+              2,
+              '0'
+            )}{' '}
+            min
+          </strong>
+          <span>{t('routes.stats.time')}</span>
+        </div>
+        <p>{t('routes.stats.disclaimer')}</p>
+      </section>
+      <details className="santiaguito-warning">
+        <summary>{t('routes.santiaguito.title')}</summary>
+        <p>{t('routes.santiaguito.body')}</p>
+        <small>{t('routes.santiaguito.source')}</small>
+      </details>
 
       {!routeGeoJson && (
         <p className="route-map-note">{t('routes.map.trackPending')}</p>

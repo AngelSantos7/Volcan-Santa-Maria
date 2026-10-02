@@ -11,11 +11,15 @@ import { useToast } from '../../components/toast-context';
 
 type GroupVisitsProps = {
   currentUserId: string;
+  currentUserName: string;
 };
 
 type VisitView = 'home' | 'create' | 'join' | 'route';
 
-export function GroupVisits({ currentUserId }: GroupVisitsProps) {
+export function GroupVisits({
+  currentUserId,
+  currentUserName,
+}: GroupVisitsProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [view, setView] = useState<VisitView>('home');
@@ -84,7 +88,11 @@ export function GroupVisits({ currentUserId }: GroupVisitsProps) {
 
   if (view === 'create') {
     return (
-      <CreateVisitForm onCreated={openVisit} onCancel={() => setView('home')} />
+      <CreateVisitForm
+        currentUserName={currentUserName}
+        onCreated={openVisit}
+        onCancel={() => setView('home')}
+      />
     );
   }
 

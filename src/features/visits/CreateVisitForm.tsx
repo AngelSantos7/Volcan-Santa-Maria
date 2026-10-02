@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../components/DatePicker';
+import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { ReturnTimePicker } from '../../components/ReturnTimePicker';
 import { AnnouncementBanner } from '../announcements/AnnouncementBanner';
 import { RouteRecommendations } from '../routes/components/RouteRecommendations';
@@ -12,11 +13,40 @@ import { createGroupVisit } from './visit-service';
 import type { VisitStartMode, VisitType } from './visit-types';
 
 type CreateVisitFormProps = {
+  currentUserName: string;
   onCreated: (visitId: string) => Promise<void>;
   onCancel: () => void;
 };
 
 const VISIT_TYPES: VisitType[] = ['day_hike', 'expedition_camping'];
+const MINOR_RELATIONSHIPS = [
+  'child',
+  'sibling',
+  'niece_nephew',
+  'grandchild',
+  'cousin',
+  'other',
+] as const;
+type MinorRelationship = (typeof MINOR_RELATIONSHIPS)[number];
+type MinorDraft = {
+  id: string;
+  fullName: string;
+  age: string;
+  sex: 'male' | 'female';
+  relationship: MinorRelationship | '';
+  relationshipDetail: string;
+};
+
+function emptyMinor(): MinorDraft {
+  return {
+    id: crypto.randomUUID(),
+    fullName: '',
+    age: '',
+    sex: 'male',
+    relationship: '',
+    relationshipDetail: '',
+  };
+}
 
 type CreateVisitField =
   | 'startMode'
@@ -111,22 +141,47 @@ function focusFirstInvalidField(
   }
 }
 
-export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
+export function CreateVisitForm({
+  currentUserName,
+  onCreated,
+  onCancel,
+}: CreateVisitFormProps) {
   const { t } = useTranslation();
   const [startMode, setStartMode] = useState<VisitStartMode>('now');
   const [visitType, setVisitType] = useState<VisitType>('day_hike');
-  const [startDate, setStartDate] = useState(getLocalDateValue);
+  const [initialDate] = useState(getLocalDateValue);
+  const [startDate, setStartDate] = useState(initialDate);
   const [startTime, setStartTime] = useState('');
-  const [returnDate, setReturnDate] = useState(getLocalDateValue);
+  const [returnDate, setReturnDate] = useState(initialDate);
   const [returnTime, setReturnTime] = useState('');
   const [hasLocalGuide, setHasLocalGuide] = useState(false);
   const [guideName, setGuideName] = useState('');
   const [recommendationsAccepted, setRecommendationsAccepted] = useState(false);
+  const [travelsWithMinors, setTravelsWithMinors] = useState(false);
+  const [minors, setMinors] = useState<MinorDraft[]>([]);
+  const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false);
   const [recommendationsOpen, setRecommendationsOpen] = useState(false);
   const [nowReference, setNowReference] = useState(getGuatemalaLocalTime);
   const [fieldErrors, setFieldErrors] = useState<CreateVisitErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isDirty =
+    startMode !== 'now' ||
+    visitType !== 'day_hike' ||
+    startDate !== initialDate ||
+    startTime !== '' ||
+    returnDate !== initialDate ||
+    returnTime !== '' ||
+    hasLocalGuide ||
+    guideName !== '' ||
+    recommendationsAccepted ||
+    travelsWithMinors ||
+    minors.length > 0;
+  const requestCancel = () => {
+    if (isDirty) setDiscardConfirmationOpen(true);
+    else onCancel();
+  };
 
   useEffect(() => {
     const interval = window.setInterval(
@@ -303,6 +358,23 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
         'visits.validation.acceptRecommendations'
       );
     }
+    if (
+      travelsWithMinors &&
+      (minors.length === 0 ||
+        minors.some(
+          (minor) =>
+            !normalizeSpaces(minor.fullName) ||
+            !minor.relationship ||
+            (minor.relationship === 'other' &&
+              !normalizeSpaces(minor.relationshipDetail)) ||
+            !/^\d+$/.test(minor.age) ||
+            Number(minor.age) < 0 ||
+            Number(minor.age) > 17
+        ))
+    ) {
+      setSubmitError(t('visits.minors.validation'));
+      return;
+    }
 
     setFieldErrors(errors);
 
@@ -326,6 +398,17 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
         hasLocalGuide,
         guideName: hasLocalGuide ? normalizedGuideName : null,
         recommendationsAccepted,
+        minors: travelsWithMinors
+          ? minors.map((minor) => ({
+              fullName: normalizeSpaces(minor.fullName),
+              age: Number(minor.age),
+              sex: minor.sex,
+              relationship:
+                minor.relationship === 'other'
+                  ? `other:${normalizeSpaces(minor.relationshipDetail)}`
+                  : minor.relationship,
+            }))
+          : [],
       });
       await onCreated(visitId);
     } catch (createError) {
@@ -372,7 +455,7 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
         <button
           className="text-button"
           type="button"
-          onClick={onCancel}
+          onClick={requestCancel}
           disabled={submitting}
         >
           {t('visits.back')}
@@ -657,6 +740,181 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
           </label>
         )}
 
+        <section
+          className="visit-minors-section"
+          aria-labelledby="visit-minors-title"
+        >
+          <div className="switch-row">
+            <span id="visit-minors-title">{t('visits.minors.question')}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={travelsWithMinors}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setTravelsWithMinors(enabled);
+                if (enabled && minors.length === 0) setMinors([emptyMinor()]);
+              }}
+              disabled={submitting}
+            />
+          </div>
+          {travelsWithMinors && (
+            <div className="minor-list">
+              <p className="muted">{t('visits.minors.responsibleHelp')}</p>
+              {minors.map((minor, index) => (
+                <fieldset key={minor.id} className="minor-card">
+                  <legend>
+                    {t('visits.minors.item', { number: index + 1 })}
+                  </legend>
+                  <label>
+                    {t('visits.minors.fullName')}
+                    <input
+                      value={minor.fullName}
+                      onChange={(event) =>
+                        setMinors((current) =>
+                          current.map((item) =>
+                            item.id === minor.id
+                              ? { ...item, fullName: event.target.value }
+                              : item
+                          )
+                        )
+                      }
+                      required
+                      maxLength={160}
+                    />
+                  </label>
+                  <div className="form-grid">
+                    <label>
+                      {t('visits.minors.age')}
+                      <input
+                        type="number"
+                        min="0"
+                        max="17"
+                        value={minor.age}
+                        onChange={(event) =>
+                          setMinors((current) =>
+                            current.map((item) =>
+                              item.id === minor.id
+                                ? { ...item, age: event.target.value }
+                                : item
+                            )
+                          )
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      {t('profile.sex')}
+                      <select
+                        value={minor.sex}
+                        onChange={(event) =>
+                          setMinors((current) =>
+                            current.map((item) =>
+                              item.id === minor.id
+                                ? {
+                                    ...item,
+                                    sex: event.target.value as
+                                      'male' | 'female',
+                                  }
+                                : item
+                            )
+                          )
+                        }
+                      >
+                        <option value="male">
+                          {t('profile.sexOptions.male')}
+                        </option>
+                        <option value="female">
+                          {t('profile.sexOptions.female')}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    {t('visits.minors.relationship')}
+                    <select
+                      value={minor.relationship}
+                      onChange={(event) =>
+                        setMinors((current) =>
+                          current.map((item) =>
+                            item.id === minor.id
+                              ? {
+                                  ...item,
+                                  relationship: event.target.value as
+                                    MinorRelationship | '',
+                                  relationshipDetail:
+                                    event.target.value === 'other'
+                                      ? item.relationshipDetail
+                                      : '',
+                                }
+                              : item
+                          )
+                        )
+                      }
+                      required
+                    >
+                      <option value="">
+                        {t('visits.minors.selectRelationship')}
+                      </option>
+                      {MINOR_RELATIONSHIPS.map((relationship) => (
+                        <option key={relationship} value={relationship}>
+                          {t(`visits.minors.relationships.${relationship}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {minor.relationship === 'other' && (
+                    <label>
+                      {t('visits.minors.relationshipDetail')}
+                      <input
+                        value={minor.relationshipDetail}
+                        onChange={(event) =>
+                          setMinors((current) =>
+                            current.map((item) =>
+                              item.id === minor.id
+                                ? {
+                                    ...item,
+                                    relationshipDetail: event.target.value,
+                                  }
+                                : item
+                            )
+                          )
+                        }
+                        required
+                        maxLength={72}
+                      />
+                    </label>
+                  )}
+                  <p className="minor-responsible">
+                    <span>{t('visits.minors.responsible')}</span>
+                    <strong>{currentUserName}</strong>
+                  </p>
+                  <button
+                    className="text-button"
+                    type="button"
+                    onClick={() =>
+                      setMinors((current) =>
+                        current.filter((item) => item.id !== minor.id)
+                      )
+                    }
+                  >
+                    {t('visits.minors.remove')}
+                  </button>
+                </fieldset>
+              ))}
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() =>
+                  setMinors((current) => [...current, emptyMinor()])
+                }
+              >
+                {t('visits.minors.add')}
+              </button>
+            </div>
+          )}
+        </section>
+
         <div
           className="recommendations-consent"
           data-field-name="recommendationsAccepted"
@@ -749,6 +1007,15 @@ export function CreateVisitForm({ onCreated, onCancel }: CreateVisitFormProps) {
           </section>
         </div>
       )}
+      <ConfirmationDialog
+        open={discardConfirmationOpen}
+        message={t('visits.create.cancelMessage')}
+        confirmLabel={t('visits.create.discard')}
+        cancelLabel={t('visits.create.continueEditing')}
+        danger
+        onConfirm={onCancel}
+        onCancel={() => setDiscardConfirmationOpen(false)}
+      />
     </section>
   );
 }

@@ -1,0 +1,18 @@
+{
+  "source": "ruta-santa-maria.gpx",
+  "pointCount": 959,
+  "distanceKm": 6.062,
+  "elevationGainM": 934,
+  "startElevationM": 2797,
+  "maxElevationM": 3703,
+  "durationMinutes": 186,
+  "direction": "one_way_ascent",
+  "start": [
+    -91.553217,
+    14.773321
+  ],
+  "summit": [
+    -91.551552,
+    14.757406
+  ]
+}

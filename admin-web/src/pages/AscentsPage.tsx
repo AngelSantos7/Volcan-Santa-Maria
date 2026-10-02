@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AscentCreationModal,
   AscentDetailsModal,
@@ -32,18 +32,36 @@ export function AscentsPage({ session }: { session: AdminSession }) {
   const canConfirmReturns =
     session.role === 'admin' ||
     Boolean(session.permissions.can_confirm_returns);
+  const operationalStatus = (row: AscentRow) => {
+    if (row.visit_status !== 'forming') return row.visit_status;
+    if (!row.planned_start_at) return 'in_preparation';
+    const planned = new Date(row.planned_start_at); const today = new Date();
+    return planned.toDateString() === today.toDateString() ? 'scheduled_today' : planned > today ? 'scheduled_future' : 'in_preparation';
+  };
+  const visibleRows = useMemo(() => rows.filter((row) => {
+    const current = operationalStatus(row);
+    if (status === 'all') return true;
+    if (status === 'forming') return current === 'in_preparation';
+    if (status === 'scheduled') return current === 'scheduled_today' || current === 'scheduled_future';
+    return current === status;
+  }).toSorted((first, second) => {
+    const rank = (row: AscentRow) => { const current = operationalStatus(row); if (current === 'in_progress' && row.expected_return_at && Date.parse(row.expected_return_at) < Date.now()) return 0; return ({ in_progress: 1, in_preparation: 3, scheduled_today: 4, scheduled_future: 5, completed: 6, cancelled: 7 } as Record<string, number>)[current] ?? 8; };
+    const difference = rank(first) - rank(second); if (difference) return difference;
+    const date = (row: AscentRow) => Date.parse(row.visit_status === 'in_progress' ? row.expected_return_at ?? '' : row.planned_start_at ?? row.completed_at ?? '') || 0;
+    return date(first) - date(second);
+  }), [rows, status]);
   const load = useCallback(async () => {
     setState('loading');
     try {
-      setRows(await listAscents(status));
+      setRows(await listAscents('all'));
       setState('success');
     } catch {
       setState('error');
     }
-  }, [status]);
+  }, []);
   useEffect(() => {
     let current = true;
-    void listAscents(status)
+    void listAscents('all')
       .then((result) => {
         if (current) {
           setRows(result);
@@ -56,7 +74,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
     return () => {
       current = false;
     };
-  }, [status]);
+  }, []);
   async function start(row: AscentRow) {
     setMessage('');
     try {
@@ -78,14 +96,15 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           aria-label="Filtrar ascensos"
           value={status}
           onChange={(event) => {
-            setState('loading');
             setStatus(event.target.value);
           }}
         >
           <option value="all">Todos</option>
-          <option value="scheduled">Programados</option>
-          <option value="in_progress">En curso</option>
-          <option value="completed">Finalizados</option>
+          <option value="forming">En preparación</option>
+          <option value="scheduled">Planificados</option>
+          <option value="in_progress">En recorrido</option>
+          <option value="completed">Completados</option>
+          <option value="cancelled">Cancelados</option>
         </select>
         {canManage && (
           <button
@@ -107,7 +126,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           <LoadingState rows={6} />
         ) : state === 'error' ? (
           <ErrorState retry={() => void load()} />
-        ) : rows.length === 0 ? (
+        ) : visibleRows.length === 0 ? (
           <EmptyState
             title="Sin ascensos"
             detail="No hay ascensos en este estado."
@@ -132,7 +151,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.visit_id}>
                     <td>
                       <strong>{row.join_code}</strong>
@@ -146,7 +165,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
                     <td>{formatDateTime(row.started_at)}</td>
                     <td>{formatDateTime(row.expected_return_at)}</td>
                     <td>
-                      <StatusBadge value={row.visit_status} />
+                      <StatusBadge value={operationalStatus(row)} />
                     </td>
                     <td>
                       <div className="provenance-row">
@@ -199,7 +218,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
             setMessage(
               `Ascenso creado correctamente. Código: ${result.join_code}. Participantes: ${result.participant_count}. Creado por administración.`
             );
-            void listAscents(status)
+            void listAscents('all')
               .then((nextRows) => {
                 setRows(nextRows);
                 setSelected(

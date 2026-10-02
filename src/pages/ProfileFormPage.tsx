@@ -41,6 +41,7 @@ type ProfileField =
   | 'lastName'
   | 'avatar'
   | 'nationalityCountryCode'
+  | 'sex'
   | 'dateOfBirth'
   | 'phone'
   | 'documentType'
@@ -258,6 +259,9 @@ export function ProfileFormPage({
       errors.nationalityCountryCode = t(
         'profile.validation.nationalityRequired'
       );
+    }
+    if (!['male', 'female'].includes(form.sex)) {
+      errors.sex = t('profile.validation.sexRequired');
     }
 
     if (!form.dateOfBirth) {
@@ -643,6 +647,20 @@ export function ProfileFormPage({
                 disabled={submitting}
                 required
               />
+
+              <div className={`form-control${fieldErrors.sex ? ' has-error' : ''}`}>
+                <label htmlFor="sex">{t('profile.sex')}</label>
+                <select id="sex" name="sex" value={form.sex} onChange={(event) => {
+                  const value = event.target.value as TouristProfileData['sex'];
+                  setField('sex', value);
+                  updateVisibleFieldError('sex', value ? null : t('profile.validation.sexRequired'));
+                }} disabled={submitting} required aria-invalid={Boolean(fieldErrors.sex)}>
+                  <option value="">{t('profile.selectOption')}</option>
+                  <option value="male">{t('profile.sexOptions.male')}</option>
+                  <option value="female">{t('profile.sexOptions.female')}</option>
+                </select>
+                {fieldErrors.sex && <span className="field-error-message" role="alert">{fieldErrors.sex}</span>}
+              </div>
 
               <InternationalPhoneInput
                 id="phone"

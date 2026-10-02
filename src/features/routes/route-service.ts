@@ -127,7 +127,7 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
   if (!routeData) throw new Error('Active summit route was not returned');
 
   const route = routeData as RouteRow;
-  const [checkpointResult, mediaResult] = await Promise.all([
+  const [checkpointResult, mediaResult, staticRouteResult, metadataResult] = await Promise.all([
     supabase
       .from('route_checkpoints')
       .select(
@@ -142,6 +142,8 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
       )
       .eq('route_id', route.id)
       .order('sort_order', { ascending: true }),
+    fetch('/data/santa-maria-route.geojson').then((response) => response.ok ? response.json() as Promise<Record<string, unknown>> : null).catch(() => null),
+    fetch('/data/santa-maria-route-metadata.json').then((response) => response.ok ? response.json() as Promise<{ distanceKm: number; elevationGainM: number; durationMinutes: number; start: [number, number]; summit: [number, number] }> : null).catch(() => null),
   ]);
 
   if (checkpointResult.error) throw checkpointResult.error;
@@ -163,15 +165,17 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
     descriptionEs: route.description_es,
     descriptionEn: route.description_en,
     difficulty: route.difficulty,
-    distanceKm: route.distance_km,
-    estimatedDurationMinutes: route.estimated_duration_minutes,
-    elevationGainM: route.elevation_gain_m,
-    pathGeojson: route.path_geojson,
+    distanceKm: metadataResult?.distanceKm ?? route.distance_km,
+    estimatedDurationMinutes: metadataResult?.durationMinutes ?? route.estimated_duration_minutes,
+    elevationGainM: metadataResult?.elevationGainM ?? route.elevation_gain_m,
+    pathGeojson: staticRouteResult ?? route.path_geojson,
     checkpoints: ((checkpointResult.data ?? []) as CheckpointRow[]).map(
       mapCheckpoint
     ),
     media,
     mediaLoadFailed: mediaResult.error !== null,
+    startCoordinate: metadataResult?.start ?? null,
+    summitCoordinate: metadataResult?.summit ?? null,
   };
 
   if (!mediaResult.error) cacheRouteContent(content);

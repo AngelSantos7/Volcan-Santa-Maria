@@ -132,6 +132,7 @@ export async function registerWalkInVisitor(input: {
   lastName: string;
   nationalityCountryCode: string;
   dateOfBirth: string;
+  sex: 'male' | 'female';
   phone?: string;
   alternatePhone?: string;
   documentType: 'dpi' | 'passport' | 'other';
@@ -157,7 +158,13 @@ export async function registerWalkInVisitor(input: {
     p_emergency_relationship: input.emergencyRelationship,
     p_emergency_phone: input.emergencyPhone,
   });
-  return unwrap(data as RegisteredVisitor | null, error);
+  const visitor = unwrap(data as RegisteredVisitor | null, error);
+  const { error: sexError } = await supabase.rpc('staff_set_visitor_sex', {
+    p_user_id: visitor.visitor_id,
+    p_sex: input.sex,
+  });
+  if (sexError) throw new Error(sexError.message);
+  return visitor;
 }
 
 export async function createAdministrativeVisit(input: {
@@ -203,14 +210,14 @@ export async function registerAdministrativeReturn(input: {
   effectiveReturnAt?: string;
 }) {
   const rpc = input.group
-    ? supabase.rpc('staff_register_administrative_group_return_v2', {
+    ? supabase.rpc('staff_register_administrative_group_return', {
         p_visit_id: input.visitId,
         p_reason: input.reason,
         p_reason_detail: input.reasonDetail || null,
         p_notes: input.notes || null,
         p_effective_return_at: input.effectiveReturnAt || null,
       })
-    : supabase.rpc('staff_register_administrative_return_v2', {
+    : supabase.rpc('staff_register_administrative_return', {
         p_visit_id: input.visitId,
         p_user_id: input.visitorId,
         p_reason: input.reason,
@@ -220,6 +227,33 @@ export async function registerAdministrativeReturn(input: {
       });
   const { error } = await rpc;
   if (error) throw new Error(error.message);
+}
+
+export async function listNotifications() {
+  const { data, error } = await supabase.rpc('staff_list_notifications');
+  return unwrap(data as import('../types').NotificationRow[] | null, error);
+}
+
+export async function saveNotification(input: Record<string, unknown>) {
+  const { data, error } = await supabase.rpc('staff_save_notification', {
+    p_notification: input,
+  });
+  return unwrap(data as string | null, error);
+}
+
+export async function uploadNotificationImage(file: File): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('La imagen debe ser JPG, PNG o WebP.');
+  }
+  if (file.size > 5 * 1024 * 1024) throw new Error('La imagen no debe superar 5 MB.');
+  const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+  const path = `${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('notification-media').upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw new Error(error.message);
+  return path;
 }
 
 export async function generateVisitorReport(

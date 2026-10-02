@@ -22,6 +22,7 @@ export type AvatarIdentity = {
 };
 
 export type TouristProfileData = AvatarIdentity & {
+  sex: 'male' | 'female' | '';
   nationalityCountryCode: string;
   dateOfBirth: string;
   phone: string;
@@ -52,6 +53,7 @@ export function isTouristProfileComplete(profile: TouristProfileData): boolean {
 
   return Boolean(
     /^[A-Z]{2}$/.test(profile.nationalityCountryCode) &&
+    ['male', 'female'].includes(profile.sex) &&
     /^\+[1-9]\d{1,14}$/.test(profile.phone) &&
     ['dpi', 'passport', 'other'].includes(profile.documentType) &&
     documentNumber.length >= 3 &&

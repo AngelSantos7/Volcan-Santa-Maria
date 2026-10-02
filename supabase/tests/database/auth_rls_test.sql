@@ -164,7 +164,7 @@ select is(
   pg_temp.sqlstate_from(
     $$
       update public.profiles
-      set created_at = now()
+      set created_at = created_at + interval '1 day'
       where id = 'a1000000-0000-4000-8000-000000000001'::uuid
     $$
   ),

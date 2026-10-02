@@ -42,4 +42,6 @@ export type RouteContent = {
   checkpoints: RouteCheckpoint[];
   media: RouteMedia[];
   mediaLoadFailed: boolean;
+  startCoordinate: [number, number] | null;
+  summitCoordinate: [number, number] | null;
 };
