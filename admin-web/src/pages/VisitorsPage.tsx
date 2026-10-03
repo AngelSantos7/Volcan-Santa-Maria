@@ -275,25 +275,42 @@ function VisitorDrawer({
               ) : (
                 <div className="history-list">
                   {summary.history.slice(0, 6).map((item) => (
-                    <div key={String(item.visit_id)}>
-                      <StatusBadge value={String(item.member_status)} />
-                      <span>
-                        {String(item.join_code)} ·{' '}
-                        {formatDateTime(
-                          item.started_at ?? item.planned_start_at
+                    <article key={item.visit_id}>
+                      <div className="history-ascent-heading">
+                        <StatusBadge value={item.member_status} />
+                        <span>
+                          {item.join_code} ·{' '}
+                          {formatDateTime(
+                            item.started_at ?? item.planned_start_at
+                          )}
+                        </span>
+                        {item.creation_origin === 'administrative' && (
+                          <span className="provenance-badge">
+                            Creado por administración
+                          </span>
                         )}
-                      </span>
-                      {item.creation_origin === 'administrative' && (
-                        <span className="provenance-badge">
-                          Creado por administración
-                        </span>
+                        {item.finalized_by_administration && (
+                          <span className="provenance-badge">
+                            Finalizado por administración
+                          </span>
+                        )}
+                      </div>
+                      {item.minors.length > 0 && (
+                        <div className="history-minors">
+                          <strong>
+                            {item.minors.length} menor
+                            {item.minors.length === 1 ? '' : 'es'} acompañado
+                            {item.minors.length === 1 ? '' : 's'}
+                          </strong>
+                          {item.minors.map((minor) => (
+                            <span key={minor.id}>
+                              {minor.full_name} · {minor.age} años ·{' '}
+                              {minor.relationship}
+                            </span>
+                          ))}
+                        </div>
                       )}
-                      {item.finalized_by_administration && (
-                        <span className="provenance-badge">
-                          Finalizado por administración
-                        </span>
-                      )}
-                    </div>
+                    </article>
                   ))}
                 </div>
               )}
@@ -491,7 +508,23 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                             : 'Individual'}
                         </td>
                         <td>
-                          <StatusBadge value={row.visit_status === 'in_progress' && row.started_at && ['active', 'returning_early'].includes(row.member_status) ? row.member_status : row.visit_status === 'forming' ? (row.planned_start_at && Date.parse(row.planned_start_at) > referenceTime ? 'scheduled_future' : 'in_preparation') : 'no_active_ascent'} />
+                          <StatusBadge
+                            value={
+                              row.visit_status === 'in_progress' &&
+                              row.started_at &&
+                              ['active', 'returning_early'].includes(
+                                row.member_status
+                              )
+                                ? row.member_status
+                                : row.visit_status === 'forming'
+                                  ? row.planned_start_at &&
+                                    Date.parse(row.planned_start_at) >
+                                      referenceTime
+                                    ? 'scheduled_future'
+                                    : 'in_preparation'
+                                  : 'no_active_ascent'
+                            }
+                          />
                         </td>
                         <td>
                           {formatDateTime(

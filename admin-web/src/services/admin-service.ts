@@ -79,10 +79,11 @@ export async function getSensitiveDetails(
   return unwrap(data as SensitiveDetails | null, error);
 }
 
-export async function listAscents(status: string) {
+export async function listAscents(status: string, search = '') {
   const { data, error } = await supabase.rpc('staff_list_ascents', {
     p_status: status,
     p_limit: 100,
+    p_search: search.trim() || null,
   });
   return unwrap(data as AscentRow[] | null, error);
 }
@@ -245,13 +246,17 @@ export async function uploadNotificationImage(file: File): Promise<string> {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
     throw new Error('La imagen debe ser JPG, PNG o WebP.');
   }
-  if (file.size > 5 * 1024 * 1024) throw new Error('La imagen no debe superar 5 MB.');
-  const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+  if (file.size > 5 * 1024 * 1024)
+    throw new Error('La imagen no debe superar 5 MB.');
+  const extension =
+    file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
   const path = `${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from('notification-media').upload(path, file, {
-    contentType: file.type,
-    upsert: false,
-  });
+  const { error } = await supabase.storage
+    .from('notification-media')
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    });
   if (error) throw new Error(error.message);
   return path;
 }

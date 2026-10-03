@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from 'react';
 import {
   AscentCreationModal,
   AscentDetailsModal,
@@ -27,6 +33,8 @@ export function AscentsPage({ session }: { session: AdminSession }) {
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<AscentRow | null>(null);
   const [message, setMessage] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const canManage =
     session.role === 'admin' || Boolean(session.permissions.can_manage_visits);
   const canConfirmReturns =
@@ -35,25 +43,65 @@ export function AscentsPage({ session }: { session: AdminSession }) {
   const operationalStatus = (row: AscentRow) => {
     if (row.visit_status !== 'forming') return row.visit_status;
     if (!row.planned_start_at) return 'in_preparation';
-    const planned = new Date(row.planned_start_at); const today = new Date();
-    return planned.toDateString() === today.toDateString() ? 'scheduled_today' : planned > today ? 'scheduled_future' : 'in_preparation';
+    const planned = new Date(row.planned_start_at);
+    const today = new Date();
+    return planned.toDateString() === today.toDateString()
+      ? 'scheduled_today'
+      : planned > today
+        ? 'scheduled_future'
+        : 'in_preparation';
   };
-  const visibleRows = useMemo(() => rows.filter((row) => {
-    const current = operationalStatus(row);
-    if (status === 'all') return true;
-    if (status === 'forming') return current === 'in_preparation';
-    if (status === 'scheduled') return current === 'scheduled_today' || current === 'scheduled_future';
-    return current === status;
-  }).toSorted((first, second) => {
-    const rank = (row: AscentRow) => { const current = operationalStatus(row); if (current === 'in_progress' && row.expected_return_at && Date.parse(row.expected_return_at) < Date.now()) return 0; return ({ in_progress: 1, in_preparation: 3, scheduled_today: 4, scheduled_future: 5, completed: 6, cancelled: 7 } as Record<string, number>)[current] ?? 8; };
-    const difference = rank(first) - rank(second); if (difference) return difference;
-    const date = (row: AscentRow) => Date.parse(row.visit_status === 'in_progress' ? row.expected_return_at ?? '' : row.planned_start_at ?? row.completed_at ?? '') || 0;
-    return date(first) - date(second);
-  }), [rows, status]);
-  const load = useCallback(async () => {
+  const visibleRows = useMemo(
+    () =>
+      rows
+        .filter((row) => {
+          const current = operationalStatus(row);
+          if (status === 'all') return true;
+          if (status === 'forming') return current === 'in_preparation';
+          if (status === 'scheduled')
+            return (
+              current === 'scheduled_today' || current === 'scheduled_future'
+            );
+          return current === status;
+        })
+        .toSorted((first, second) => {
+          const rank = (row: AscentRow) => {
+            const current = operationalStatus(row);
+            if (
+              current === 'in_progress' &&
+              row.expected_return_at &&
+              Date.parse(row.expected_return_at) < Date.now()
+            )
+              return 0;
+            return (
+              (
+                {
+                  in_progress: 1,
+                  in_preparation: 3,
+                  scheduled_today: 4,
+                  scheduled_future: 5,
+                  completed: 6,
+                  cancelled: 7,
+                } as Record<string, number>
+              )[current] ?? 8
+            );
+          };
+          const difference = rank(first) - rank(second);
+          if (difference) return difference;
+          const date = (row: AscentRow) =>
+            Date.parse(
+              row.visit_status === 'in_progress'
+                ? (row.expected_return_at ?? '')
+                : (row.planned_start_at ?? row.completed_at ?? '')
+            ) || 0;
+          return date(first) - date(second);
+        }),
+    [rows, status]
+  );
+  const load = useCallback(async (query = '') => {
     setState('loading');
     try {
-      setRows(await listAscents('all'));
+      setRows(await listAscents('all', query));
       setState('success');
     } catch {
       setState('error');
@@ -80,7 +128,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
     try {
       await startAdministrativeVisit(row.visit_id);
       setMessage(`Ascenso ${row.join_code} iniciado.`);
-      await load();
+      await load(activeSearch);
     } catch (reason) {
       setMessage(
         reason instanceof Error
@@ -88,6 +136,12 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           : 'No fue posible iniciar el ascenso.'
       );
     }
+  }
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = search.trim();
+    setActiveSearch(query);
+    void load(query);
   }
   return (
     <>
@@ -121,6 +175,33 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           {message}
         </div>
       )}
+      <Panel className="ascent-search-panel">
+        <form className="ascent-search" onSubmit={submitSearch}>
+          <label>
+            Buscar ascenso o menor
+            <input
+              type="search"
+              value={search}
+              placeholder="Código, organizador o nombre del menor"
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+          <button type="submit">Buscar</button>
+          {activeSearch && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setSearch('');
+                setActiveSearch('');
+                void load();
+              }}
+            >
+              Limpiar
+            </button>
+          )}
+        </form>
+      </Panel>
       <Panel>
         {state === 'loading' ? (
           <LoadingState rows={6} />
@@ -156,11 +237,29 @@ export function AscentsPage({ session }: { session: AdminSession }) {
                     <td>
                       <strong>{row.join_code}</strong>
                     </td>
-                    <td>{row.organizer_name}</td>
+                    <td>
+                      {row.organizer_name}
+                      {row.minor_matches.map((minor) => (
+                        <small
+                          className="minor-search-match"
+                          key={minor.full_name}
+                        >
+                          {minor.full_name} · Menor a cargo de{' '}
+                          {minor.responsible_name}
+                        </small>
+                      ))}
+                    </td>
                     <td>
                       {row.visit_type === 'day_hike' ? 'Día' : 'Campamento'}
                     </td>
-                    <td>{row.participant_count}</td>
+                    <td>
+                      <strong>{row.participant_count}</strong>
+                      <small className="participant-breakdown">
+                        {row.adult_count} adulto
+                        {row.adult_count === 1 ? '' : 's'} · {row.minor_count}{' '}
+                        menor{row.minor_count === 1 ? '' : 'es'}
+                      </small>
+                    </td>
                     <td>{formatDateTime(row.planned_start_at)}</td>
                     <td>{formatDateTime(row.started_at)}</td>
                     <td>{formatDateTime(row.expected_return_at)}</td>
@@ -238,7 +337,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           close={() => setSelected(null)}
           onChanged={() => {
             setMessage('Retorno administrativo registrado.');
-            void load();
+            void load(activeSearch);
           }}
         />
       )}

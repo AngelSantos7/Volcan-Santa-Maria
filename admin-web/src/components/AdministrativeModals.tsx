@@ -29,6 +29,13 @@ import {
   formatInternationalPhone,
   type PhoneValue,
 } from '../lib/admin-form-utils';
+import { StatusBadge } from './ui';
+
+function formatSex(sex: 'male' | 'female' | null) {
+  if (sex === 'male') return 'Masculino';
+  if (sex === 'female') return 'Femenino';
+  return 'Sin registrar';
+}
 
 function Modal({
   title,
@@ -349,7 +356,16 @@ export function VisitorRegistrationModal({
           />
           <label>
             Sexo
-            <select value={draft.sex} onChange={(event) => setDraft({ ...draft, sex: event.target.value as 'male' | 'female' })} required>
+            <select
+              value={draft.sex}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  sex: event.target.value as 'male' | 'female',
+                })
+              }
+              required
+            >
               <option value="male">Masculino</option>
               <option value="female">Femenino</option>
             </select>
@@ -820,8 +836,10 @@ export function AscentDetailsModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [returnRow, setReturnRow] = useState<ReturnRow | null>(null);
+
   function load() {
     setLoading(true);
+    setError('');
     void getAscentMembers(ascent.visit_id)
       .then(setMembers)
       .catch((reason: unknown) =>
@@ -833,6 +851,7 @@ export function AscentDetailsModal({
       )
       .finally(() => setLoading(false));
   }
+
   useEffect(() => {
     let current = true;
     void getAscentMembers(ascent.visit_id)
@@ -854,7 +873,8 @@ export function AscentDetailsModal({
       current = false;
     };
   }, [ascent.visit_id]);
-  if (returnRow)
+
+  if (returnRow) {
     return (
       <AdministrativeReturnModal
         row={returnRow}
@@ -866,6 +886,13 @@ export function AscentDetailsModal({
         }}
       />
     );
+  }
+
+  const adults = members.filter((member) => !member.is_minor);
+  const minors = members.filter((member) => member.is_minor);
+  const minorsFor = (adultId: string) =>
+    minors.filter((minor) => minor.responsible_member_id === adultId);
+
   return (
     <Modal title={`Detalle del ascenso ${ascent.join_code}`} close={close}>
       <div className="operation-form">
@@ -897,69 +924,132 @@ export function AscentDetailsModal({
             </span>
           )}
         </div>
+        <div
+          className="participant-summary"
+          aria-label="Resumen de participantes"
+        >
+          <div>
+            <strong>{ascent.participant_count}</strong>
+            <span>Visitantes</span>
+          </div>
+          <div>
+            <strong>{ascent.adult_count}</strong>
+            <span>Adultos</span>
+          </div>
+          <div>
+            <strong>{ascent.minor_count}</strong>
+            <span>Menores</span>
+          </div>
+        </div>
         <ErrorMessage value={error} />
         {loading ? (
           <p className="muted">Cargando participantes…</p>
         ) : (
           <div className="member-list">
-            {members.map((member) => (
-              <div key={member.user_id}>
-                <div>
-                  <strong>{member.visitor_name}</strong>
-                  {member.is_minor && <span className="provenance-badge">Menor acompañado</span>}
-                  <span>
-                    {member.member_role === 'leader'
-                      ? 'Organizador'
-                      : 'Integrante'}{' '}
-                    · {member.member_status}
-                  </span>
-                  {member.is_minor && <span>Responsable: {member.responsible_name}</span>}
-                </div>
-                <div className="provenance-row">
-                  {member.finalized_by_administration && (
-                    <span className="provenance-badge">
-                      Finalizado por administración
-                    </span>
+            {adults.map((member) => {
+              const relatedMinors = minorsFor(member.user_id);
+              return (
+                <article className="adult-member-card" key={member.user_id}>
+                  <div className="adult-member-main">
+                    <div>
+                      <strong>{member.visitor_name}</strong>
+                      <span>
+                        {member.member_role === 'leader'
+                          ? 'Organizador'
+                          : 'Integrante'}
+                      </span>
+                    </div>
+                    <StatusBadge value={member.member_status} />
+                    <div className="provenance-row">
+                      {member.finalized_by_administration && (
+                        <span className="provenance-badge">
+                          Finalizado por administración
+                        </span>
+                      )}
+                      {member.checked_out_at && (
+                        <span className="muted">
+                          Retorno: {formatDateTime(member.checked_out_at)}
+                        </span>
+                      )}
+                    </div>
+                    {canConfirmReturns &&
+                      ascent.visit_status === 'in_progress' &&
+                      ['active', 'returning_early'].includes(
+                        member.member_status
+                      ) && (
+                        <button
+                          type="button"
+                          className="table-action"
+                          onClick={() =>
+                            setReturnRow({
+                              visit_id: ascent.visit_id,
+                              user_id: member.user_id,
+                              visitor_name: member.visitor_name,
+                              join_code: ascent.join_code,
+                              member_status: member.member_status,
+                              started_at: ascent.started_at,
+                              expected_return_at: ascent.expected_return_at,
+                              return_started_at: null,
+                              checked_out_at: member.checked_out_at,
+                              attention_state: 'on_route',
+                              participant_count: ascent.participant_count,
+                              minors: relatedMinors.flatMap((minor) =>
+                                minor.age !== null &&
+                                minor.sex !== null &&
+                                minor.relationship !== null
+                                  ? [
+                                      {
+                                        id: minor.user_id,
+                                        full_name: minor.visitor_name,
+                                        age: minor.age,
+                                        sex: minor.sex,
+                                        relationship: minor.relationship,
+                                        member_status: minor.member_status,
+                                        checked_out_at: minor.checked_out_at,
+                                      },
+                                    ]
+                                  : []
+                              ),
+                              creation_origin: ascent.creation_origin,
+                              finalized_by_administration:
+                                member.finalized_by_administration,
+                            })
+                          }
+                        >
+                          Registrar retorno administrativo
+                        </button>
+                      )}
+                  </div>
+                  {relatedMinors.length > 0 && (
+                    <div className="minor-member-list">
+                      <span className="minor-group-label">
+                        {relatedMinors.length} menor
+                        {relatedMinors.length === 1 ? '' : 'es'} a cargo
+                      </span>
+                      {relatedMinors.map((minor) => (
+                        <div className="minor-member-card" key={minor.user_id}>
+                          <div>
+                            <span className="minor-badge">Menor</span>
+                            <strong>{minor.visitor_name}</strong>
+                            <span>
+                              {minor.age} años · {formatSex(minor.sex)} ·{' '}
+                              {minor.relationship}
+                            </span>
+                            <span>Responsable: {member.visitor_name}</span>
+                            {minor.checked_out_at && (
+                              <span>
+                                Retorno: {formatDateTime(minor.checked_out_at)}
+                              </span>
+                            )}
+                          </div>
+                          <StatusBadge value={minor.member_status} />
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  {member.checked_out_at && (
-                    <span className="muted">
-                      {formatDateTime(member.checked_out_at)}
-                    </span>
-                  )}
-                </div>
-                {canConfirmReturns &&
-                  !member.is_minor &&
-                  ascent.visit_status === 'in_progress' &&
-                  ['active', 'returning_early'].includes(
-                    member.member_status
-                  ) && (
-                    <button
-                      type="button"
-                      className="table-action"
-                      onClick={() =>
-                        setReturnRow({
-                          visit_id: ascent.visit_id,
-                          user_id: member.user_id,
-                          visitor_name: member.visitor_name,
-                          join_code: ascent.join_code,
-                          member_status: member.member_status,
-                          started_at: ascent.started_at,
-                          expected_return_at: ascent.expected_return_at,
-                          return_started_at: null,
-                          checked_out_at: member.checked_out_at,
-                          attention_state: 'on_route',
-                          participant_count: ascent.participant_count,
-                          creation_origin: ascent.creation_origin,
-                          finalized_by_administration:
-                            member.finalized_by_administration,
-                        })
-                      }
-                    >
-                      Registrar retorno administrativo
-                    </button>
-                  )}
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
         <div className="modal-actions">
@@ -1046,6 +1136,26 @@ export function AdministrativeReturnModal({
             <strong>En recorrido</strong>
           </div>
         </div>
+        {row.minors.length > 0 && (
+          <div className="minor-return-notice" role="note">
+            <strong>
+              {row.visitor_name} tiene {row.minors.length} menor
+              {row.minors.length === 1 ? '' : 'es'} a cargo.
+            </strong>
+            <span>
+              {row.minors.length === 1
+                ? 'El retorno del menor también será registrado automáticamente.'
+                : 'Sus retornos también serán registrados automáticamente.'}
+            </span>
+            <ul>
+              {row.minors.map((minor) => (
+                <li key={minor.id}>
+                  {minor.full_name} · {minor.age} años · {minor.relationship}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <ErrorMessage value={error} />
         <label>
           Motivo del registro

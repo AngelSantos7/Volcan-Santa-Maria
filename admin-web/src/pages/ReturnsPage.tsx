@@ -1,31 +1,179 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AdministrativeReturnModal } from '../components/AdministrativeModals'
-import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, StatusBadge } from '../components/ui'
-import { formatDateTime } from '../lib/date-range'
-import { listReturns } from '../services/admin-service'
-import type { AdminSession, ReturnRow } from '../types'
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AdministrativeReturnModal } from '../components/AdministrativeModals';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  Panel,
+  StatusBadge,
+} from '../components/ui';
+import { formatDateTime } from '../lib/date-range';
+import { listReturns } from '../services/admin-service';
+import type { AdminSession, ReturnRow } from '../types';
 
 export function ReturnsPage({ session }: { session: AdminSession }) {
-  const [rows, setRows] = useState<ReturnRow[]>([])
-  const [filter, setFilter] = useState('all')
-  const [state, setState] = useState<'loading' | 'success' | 'error'>('loading')
-  const [selected, setSelected] = useState<ReturnRow | null>(null)
-  const [message, setMessage] = useState('')
-  const canConfirm = session.role === 'admin' || Boolean(session.permissions.can_confirm_returns)
-  const load = useCallback(async () => { setState('loading'); try { setRows(await listReturns()); setState('success') } catch { setState('error') } }, [])
+  const [rows, setRows] = useState<ReturnRow[]>([]);
+  const [filter, setFilter] = useState('all');
+  const [state, setState] = useState<'loading' | 'success' | 'error'>(
+    'loading'
+  );
+  const [selected, setSelected] = useState<ReturnRow | null>(null);
+  const [message, setMessage] = useState('');
+  const canConfirm =
+    session.role === 'admin' ||
+    Boolean(session.permissions.can_confirm_returns);
+  const load = useCallback(async () => {
+    setState('loading');
+    try {
+      setRows(await listReturns());
+      setState('success');
+    } catch {
+      setState('error');
+    }
+  }, []);
   useEffect(() => {
-    let current = true
-    void listReturns().then((result) => { if (current) { setRows(result); setState('success') } })
-      .catch(() => { if (current) setState('error') })
-    return () => { current = false }
-  }, [])
-  const filtered = useMemo(() => rows.filter((row) => filter === 'all' || row.attention_state === filter), [rows, filter])
-  return <>
-    <PageHeader eyebrow="Operación" title="Control de retornos"><select aria-label="Filtrar retornos" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">Todos</option><option value="due_soon">Próximos a retornar</option><option value="overdue">Hora estimada superada</option><option value="early_return">Retorno anticipado</option><option value="administratively_completed">Finalizados por administración</option></select></PageHeader>
-    {message && <div className="alert success" role="status">{message}</div>}
-    <Panel>{state === 'loading' ? <LoadingState rows={6}/> : state === 'error' ? <ErrorState retry={() => void load()}/> : filtered.length === 0 ? <EmptyState title="Sin retornos pendientes" detail="No hay personas en esta categoría."/> : <div className="table-scroll"><table><thead><tr><th>Visitante</th><th>Ascenso</th><th>Inicio</th><th>Retorno estimado</th><th>Estado operativo</th><th>Confirmación</th><th><span className="sr-only">Acción</span></th></tr></thead><tbody>{filtered.map((row) => <tr key={`${row.visit_id}-${row.user_id}`}><td><strong>{row.visitor_name}</strong></td><td>{row.join_code}</td><td>{formatDateTime(row.started_at)}</td><td>{formatDateTime(row.expected_return_at)}</td><td><StatusBadge value={row.attention_state}/></td><td>{row.finalized_by_administration ? <span className="provenance-badge">Finalizado por administración</span> : row.checked_out_at ? formatDateTime(row.checked_out_at) : 'Pendiente'}</td><td>{canConfirm && ['active', 'returning_early'].includes(row.member_status) && <button type="button" className="table-action" onClick={() => setSelected(row)}>Registrar retorno administrativo</button>}</td></tr>)}</tbody></table></div>}</Panel>
-    {selected && (
-      <AdministrativeReturnModal row={selected} close={() => setSelected(null)} onConfirmed={() => { setSelected(null); setMessage('Retorno administrativo registrado.'); void load() }}/>
-    )}
-  </>
+    let current = true;
+    void listReturns()
+      .then((result) => {
+        if (current) {
+          setRows(result);
+          setState('success');
+        }
+      })
+      .catch(() => {
+        if (current) setState('error');
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
+  const filtered = useMemo(
+    () =>
+      rows.filter((row) => filter === 'all' || row.attention_state === filter),
+    [rows, filter]
+  );
+  return (
+    <>
+      <PageHeader eyebrow="Operación" title="Control de retornos">
+        <select
+          aria-label="Filtrar retornos"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+        >
+          <option value="all">Todos</option>
+          <option value="due_soon">Próximos a retornar</option>
+          <option value="overdue">Hora estimada superada</option>
+          <option value="early_return">Retorno anticipado</option>
+          <option value="administratively_completed">
+            Finalizados por administración
+          </option>
+        </select>
+      </PageHeader>
+      {message && (
+        <div className="alert success" role="status">
+          {message}
+        </div>
+      )}
+      <Panel>
+        {state === 'loading' ? (
+          <LoadingState rows={6} />
+        ) : state === 'error' ? (
+          <ErrorState retry={() => void load()} />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="Sin retornos pendientes"
+            detail="No hay personas en esta categoría."
+          />
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Visitante</th>
+                  <th>Ascenso</th>
+                  <th>Inicio</th>
+                  <th>Retorno estimado</th>
+                  <th>Estado operativo</th>
+                  <th>Confirmación</th>
+                  <th>
+                    <span className="sr-only">Acción</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((row) => (
+                  <tr key={`${row.visit_id}-${row.user_id}`}>
+                    <td>
+                      <div className="return-visitor">
+                        <strong>{row.visitor_name}</strong>
+                        {row.minors.length > 0 && (
+                          <>
+                            <span className="minor-count-label">
+                              {row.minors.length} menor
+                              {row.minors.length === 1 ? '' : 'es'} a cargo
+                            </span>
+                            <ul>
+                              {row.minors.map((minor) => (
+                                <li key={minor.id}>
+                                  {minor.full_name} · {minor.age} años ·{' '}
+                                  {minor.relationship}
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td>{row.join_code}</td>
+                    <td>{formatDateTime(row.started_at)}</td>
+                    <td>{formatDateTime(row.expected_return_at)}</td>
+                    <td>
+                      <StatusBadge value={row.attention_state} />
+                    </td>
+                    <td>
+                      {row.finalized_by_administration ? (
+                        <span className="provenance-badge">
+                          Finalizado por administración
+                        </span>
+                      ) : row.checked_out_at ? (
+                        formatDateTime(row.checked_out_at)
+                      ) : (
+                        'Pendiente'
+                      )}
+                    </td>
+                    <td>
+                      {canConfirm &&
+                        ['active', 'returning_early'].includes(
+                          row.member_status
+                        ) && (
+                          <button
+                            type="button"
+                            className="table-action"
+                            onClick={() => setSelected(row)}
+                          >
+                            Registrar retorno administrativo
+                          </button>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+      {selected && (
+        <AdministrativeReturnModal
+          row={selected}
+          close={() => setSelected(null)}
+          onConfirmed={() => {
+            setSelected(null);
+            setMessage('Retorno administrativo registrado.');
+            void load();
+          }}
+        />
+      )}
+    </>
+  );
 }

@@ -100,7 +100,33 @@ export interface VisitorSummary {
   administrative_created_at: string | null;
   finalized_by_administration: boolean;
   administrative_return_recorded_at: string | null;
-  history: Array<Record<string, string | null>>;
+  history: VisitorHistoryItem[];
+}
+
+export interface MinorSummary {
+  id: string;
+  full_name: string;
+  age: number;
+  sex: 'male' | 'female';
+  relationship: string;
+  member_status: string;
+  checked_out_at: string | null;
+}
+
+export interface VisitorHistoryItem {
+  visit_id: string;
+  join_code: string;
+  visit_type: string;
+  visit_status: string;
+  member_status: string;
+  planned_start_at: string | null;
+  started_at: string | null;
+  expected_return_at: string | null;
+  completed_at: string | null;
+  checked_out_at: string | null;
+  creation_origin: 'tourist' | 'administrative';
+  finalized_by_administration: boolean;
+  minors: MinorSummary[];
 }
 
 export interface SensitiveDetails {
@@ -123,6 +149,12 @@ export interface AscentRow {
   organizer_name: string;
   visit_type: string;
   participant_count: number;
+  adult_count: number;
+  minor_count: number;
+  minor_matches: Array<{
+    full_name: string;
+    responsible_name: string;
+  }>;
   planned_start_at: string | null;
   started_at: string | null;
   expected_return_at: string | null;
@@ -144,6 +176,7 @@ export interface ReturnRow {
   checked_out_at: string | null;
   attention_state: string;
   participant_count: number;
+  minors: MinorSummary[];
   creation_origin: 'tourist' | 'administrative';
   finalized_by_administration: boolean;
 }
@@ -213,6 +246,10 @@ export interface AscentMemberRow {
   finalized_by_administration: boolean;
   is_minor: boolean;
   responsible_name: string | null;
+  responsible_member_id: string | null;
+  age: number | null;
+  sex: 'male' | 'female' | null;
+  relationship: string | null;
 }
 
 export interface StaffRow {
@@ -246,8 +283,10 @@ export interface AuditRow {
 }
 
 export type NotificationPriority = 'info' | 'caution' | 'urgent';
-export type NotificationStatus = 'draft' | 'scheduled' | 'published' | 'expired' | 'cancelled';
-export type NotificationAudience = 'all_users' | 'in_progress' | 'planned' | 'specific_visit' | 'specific_user';
+export type NotificationStatus =
+  'draft' | 'scheduled' | 'published' | 'expired' | 'cancelled';
+export type NotificationAudience =
+  'all_users' | 'in_progress' | 'planned' | 'specific_visit' | 'specific_user';
 
 export interface NotificationRow {
   id: string;

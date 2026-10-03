@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(34);
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('e1000000-0000-4000-8000-000000000001','phase4-admin@example.invalid',now(),'{"first_name":"Ana","last_name":"Admin"}'),
@@ -52,6 +52,10 @@ select is(pg_temp.sqlstate_from(format($$delete from public.visit_members where 
 
 set local role authenticated;
 select pg_temp.authenticate_as('e1000000-0000-4000-8000-000000000001');
+select is((select age from public.staff_get_ascent_members((select visit_id from phase4_planned)) where is_minor),10::smallint,'staff ascent detail exposes the existing minor age');
+select is((select minor_count from public.staff_list_ascents('all',100,'Menor Prueba') where visit_id=(select visit_id from phase4_planned)),1::bigint,'minor name search finds the corresponding ascent');
+select is((select participant_count from public.staff_list_ascents('all',100) where visit_id=(select visit_id from phase4_planned)),2::bigint,'ascent participant count includes adults and minors once');
+select is((public.staff_get_visitor_summary('e4000000-0000-4000-8000-000000000004',(select visit_id from phase4_planned)) #>> '{history,0,minors,0,full_name}'),'Menor Prueba','adult history includes the minor accompanied on the ascent');
 select lives_ok(format($$select public.staff_register_administrative_return(%L,'e3000000-0000-4000-8000-000000000003','confirmed_in_person',null,null,null)$$,(select visit_id from phase4_active)),'administrative return uses the unified RPC');
 select lives_ok(format($$select public.staff_register_administrative_return(%L,'e3000000-0000-4000-8000-000000000003','confirmed_in_person',null,null,null)$$,(select visit_id from phase4_active)),'double administrative return is idempotent');
 reset role;
