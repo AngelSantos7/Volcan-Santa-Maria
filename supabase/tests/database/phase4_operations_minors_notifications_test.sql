@@ -34,9 +34,9 @@ select pg_temp.authenticate_as('e1000000-0000-4000-8000-000000000001');
 select is((select visit_status from public.staff_list_ascents('all',100) where visit_id=(select visit_id from phase4_active)),'in_progress','operational ascent query preserves active state');
 
 select pg_temp.authenticate_as('e3000000-0000-4000-8000-000000000003');
-select is(pg_temp.sqlstate_from(format($$select public.add_my_visit_minors(%L,'[{"full_name":"Niña Prueba","age":12,"sex":"female","relationship":"Hija"}]')$$,(select visit_id from phase4_active))),'P0001','minors cannot be added after an ascent starts');
+select is(pg_temp.sqlstate_from(format($$select public.add_my_visit_minors(%L,'[{"full_name":"Niña Prueba","age":12,"sex":"female","relationship":"Hija"}]',true)$$,(select visit_id from phase4_active))),'P0001','minors cannot be added after an ascent starts');
 select pg_temp.authenticate_as('e4000000-0000-4000-8000-000000000004');
-select lives_ok(format($$select public.add_my_visit_minors(%L,'[{"full_name":"Menor Prueba","age":10,"sex":"male","relationship":"Hijo"}]')$$,(select visit_id from phase4_planned)),'adult organizer can add a minor');
+select lives_ok(format($$select public.add_my_visit_minors(%L,'[{"full_name":"Menor Prueba","age":10,"sex":"male","relationship":"Hijo"}]',true)$$,(select visit_id from phase4_planned)),'adult organizer can add a minor with versioned responsibility consent');
 reset role;
 select is((select count(*) from public.visit_minors where visit_id=(select visit_id from phase4_planned)),1::bigint,'minor is stored without an Auth account');
 select is((select count(*) from public.visit_members where visit_id=(select visit_id from phase4_planned)),1::bigint,'minor is not stored as an adult visit member');

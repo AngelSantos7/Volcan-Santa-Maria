@@ -83,7 +83,14 @@ select columns_are(
     'caption_en',
     'sort_order',
     'is_cover',
-    'created_at'
+    'created_at',
+    'title_es',
+    'title_en',
+    'description_es',
+    'description_en',
+    'is_active',
+    'created_by',
+    'updated_at'
   ],
   'route media stores paths and metadata rather than image data'
 );
@@ -176,10 +183,10 @@ select ok(
 );
 
 select ok(
-  not has_table_privilege('authenticated', 'public.route_media', 'INSERT')
-  and not has_table_privilege('authenticated', 'public.route_media', 'UPDATE')
-  and not has_table_privilege('authenticated', 'public.route_media', 'DELETE'),
-  'authenticated tourists cannot mutate route media'
+  has_table_privilege('authenticated', 'public.route_media', 'INSERT')
+  and has_table_privilege('authenticated', 'public.route_media', 'UPDATE')
+  and has_table_privilege('authenticated', 'public.route_media', 'DELETE'),
+  'route media mutation grants are available for staff and constrained by RLS'
 );
 
 select is(

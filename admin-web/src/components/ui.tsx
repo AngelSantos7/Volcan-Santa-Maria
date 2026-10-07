@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import { adminLabel } from '../lib/admin-labels'
 
 export function PageHeader({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
   return <header className="page-header">
@@ -26,18 +27,8 @@ export function ErrorState({ retry }: { retry?: () => void }) {
   return <div className="empty-state error-state"><span>!</span><h3>No fue posible cargar la información</h3><p>Intente nuevamente. No se realizó ningún cambio.</p>{retry && <button type="button" className="secondary" onClick={retry}>Reintentar</button>}</div>
 }
 
-const statusLabels: Record<string, string> = {
-  forming: 'En preparación', in_preparation: 'En preparación', scheduled_today: 'Planificado hoy', scheduled_future: 'Planificado', in_progress: 'En recorrido', completed: 'Completado', cancelled: 'Cancelado',
-  active: 'En recorrido', returning_early: 'Retorno anticipado', returned_early: 'Retornó antes',
-  withdrawn_before_start: 'Retirado antes', overdue: 'Hora estimada superada', due_soon: 'Próximo a retornar',
-  on_route: 'En recorrido', early_return: 'Retorno anticipado', early_return_completed: 'Retorno confirmado',
-  active_access: 'Activo', inactive_access: 'Desactivado',
-  administratively_completed: 'Completado',
-  no_active_ascent: 'Sin ascenso activo',
-}
-
 export function StatusBadge({ value }: { value: string }) {
-  return <span className={`status status-${value}`}>{statusLabels[value] ?? value}</span>
+  return <span className={`status status-${value}`}>{adminLabel(value)}</span>
 }
 
 export function Avatar({ name, preset, path }: { name: string; preset?: string | null; path?: string | null }) {

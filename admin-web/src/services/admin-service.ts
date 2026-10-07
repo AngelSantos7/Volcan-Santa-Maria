@@ -16,6 +16,10 @@ import type {
   AdministrativeVisitResult,
   AscentMemberRow,
   VisitorReportData,
+  OperationalDashboard,
+  GalleryRow,
+  IdentityDetails,
+  OperationalContactDetails,
 } from '../types';
 
 function unwrap<T>(data: T | null, error: { message: string } | null): T {
@@ -38,6 +42,11 @@ export async function getDashboard(from: string, to: string) {
     stats: unwrap(stats.data as DashboardStats | null, stats.error),
     series: unwrap(series.data as DashboardPoint[] | null, series.error),
   };
+}
+
+export async function getOperationalDashboard() {
+  const { data, error } = await supabase.rpc('get_operational_dashboard');
+  return unwrap(data as OperationalDashboard | null, error);
 }
 
 export async function searchVisitors(filters: {
@@ -77,6 +86,21 @@ export async function getSensitiveDetails(
     }
   );
   return unwrap(data as SensitiveDetails | null, error);
+}
+
+export async function getIdentityDetails(userId: string) {
+  const { data, error } = await supabase.rpc('staff_get_identity_details', {
+    p_user_id: userId,
+  });
+  return unwrap(data as IdentityDetails | null, error);
+}
+
+export async function getOperationalContacts(userId: string) {
+  const { data, error } = await supabase.rpc('staff_get_operational_contacts', {
+    p_user_id: userId,
+    p_context: 'visitor_record',
+  });
+  return unwrap(data as OperationalContactDetails | null, error);
 }
 
 export async function listAscents(status: string, search = '') {
@@ -132,6 +156,7 @@ export async function registerWalkInVisitor(input: {
   firstName: string;
   lastName: string;
   nationalityCountryCode: string;
+  departmentCode?: string;
   dateOfBirth: string;
   sex: 'male' | 'female';
   phone?: string;
@@ -148,6 +173,7 @@ export async function registerWalkInVisitor(input: {
     p_first_name: input.firstName,
     p_last_name: input.lastName,
     p_nationality_country_code: input.nationalityCountryCode,
+    p_department_code: input.departmentCode || null,
     p_date_of_birth: input.dateOfBirth,
     p_phone: input.phone || null,
     p_alternate_phone: input.alternatePhone || null,
@@ -298,10 +324,95 @@ export async function updateStaffPermissions(
   userId: string,
   permissions: Record<string, boolean>
 ) {
-  const { error } = await supabase.rpc('admin_update_staff_permissions', {
+  const { error } = await supabase.rpc('admin_update_staff_permissions_v2', {
     p_user_id: userId,
     p_permissions: permissions,
   });
+  if (error) throw new Error(error.message);
+}
+
+export async function activateMyStaffInvitation() {
+  const { error } = await supabase.rpc('activate_my_staff_invitation');
+  if (error) throw new Error(error.message);
+}
+
+export async function manageStaffInvitation(input: {
+  action: 'invite' | 'resend' | 'delete';
+  userId?: string;
+  fullName?: string;
+  email?: string;
+  permissions?: Record<string, boolean>;
+}) {
+  const { data, error } = await supabase.functions.invoke('invite-staff', {
+    body: input,
+  });
+  if (error) throw new Error(error.message);
+  return data as { user_id?: string };
+}
+
+export async function listGallery(): Promise<GalleryRow[]> {
+  const routeResult = await supabase
+    .from('routes')
+    .select('id')
+    .eq('slug', 'ascenso-a-la-cima')
+    .single<{ id: string }>();
+  if (routeResult.error) throw new Error(routeResult.error.message);
+  const { data, error } = await supabase
+    .from('route_media')
+    .select('id, route_id, storage_path, title_es, title_en, description_es, description_en, sort_order, is_active, updated_at')
+    .eq('route_id', routeResult.data.id)
+    .order('sort_order');
+  if (error) throw new Error(error.message);
+  return Promise.all(((data ?? []) as GalleryRow[]).map(async (row) => {
+    const signed = await supabase.storage.from('route-media').createSignedUrl(row.storage_path, 300);
+    return { ...row, signed_url: signed.data?.signedUrl };
+  }));
+}
+
+export async function uploadGalleryImage(file: File): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+    throw new Error('La imagen debe ser JPG, PNG o WebP.');
+  if (file.size > 5 * 1024 * 1024)
+    throw new Error('La imagen no debe superar 5 MB.');
+  const routeResult = await supabase.from('routes').select('id').eq('slug', 'ascenso-a-la-cima').single<{ id: string }>();
+  if (routeResult.error) throw new Error(routeResult.error.message);
+  const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+  const path = `${routeResult.data.id}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('route-media').upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+export async function saveGalleryItem(input: Partial<GalleryRow> & { storage_path: string }) {
+  const routeResult = await supabase.from('routes').select('id').eq('slug', 'ascenso-a-la-cima').single<{ id: string }>();
+  if (routeResult.error) throw new Error(routeResult.error.message);
+  const values = {
+    route_id: routeResult.data.id,
+    storage_path: input.storage_path,
+    title_es: input.title_es || null,
+    title_en: input.title_en || null,
+    description_es: input.description_es || null,
+    description_en: input.description_en || null,
+    sort_order: input.sort_order ?? 0,
+    is_active: input.is_active ?? true,
+  };
+  const authResult = await supabase.auth.getUser();
+  const request = input.id
+    ? supabase.from('route_media').update(values).eq('id', input.id)
+    : supabase.from('route_media').insert({ ...values, created_by: authResult.data.user?.id ?? null });
+  const { error } = await request;
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteGalleryItem(row: GalleryRow) {
+  const { error } = await supabase.from('route_media').delete().eq('id', row.id);
+  if (error) throw new Error(error.message);
+  const storageResult = await supabase.storage.from('route-media').remove([row.storage_path]);
+  if (storageResult.error) throw new Error(storageResult.error.message);
+}
+
+export async function deleteGalleryStoragePath(storagePath: string) {
+  const { error } = await supabase.storage.from('route-media').remove([storagePath]);
   if (error) throw new Error(error.message);
 }
 

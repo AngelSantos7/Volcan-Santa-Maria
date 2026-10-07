@@ -4,13 +4,12 @@ import { AdminShell, type PageId } from './components/AdminShell';
 import { DashboardPage } from './pages/DashboardPage';
 import { VisitorsPage } from './pages/VisitorsPage';
 import { AscentsPage } from './pages/AscentsPage';
-import { ReturnsPage } from './pages/ReturnsPage';
 import { StaffPage } from './pages/StaffPage';
-import { PermissionsPage } from './pages/PermissionsPage';
 import { AuditPage } from './pages/AuditPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
-import { getAdminSession } from './services/admin-service';
+import { GalleryPage } from './pages/GalleryPage';
+import { activateMyStaffInvitation, getAdminSession } from './services/admin-service';
 import { supabase } from './lib/supabase';
 import type { AdminSession } from './types';
 
@@ -91,7 +90,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [page, setPage] = useState<PageId>('dashboard');
-  const [permissionUserId, setPermissionUserId] = useState<string | null>(null);
+  const [ascentSearch, setAscentSearch] = useState('');
   const [error, setError] = useState('');
 
   async function checkAccess(nextSession: Session | null) {
@@ -103,6 +102,7 @@ export default function App() {
     }
     setAccess('loading');
     try {
+      await activateMyStaffInvitation();
       const profile = await getAdminSession();
       setAdminSession(profile);
       setAccess(
@@ -178,16 +178,16 @@ export default function App() {
     canView || Boolean(adminSession.permissions.can_register_walk_in_visitors);
   const canAscents =
     canView || Boolean(adminSession.permissions.can_manage_visits);
-  const canReturns =
-    canView || Boolean(adminSession.permissions.can_confirm_returns);
   const canReports =
     isAdmin || Boolean(adminSession.permissions.can_export_reports);
   const canNotifications =
     isAdmin || Boolean(adminSession.permissions.can_manage_notifications);
+  const canGallery =
+    isAdmin || Boolean(adminSession.permissions.can_manage_gallery);
   let content;
   if (page === 'dashboard')
     content = canView ? (
-      <DashboardPage />
+      <DashboardPage onOpenAscent={(joinCode) => { setAscentSearch(joinCode); setPage('ascents'); }} />
     ) : (
       <AccessMessage
         title="Permiso requerido"
@@ -207,21 +207,11 @@ export default function App() {
     );
   else if (page === 'ascents')
     content = canAscents ? (
-      <AscentsPage session={adminSession} />
+      <AscentsPage session={adminSession} initialSearch={ascentSearch} />
     ) : (
       <AccessMessage
         title="Permiso requerido"
         detail="No tiene acceso a los ascensos."
-        signOut={signOut}
-      />
-    );
-  else if (page === 'returns')
-    content = canReturns ? (
-      <ReturnsPage session={adminSession} />
-    ) : (
-      <AccessMessage
-        title="Permiso requerido"
-        detail="No tiene acceso al control de retornos."
         signOut={signOut}
       />
     );
@@ -241,6 +231,10 @@ export default function App() {
     ) : (
       <AccessMessage title="Permiso requerido" detail="No tiene autorización para gestionar notificaciones." signOut={signOut} />
     );
+  else if (page === 'gallery')
+    content = canGallery ? <GalleryPage /> : (
+      <AccessMessage title="Permiso requerido" detail="No tiene autorización para gestionar la galería." signOut={signOut} />
+    );
   else if (!isAdmin)
     content = (
       <AccessMessage
@@ -249,17 +243,7 @@ export default function App() {
         signOut={signOut}
       />
     );
-  else if (page === 'staff')
-    content = (
-      <StaffPage
-        managePermissions={(userId) => {
-          setPermissionUserId(userId);
-          setPage('permissions');
-        }}
-      />
-    );
-  else if (page === 'permissions')
-    content = <PermissionsPage initialUserId={permissionUserId} />;
+  else if (page === 'staff') content = <StaffPage />;
   else content = <AuditPage />;
 
   return (
@@ -267,7 +251,7 @@ export default function App() {
       session={adminSession}
       page={page}
       setPage={(next) => {
-        setPermissionUserId(null);
+        if (next !== 'ascents') setAscentSearch('');
         setPage(next);
       }}
       signOut={signOut}

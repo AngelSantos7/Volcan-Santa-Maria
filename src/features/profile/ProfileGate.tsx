@@ -11,6 +11,8 @@ import {
 import { AuthenticatedPage } from '../../pages/AuthenticatedPage';
 import { ProfileFormPage } from '../../pages/ProfileFormPage';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { ConsentGate } from '../legal/ConsentGate';
+import { hasCurrentLegalConsent } from '../legal/legal-service';
 
 export function ProfileGate() {
   const { t } = useTranslation();
@@ -22,17 +24,19 @@ export function ProfileGate() {
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [requestNumber, setRequestNumber] = useState(0);
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
     let active = true;
 
-    void loadTouristProfile(user.id)
-      .then((loadedProfile) => {
+    void Promise.all([loadTouristProfile(user.id), hasCurrentLegalConsent()])
+      .then(([loadedProfile, hasConsent]) => {
         if (!active) return;
 
         setProfile(loadedProfile);
+        setLegalConsentAccepted(hasConsent);
         setLoadError(false);
       })
       .catch(() => {
@@ -113,6 +117,18 @@ export function ProfileGate() {
   }
 
   const profileComplete = isTouristProfileComplete(profile);
+
+  if (!legalConsentAccepted) {
+    return (
+      <>
+        <LanguageSwitcher />
+        <ConsentGate
+          onAccepted={() => setLegalConsentAccepted(true)}
+          onSignOut={signOut}
+        />
+      </>
+    );
+  }
 
   if (!profileComplete || editing) {
     return (

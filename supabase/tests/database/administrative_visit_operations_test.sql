@@ -44,7 +44,8 @@ select lives_ok($$
   select (result ->> 'visitor_id')::uuid, 'one'
   from public.staff_register_walk_in_visitor(
     'Juan', 'Pérez', 'GT', '1990-01-01', null, '+50255550001',
-    'dpi', '1111111111111', 'Eva', 'Pérez', 'Hermana', '+50255550002'
+    'dpi', null, '1111111111111', 'Eva', 'Pérez', 'Hermana', '+50255550002',
+    'quetzaltenango'
   ) as call(result)
 $$, 'an administrator can register a visitor without email');
 

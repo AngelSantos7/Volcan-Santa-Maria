@@ -21,7 +21,6 @@ export function RouteRecommendations() {
       <p className="route-recommendations-intro">
         {t('routes.recommendations.intro')}
       </p>
-      <aside className="santiaguito-warning" role="note"><h3>{t('routes.santiaguito.title')}</h3><p>{t('routes.santiaguito.body')}</p><small>{t('routes.santiaguito.source')}</small></aside>
       <div className="route-recommendation-sections">
         {Object.entries(SECTIONS).map(([section, items]) => (
           <section key={section}>
@@ -34,6 +33,12 @@ export function RouteRecommendations() {
           </section>
         ))}
       </div>
+      <aside className="santiaguito-warning" role="note">
+        <h3>{t('routes.santiaguito.title')}</h3>
+        <p>{t('routes.santiaguito.body')}</p>
+        <p>{t('routes.santiaguito.scope')}</p>
+        <small>{t('routes.santiaguito.source')}</small>
+      </aside>
     </div>
   );
 }

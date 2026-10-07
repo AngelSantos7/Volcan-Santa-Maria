@@ -1,7 +1,8 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { VisitorReportData } from '../types';
-import { countryName } from './admin-form-utils';
+import { countryName, departmentName } from './admin-form-utils';
+import { adminLabel } from './admin-labels';
 
 const DARK_GREEN: [number, number, number] = [20, 77, 58];
 const MINT: [number, number, number] = [220, 243, 233];
@@ -28,7 +29,7 @@ function addHeader(pdf: jsPDF, title: string) {
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(14);
-  pdf.text('ALCALDÍA INDÍGENA', 14, 11);
+  pdf.text('ALCALDÍA INDÍGENA DE LLANOS DEL PINAL', 14, 11);
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.text('Gestor de Visitantes - Volcán Santa María', 14, 18);
@@ -115,6 +116,19 @@ export function buildVisitorReportPdf(data: VisitorReportData) {
     (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable
       ?.finalY ?? cursor;
 
+  if (data.department_breakdown.length) {
+    autoTable(pdf, {
+      startY: cursor + 8,
+      head: [['Departamento de Guatemala', 'Visitantes con ingreso']],
+      body: data.department_breakdown.map((item) => [departmentName(item.department_code), item.visitors]),
+      theme: 'striped',
+      headStyles: { fillColor: DARK_GREEN },
+      styles: { font: 'helvetica', fontSize: 9 },
+      margin: { left: 14, right: 14, bottom: 18 },
+    });
+    cursor = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? cursor;
+  }
+
   if (detailed) {
     autoTable(pdf, {
       startY: cursor + 8,
@@ -139,12 +153,12 @@ export function buildVisitorReportPdf(data: VisitorReportData) {
         row.visitor_name,
         countryName(row.nationality_country_code),
         row.join_code,
-        row.ascent_type === 'day_hike' ? 'Día' : 'Campamento',
+        adminLabel(row.ascent_type),
         dateTime(row.started_at),
         dateTime(row.expected_return_at),
         dateTime(row.checked_out_at),
         duration(row.duration_minutes),
-        row.operational_status,
+        adminLabel(row.operational_status),
         row.creation_origin === 'administrative'
           ? 'Creado por administración'
           : 'PWA',

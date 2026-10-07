@@ -88,6 +88,79 @@ const resources = {
         verificationPersistentNotice:
           'Confirma tu correo para habilitar el registro de ascensos.',
       },
+      theme: { label: 'Tema', light: 'Claro', dark: 'Oscuro' },
+      legal: {
+        entity: 'Alcaldía Indígena de Llanos del Pinal',
+        menu: 'Privacidad y términos',
+        centerIntro: 'Consulte los documentos vigentes de la aplicación.',
+        version: 'Versión {{version}}',
+        consent: {
+          title: 'Aceptación requerida',
+          existingUser:
+            'Antes de continuar, revise y acepte los documentos vigentes. Su información existente no será modificada.',
+          label:
+            'He leído y acepto los Términos y Condiciones y la Política de Privacidad.',
+          required: 'Debe aceptar los documentos para completar el registro.',
+          accept: 'Aceptar y continuar',
+          saving: 'Guardando aceptación…',
+          error: 'No fue posible guardar su aceptación. Inténtelo nuevamente.',
+        },
+        privacy: {
+          title: 'Política de Privacidad',
+          sections: [
+            {
+              title: 'Responsable y datos tratados',
+              body: 'La Alcaldía Indígena de Llanos del Pinal es la entidad responsable. Según las funciones utilizadas, la aplicación puede tratar nombre, apellido, fecha de nacimiento, sexo, nacionalidad, departamento para Guatemala, teléfono, DPI/CUI o pasaporte, contacto de emergencia, avatar, ascensos, historial, retornos, notificaciones y datos de menores acompañantes como nombre, edad, sexo y parentesco.',
+            },
+            {
+              title: 'Finalidades',
+              body: 'Los datos se utilizan para identificar visitantes, organizar y controlar ascensos, apoyar la atención de incidentes o retrasos, gestionar retornos, facilitar el contacto de emergencia, producir información operativa o estadística y permitir el funcionamiento de la aplicación.',
+            },
+            {
+              title: 'Ubicación en el dispositivo',
+              body: 'La ubicación GPS mostrada en el mapa se utiliza únicamente en el dispositivo como referencia. No se almacena en Supabase ni se comparte con la Alcaldía u otros usuarios.',
+            },
+            {
+              title: 'Menores y conservación',
+              body: 'Los menores no reciben una cuenta. Sus datos quedan ligados al ascenso y al adulto que los registró como responsable. El acceso administrativo se limita mediante roles, permisos y auditoría, y los registros se conservan conforme a las necesidades operativas y obligaciones aplicables.',
+            },
+          ],
+        },
+        terms: {
+          title: 'Términos y Condiciones',
+          sections: [
+            {
+              title: 'Alcance de la aplicación',
+              body: 'La aplicación es una herramienta informativa y de apoyo de la Alcaldía Indígena de Llanos del Pinal. No es un servicio de rescate, un sistema de navegación profesional ni un servicio de monitoreo permanente, y no sustituye a un guía local o a los servicios de emergencia.',
+            },
+            {
+              title: 'Condiciones variables',
+              body: 'El mapa, GPS, clima, ruta y tiempos son referencias que pueden presentar variaciones. El terreno, la actividad volcánica y las condiciones meteorológicas pueden cambiar. Cada visitante debe atender las instrucciones de las autoridades competentes y actuar con prudencia.',
+            },
+            {
+              title: 'Disponibilidad',
+              body: 'La aplicación no puede garantizar disponibilidad continua de internet, GPS, mapas, pronósticos u otros servicios externos. Estas limitaciones razonables no reducen los derechos que correspondan a las personas usuarias.',
+            },
+            {
+              title: 'Donaciones',
+              body: 'Las donaciones serán voluntarias, no son requisito para usar la aplicación y la aplicación continuará siendo gratuita. Cuando PayPal esté habilitado, la transacción ocurrirá fuera de esta PWA y estará sujeta a los términos y políticas de PayPal.',
+            },
+          ],
+        },
+        safety: {
+          title: 'Aviso de Seguridad',
+          sections: [
+            {
+              title: 'Herramienta de apoyo',
+              body: 'Esta aplicación sirve únicamente como herramienta de apoyo. Las condiciones del clima, terreno, señal GPS y actividad volcánica pueden cambiar.',
+            },
+            {
+              title: 'Referencias y autoridades',
+              body: 'El mapa y la ubicación son referencias y pueden presentar errores de precisión. La aplicación no sustituye un guía local, las indicaciones de las autoridades competentes ni los servicios de emergencia.',
+            },
+          ],
+        },
+      },
       profile: {
         loading: 'Cargando perfil…',
         loadErrorTitle: 'No pudimos cargar tu perfil',
@@ -126,6 +199,8 @@ const resources = {
           },
         },
         nationality: 'Nacionalidad',
+        department: 'Departamento',
+        selectDepartment: 'Seleccione un departamento',
         sex: 'Sexo',
         sexOptions: { male: 'Masculino', female: 'Femenino' },
         dateOfBirth: 'Fecha de nacimiento',
@@ -153,6 +228,8 @@ const resources = {
         },
         validation: {
           nationalityRequired: 'Selecciona una nacionalidad.',
+          departmentRequired:
+            'Selecciona tu departamento cuando la nacionalidad es Guatemala.',
           sexRequired: 'Selecciona el sexo.',
           dateOfBirthRequired: 'Selecciona una fecha de nacimiento.',
           dateOfBirthInvalid:
@@ -212,6 +289,10 @@ const resources = {
           remove: 'Retirar menor',
           validation:
             'Complete correctamente los datos de todos los menores (edad entre 0 y 17 años).',
+          consent:
+            'Confirmo que soy el adulto responsable del menor durante este ascenso y autorizo el registro de los datos necesarios para la gestión del recorrido.',
+          consentRequired:
+            'Debe confirmar su responsabilidad y autorización para registrar menores.',
         },
         loading: 'Buscando tu ascenso activo…',
         title: 'Ascenso al Volcán Santa María',
@@ -358,6 +439,7 @@ const resources = {
         },
         group: {
           preparing: 'En preparación',
+          pendingReturns: 'Retornos pendientes',
           title: 'Grupo para el ascenso',
           code: 'Código',
           copyCode: 'Copiar código',
@@ -379,7 +461,7 @@ const resources = {
           startedAt: 'Inicio',
           route: 'Ver ruta',
           map: 'Mapa',
-          references: 'Referencias',
+          gallery: 'Galería',
           futureFeature: '{{feature}} se implementará posteriormente.',
         },
         cancel: {
@@ -432,6 +514,9 @@ const resources = {
           copyFailed: 'No se pudo copiar el código.',
           shareFailed: 'No se pudo compartir el código.',
           generic: 'No se pudo completar la acción. Inténtalo de nuevo.',
+          minorConsentRequired: 'Debe confirmar la responsabilidad sobre los menores antes de continuar.',
+          invalidMinorData: 'Revise el nombre, edad, sexo y parentesco de cada menor.',
+          adultRequiredForMinors: 'Solo una persona adulta puede registrar menores a su cargo.',
         },
       },
       routes: {
@@ -443,7 +528,8 @@ const resources = {
           recommendations: 'Recomendaciones',
           map: 'Mapa',
           weather: 'Clima',
-          references: 'Referencias',
+          gallery: 'Galería',
+          donations: 'Donaciones',
         },
         loading: 'Cargando información de la ruta…',
         loadError: 'No pudimos cargar la información de la ruta.',
@@ -462,6 +548,9 @@ const resources = {
           previous: 'Fotografía anterior',
           next: 'Fotografía siguiente',
           position: '{{current}} de {{total}}',
+          goTo: 'Ver fotografía {{number}}',
+          pause: 'Pausar',
+          resume: 'Reanudar',
         },
         altitude: '{{altitude}} m de altitud',
         map: {
@@ -516,8 +605,21 @@ const resources = {
         },
         santiaguito: {
           title: 'Área restringida — Volcán Santiaguito',
-          body: 'No intente ascender hacia el complejo volcánico Santiaguito. Está prohibido ingresar o acercarse a la zona de restricción de 5 km alrededor de sus domos. La actividad volcánica puede generar explosiones, ceniza, flujos piroclásticos y otros peligros graves.',
+          body: 'No intente ascender ni acercarse al complejo volcánico Santiaguito. La actividad volcánica puede representar un peligro grave por explosiones, caída de ceniza, avalanchas, flujos piroclásticos y lahares.',
+          scope: 'Esta aplicación proporciona únicamente información para la ruta del Volcán Santa María. Respete las disposiciones de las autoridades competentes.',
           source: 'Fuente: CONRED / INSIVUMEH.',
+        },
+        gallery: {
+          title: 'Galería del Volcán Santa María',
+          empty: 'Aún no hay fotografías activas en la galería.',
+        },
+        donations: {
+          title: 'Donaciones',
+          heading: 'Apoye la conservación del Volcán Santa María',
+          body: 'Su aporte podrá contribuir a la limpieza del sendero, mantenimiento del recorrido, señalización y acciones de seguridad. La aplicación continuará siendo gratuita para todos los visitantes.',
+          button: 'Donar con PayPal',
+          comingSoon: 'Próximamente',
+          free: 'Las donaciones serán voluntarias y no son requisito para usar la aplicación.',
         },
         checkpointTypes: {
           start: 'Inicio',
@@ -810,6 +912,78 @@ const resources = {
         verificationPersistentNotice:
           'Confirm your email to enable ascent registration.',
       },
+      theme: { label: 'Theme', light: 'Light', dark: 'Dark' },
+      legal: {
+        entity: 'Alcaldía Indígena de Llanos del Pinal',
+        menu: 'Privacy and terms',
+        centerIntro: 'Review the application documents currently in force.',
+        version: 'Version {{version}}',
+        consent: {
+          title: 'Acceptance required',
+          existingUser:
+            'Before continuing, review and accept the current documents. Your existing information will not be changed.',
+          label: 'I have read and accept the Terms and Conditions and Privacy Policy.',
+          required: 'You must accept the documents to complete registration.',
+          accept: 'Accept and continue',
+          saving: 'Saving acceptance…',
+          error: 'Your acceptance could not be saved. Please try again.',
+        },
+        privacy: {
+          title: 'Privacy Policy',
+          sections: [
+            {
+              title: 'Controller and data processed',
+              body: 'Alcaldía Indígena de Llanos del Pinal is the responsible entity. Depending on the features used, the application may process first and last name, date of birth, sex, nationality, Guatemalan department, phone number, DPI/CUI or passport, emergency contact, avatar, ascents, history, returns, notifications, and accompanying minor data such as name, age, sex, and relationship.',
+            },
+            {
+              title: 'Purposes',
+              body: 'Data is used to identify visitors, organize and control ascents, support incident or delay response, manage returns, enable emergency contact, produce operational or statistical information, and operate the application.',
+            },
+            {
+              title: 'On-device location',
+              body: 'GPS location shown on the map is used only on the device as a reference. It is not stored in Supabase or shared with the Municipality or other users.',
+            },
+            {
+              title: 'Minors and retention',
+              body: 'Minors do not receive accounts. Their data remains linked to the ascent and to the adult who registered them as responsible. Administrative access is limited through roles, permissions, and audit logs.',
+            },
+          ],
+        },
+        terms: {
+          title: 'Terms and Conditions',
+          sections: [
+            {
+              title: 'Application scope',
+              body: 'This is an information and support tool of Alcaldía Indígena de Llanos del Pinal. It is not a rescue service, professional navigation system, or permanent monitoring service, and it does not replace a local guide or emergency services.',
+            },
+            {
+              title: 'Changing conditions',
+              body: 'The map, GPS, weather, route, and times are references and may vary. Terrain, volcanic activity, and weather can change. Visitors must follow competent authorities and act prudently.',
+            },
+            {
+              title: 'Availability',
+              body: 'The application cannot guarantee continuous availability of internet, GPS, maps, forecasts, or other external services. These reasonable limitations do not reduce applicable user rights.',
+            },
+            {
+              title: 'Donations',
+              body: 'Donations will be voluntary, are not required to use the application, and the application will remain free. When PayPal is enabled, transactions will occur outside this PWA under PayPal terms and policies.',
+            },
+          ],
+        },
+        safety: {
+          title: 'Safety Notice',
+          sections: [
+            {
+              title: 'Support tool',
+              body: 'This application is only a support tool. Weather, terrain, GPS signal, and volcanic activity can change.',
+            },
+            {
+              title: 'References and authorities',
+              body: 'The map and location are references and may have accuracy errors. The application does not replace a local guide, competent-authority instructions, or emergency services.',
+            },
+          ],
+        },
+      },
       profile: {
         loading: 'Loading profile…',
         loadErrorTitle: 'We could not load your profile',
@@ -848,6 +1022,8 @@ const resources = {
           },
         },
         nationality: 'Nationality',
+        department: 'Department',
+        selectDepartment: 'Select a department',
         sex: 'Sex',
         sexOptions: { male: 'Male', female: 'Female' },
         dateOfBirth: 'Date of birth',
@@ -875,6 +1051,8 @@ const resources = {
         },
         validation: {
           nationalityRequired: 'Select a nationality.',
+          departmentRequired:
+            'Select your department when your nationality is Guatemala.',
           sexRequired: 'Select sex.',
           dateOfBirthRequired: 'Select a date of birth.',
           dateOfBirthInvalid: 'Select a valid and reasonable date of birth.',
@@ -931,6 +1109,10 @@ const resources = {
           remove: 'Remove minor',
           validation:
             'Complete all minor details correctly (age from 0 to 17).',
+          consent:
+            'I confirm that I am responsible for the minor during this ascent and authorize the registration of the data needed to manage the trip.',
+          consentRequired:
+            'You must confirm responsibility and authorization to register minors.',
         },
         loading: 'Looking for your active ascent…',
         title: 'Santa María Volcano Ascent',
@@ -1078,6 +1260,7 @@ const resources = {
         },
         group: {
           preparing: 'Preparing',
+          pendingReturns: 'Pending returns',
           title: 'Ascent group',
           code: 'Code',
           copyCode: 'Copy code',
@@ -1099,7 +1282,7 @@ const resources = {
           startedAt: 'Start',
           route: 'View route',
           map: 'Map',
-          references: 'References',
+          gallery: 'Gallery',
           futureFeature: '{{feature}} will be implemented later.',
         },
         cancel: {
@@ -1151,6 +1334,9 @@ const resources = {
           copyFailed: 'The code could not be copied.',
           shareFailed: 'The code could not be shared.',
           generic: 'The action could not be completed. Try again.',
+          minorConsentRequired: 'Confirm responsibility for the minors before continuing.',
+          invalidMinorData: 'Review the name, age, sex, and relationship for each minor.',
+          adultRequiredForMinors: 'Only an adult may register accompanying minors.',
         },
       },
       routes: {
@@ -1162,7 +1348,8 @@ const resources = {
           recommendations: 'Recommendations',
           map: 'Map',
           weather: 'Weather',
-          references: 'References',
+          gallery: 'Gallery',
+          donations: 'Donations',
         },
         loading: 'Loading route information…',
         loadError: 'We could not load the route information.',
@@ -1180,6 +1367,9 @@ const resources = {
           previous: 'Previous photo',
           next: 'Next photo',
           position: '{{current}} of {{total}}',
+          goTo: 'View photo {{number}}',
+          pause: 'Pause',
+          resume: 'Resume',
         },
         altitude: '{{altitude}} m elevation',
         map: {
@@ -1233,8 +1423,21 @@ const resources = {
         },
         santiaguito: {
           title: 'Restricted area — Santiaguito Volcano',
-          body: 'Do not attempt to climb toward the Santiaguito volcanic complex. Entry into or approach to the 5 km restriction zone around its domes is prohibited. Volcanic activity can produce explosions, ash, pyroclastic flows, and other severe hazards.',
+          body: 'Do not attempt to climb or approach the Santiaguito volcanic complex. Volcanic activity can pose a serious danger from explosions, ashfall, avalanches, pyroclastic flows, and lahars.',
+          scope: 'This application provides information only for the Santa María Volcano route. Follow all instructions issued by competent authorities.',
           source: 'Source: CONRED / INSIVUMEH.',
+        },
+        gallery: {
+          title: 'Santa María Volcano gallery',
+          empty: 'There are no active gallery photos yet.',
+        },
+        donations: {
+          title: 'Donations',
+          heading: 'Support the conservation of Santa María Volcano',
+          body: 'Your contribution may support trail cleanup, route maintenance, signage, and safety actions. The application will remain free for every visitor.',
+          button: 'Donate with PayPal',
+          comingSoon: 'Coming soon',
+          free: 'Donations will be voluntary and are not required to use the application.',
         },
         checkpointTypes: {
           start: 'Start',

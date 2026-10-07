@@ -24,7 +24,7 @@ import {
 } from '../services/admin-service';
 import type { AdminSession, AscentRow } from '../types';
 
-export function AscentsPage({ session }: { session: AdminSession }) {
+export function AscentsPage({ session, initialSearch = '' }: { session: AdminSession; initialSearch?: string }) {
   const [status, setStatus] = useState('all');
   const [rows, setRows] = useState<AscentRow[]>([]);
   const [state, setState] = useState<'loading' | 'success' | 'error'>(
@@ -33,15 +33,16 @@ export function AscentsPage({ session }: { session: AdminSession }) {
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<AscentRow | null>(null);
   const [message, setMessage] = useState('');
-  const [search, setSearch] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
+  const [activeSearch, setActiveSearch] = useState(initialSearch);
+  const [referenceTime, setReferenceTime] = useState(() => Date.now());
   const canManage =
     session.role === 'admin' || Boolean(session.permissions.can_manage_visits);
   const canConfirmReturns =
     session.role === 'admin' ||
     Boolean(session.permissions.can_confirm_returns);
   const operationalStatus = (row: AscentRow) => {
-    if (row.visit_status !== 'forming') return row.visit_status;
+    if (!['forming', 'scheduled'].includes(row.visit_status)) return row.visit_status;
     if (!row.planned_start_at) return 'in_preparation';
     const planned = new Date(row.planned_start_at);
     const today = new Date();
@@ -70,13 +71,14 @@ export function AscentsPage({ session }: { session: AdminSession }) {
             if (
               current === 'in_progress' &&
               row.expected_return_at &&
-              Date.parse(row.expected_return_at) < Date.now()
+              Date.parse(row.expected_return_at) < referenceTime
             )
               return 0;
             return (
               (
                 {
-                  in_progress: 1,
+                  pending_returns: 1,
+                  in_progress: 2,
                   in_preparation: 3,
                   scheduled_today: 4,
                   scheduled_future: 5,
@@ -90,13 +92,13 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           if (difference) return difference;
           const date = (row: AscentRow) =>
             Date.parse(
-              row.visit_status === 'in_progress'
+              ['in_progress', 'pending_returns'].includes(row.visit_status)
                 ? (row.expected_return_at ?? '')
                 : (row.planned_start_at ?? row.completed_at ?? '')
             ) || 0;
           return date(first) - date(second);
         }),
-    [rows, status]
+    [referenceTime, rows, status]
   );
   const load = useCallback(async (query = '') => {
     setState('loading');
@@ -109,7 +111,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
   }, []);
   useEffect(() => {
     let current = true;
-    void listAscents('all')
+    void listAscents('all', initialSearch)
       .then((result) => {
         if (current) {
           setRows(result);
@@ -122,6 +124,10 @@ export function AscentsPage({ session }: { session: AdminSession }) {
     return () => {
       current = false;
     };
+  }, [initialSearch]);
+  useEffect(() => {
+    const interval = window.setInterval(() => setReferenceTime(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
   }, []);
   async function start(row: AscentRow) {
     setMessage('');
@@ -157,6 +163,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
           <option value="forming">En preparación</option>
           <option value="scheduled">Planificados</option>
           <option value="in_progress">En recorrido</option>
+          <option value="pending_returns">Retornos pendientes</option>
           <option value="completed">Completados</option>
           <option value="cancelled">Cancelados</option>
         </select>
@@ -178,11 +185,11 @@ export function AscentsPage({ session }: { session: AdminSession }) {
       <Panel className="ascent-search-panel">
         <form className="ascent-search" onSubmit={submitSearch}>
           <label>
-            Buscar ascenso o menor
+            Buscar ascenso o participante
             <input
               type="search"
               value={search}
-              placeholder="Código, organizador o nombre del menor"
+              placeholder="Código, organizador, adulto o menor"
               onChange={(event) => setSearch(event.target.value)}
             />
           </label>
@@ -265,6 +272,9 @@ export function AscentsPage({ session }: { session: AdminSession }) {
                     <td>{formatDateTime(row.expected_return_at)}</td>
                     <td>
                       <StatusBadge value={operationalStatus(row)} />
+                      {row.visit_status !== 'completed' && row.expected_return_at && Date.parse(row.expected_return_at) < referenceTime && (
+                        <small className="overdue-indicator">Retorno atrasado</small>
+                      )}
                     </td>
                     <td>
                       <div className="provenance-row">
@@ -291,7 +301,7 @@ export function AscentsPage({ session }: { session: AdminSession }) {
                         </button>
                         {canManage &&
                           row.creation_origin === 'administrative' &&
-                          row.visit_status === 'forming' && (
+                          ['forming', 'scheduled'].includes(row.visit_status) && (
                             <button
                               type="button"
                               className="table-action"

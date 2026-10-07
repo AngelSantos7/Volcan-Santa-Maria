@@ -11,6 +11,7 @@ import { normalizeSpaces } from '../../lib/text';
 import { getVisitErrorMessage } from './visit-errors';
 import { createGroupVisit } from './visit-service';
 import type { VisitStartMode, VisitType } from './visit-types';
+import { LegalLinks } from '../legal/LegalDocuments';
 
 type CreateVisitFormProps = {
   currentUserName: string;
@@ -159,6 +160,8 @@ export function CreateVisitForm({
   const [recommendationsAccepted, setRecommendationsAccepted] = useState(false);
   const [travelsWithMinors, setTravelsWithMinors] = useState(false);
   const [minors, setMinors] = useState<MinorDraft[]>([]);
+  const [minorResponsibilityConsentAccepted, setMinorResponsibilityConsentAccepted] =
+    useState(false);
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false);
   const [recommendationsOpen, setRecommendationsOpen] = useState(false);
   const [nowReference, setNowReference] = useState(getGuatemalaLocalTime);
@@ -375,6 +378,10 @@ export function CreateVisitForm({
       setSubmitError(t('visits.minors.validation'));
       return;
     }
+    if (travelsWithMinors && !minorResponsibilityConsentAccepted) {
+      setSubmitError(t('visits.minors.consentRequired'));
+      return;
+    }
 
     setFieldErrors(errors);
 
@@ -398,6 +405,8 @@ export function CreateVisitForm({
         hasLocalGuide,
         guideName: hasLocalGuide ? normalizedGuideName : null,
         recommendationsAccepted,
+        minorResponsibilityConsentAccepted:
+          travelsWithMinors && minorResponsibilityConsentAccepted,
         minors: travelsWithMinors
           ? minors.map((minor) => ({
               fullName: normalizeSpaces(minor.fullName),
@@ -476,6 +485,13 @@ export function CreateVisitForm({
           <span>{t('visits.route')}</span>
           <strong>{t('visits.summitRoute')}</strong>
         </div>
+
+        <aside className="visit-safety-notice" role="note">
+          <strong>{t('legal.safety.title')}</strong>
+          <p>{t('legal.safety.sections.0.body')}</p>
+          <p>{t('legal.safety.sections.1.body')}</p>
+          <LegalLinks compact />
+        </aside>
 
         <fieldset className="visit-type-fieldset" data-field-name="startMode">
           <legend>{t('visits.startMode.title')}</legend>
@@ -754,6 +770,7 @@ export function CreateVisitForm({
                 const enabled = event.target.checked;
                 setTravelsWithMinors(enabled);
                 if (enabled && minors.length === 0) setMinors([emptyMinor()]);
+                if (!enabled) setMinorResponsibilityConsentAccepted(false);
               }}
               disabled={submitting}
             />
@@ -911,6 +928,18 @@ export function CreateVisitForm({
               >
                 {t('visits.minors.add')}
               </button>
+              <label className="terms-row minor-consent-row">
+                <input
+                  type="checkbox"
+                  checked={minorResponsibilityConsentAccepted}
+                  onChange={(event) =>
+                    setMinorResponsibilityConsentAccepted(event.target.checked)
+                  }
+                  disabled={submitting}
+                  required
+                />
+                <span>{t('visits.minors.consent')}</span>
+              </label>
             </div>
           )}
         </section>

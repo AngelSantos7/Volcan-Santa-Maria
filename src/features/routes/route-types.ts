@@ -1,7 +1,12 @@
 export type RouteCheckpointType =
   'start' | 'reference' | 'rest' | 'viewpoint' | 'summit';
 
-export type RouteTab = 'recommendations' | 'map' | 'weather' | 'references';
+export type RouteTab =
+  | 'recommendations'
+  | 'map'
+  | 'weather'
+  | 'gallery'
+  | 'donations';
 
 export type RouteCheckpoint = {
   id: string;
@@ -23,6 +28,10 @@ export type RouteMedia = {
   publicUrl: string;
   captionEs: string | null;
   captionEn: string | null;
+  titleEs: string | null;
+  titleEn: string | null;
+  descriptionEs: string | null;
+  descriptionEn: string | null;
   sortOrder: number;
   isCover: boolean;
 };

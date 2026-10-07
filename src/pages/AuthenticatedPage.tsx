@@ -9,6 +9,7 @@ import { GroupVisits } from '../features/visits/GroupVisits';
 import { getShortName } from '../features/profile/avatar-utils';
 import type { TouristProfileData } from '../features/profile/profile-types';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
+import { LegalLinks } from '../features/legal/LegalDocuments';
 
 type AuthenticatedPageProps = {
   profile: TouristProfileData;
@@ -23,6 +24,7 @@ export function AuthenticatedPage({
   const { user, signOut } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(false);
   const email = user?.email ?? '';
   const displayName = getShortName(profile.firstName, profile.lastName, email);
   const fullName =
@@ -54,6 +56,7 @@ export function AuthenticatedPage({
             email={email}
             disabled={submitting}
             onEditProfile={onEditProfile}
+            onOpenLegal={() => setLegalOpen(true)}
             onSignOut={() => void handleSignOut()}
           />
         </div>
@@ -77,6 +80,18 @@ export function AuthenticatedPage({
           <p className="form-message error-message" role="alert">
             {error}
           </p>
+        )}
+        {legalOpen && (
+          <div className="legal-dialog-backdrop" role="presentation">
+            <section className="legal-dialog legal-center" role="dialog" aria-modal="true" aria-label={t('legal.menu')}>
+              <h2>{t('legal.menu')}</h2>
+              <p>{t('legal.centerIntro')}</p>
+              <LegalLinks />
+              <button className="primary-button" type="button" onClick={() => setLegalOpen(false)}>
+                {t('common.close')}
+              </button>
+            </section>
+          </div>
         )}
       </section>
     </main>

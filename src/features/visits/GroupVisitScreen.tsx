@@ -128,6 +128,16 @@ export function GroupVisitScreen({
   const participantCount = details.participants.filter(
     (participant) => participant.memberStatus !== 'withdrawn_before_start'
   ).length;
+  const activeAdults = details.participants.filter((participant) =>
+    ['active', 'returning_early'].includes(participant.memberStatus)
+  );
+  const returnedAdults = details.participants.filter((participant) =>
+    ['completed', 'returned_early'].includes(participant.memberStatus)
+  );
+  const hasPendingReturns =
+    details.status === 'in_progress' &&
+    activeAdults.length > 0 &&
+    returnedAdults.length > 0;
   const scheduledStartLocked =
     details.startMode === 'scheduled' &&
     Boolean(details.plannedStartAt) &&
@@ -355,6 +365,8 @@ export function GroupVisitScreen({
               ? 'visits.group.preparing'
               : details.status === 'completed'
                 ? 'visits.complete.completed'
+                : hasPendingReturns
+                  ? 'visits.group.pendingReturns'
                 : 'visits.inProgress.status'
           )}
         </span>
@@ -550,7 +562,7 @@ export function GroupVisitScreen({
 
       {details.status === 'in_progress' && (
         <div className="future-actions ascent-route-actions">
-          {(['route', 'map', 'references'] as const).map((feature) => (
+          {(['route', 'map', 'gallery'] as const).map((feature) => (
             <button
               key={feature}
               className="secondary-button"

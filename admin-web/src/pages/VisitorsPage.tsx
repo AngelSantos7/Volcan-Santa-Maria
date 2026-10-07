@@ -8,15 +8,20 @@ import {
   StatusBadge,
   Avatar,
 } from '../components/ui';
-import { formatDateTime, toHalfOpenRange } from '../lib/date-range';
+import { formatDateTime } from '../lib/date-range';
+import { countryName, departmentName } from '../lib/admin-form-utils';
+import { adminLabel } from '../lib/admin-labels';
 import {
-  getSensitiveDetails,
+  getIdentityDetails,
+  getOperationalContacts,
   getVisitorSummary,
-  searchVisitors,
+  listVisitorDirectory,
 } from '../services/admin-service';
 import type {
   AdminSession,
-  SensitiveDetails,
+  IdentityDetails,
+  OperationalContactDetails,
+  VisitorDirectoryRow,
   VisitorRow,
   VisitorSummary,
 } from '../types';
@@ -32,6 +37,31 @@ function maskDocument(value?: string | null) {
   return `•••••••••${value.slice(-4)}`;
 }
 
+function directoryVisitor(row: VisitorDirectoryRow): VisitorRow {
+  return {
+    user_id: row.visitor_id,
+    visit_id: row.latest_visit_id ?? '',
+    full_name: row.full_name,
+    nationality_country_code: row.nationality_country_code,
+    department_code: row.department_code,
+    sex: row.sex,
+    registration_origin: row.registration_origin,
+    ascent_count: row.ascent_count,
+    last_ascent_at: row.last_ascent_at,
+    avatar_kind: null,
+    avatar_path: null,
+    avatar_preset: null,
+    group_type: 'individual',
+    member_status: row.latest_member_status ?? 'no_active_ascent',
+    visit_status: row.latest_visit_status ?? 'no_active_ascent',
+    planned_start_at: row.last_ascent_at,
+    started_at: row.last_ascent_at,
+    expected_return_at: null,
+    participant_count: 1,
+    total_count: 1,
+  };
+}
+
 function VisitorDrawer({
   visitor,
   session,
@@ -42,10 +72,11 @@ function VisitorDrawer({
   close: () => void;
 }) {
   const [summary, setSummary] = useState<VisitorSummary | null>(null);
-  const [sensitive, setSensitive] = useState<SensitiveDetails | null>(null);
-  const [documentsShown, setDocumentsShown] = useState(false);
+  const [identity, setIdentity] = useState<IdentityDetails | null>(null);
+  const [contacts, setContacts] = useState<OperationalContactDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [accessError, setAccessError] = useState('');
 
   useEffect(() => {
     void getVisitorSummary(visitor.user_id, visitor.visit_id)
@@ -54,23 +85,28 @@ function VisitorDrawer({
       .finally(() => setLoading(false));
   }, [visitor]);
 
-  async function revealSensitive(includeDocuments: boolean) {
+  async function revealIdentity() {
     try {
-      const result = await getSensitiveDetails(
-        visitor.user_id,
-        includeDocuments
-      );
-      setSensitive((current) => ({ ...(current ?? result), ...result }));
-      if (includeDocuments) setDocumentsShown(true);
+      setAccessError('');
+      setIdentity(await getIdentityDetails(visitor.user_id));
     } catch {
-      setFailed(true);
+      setAccessError('No fue posible consultar los datos de identidad con sus permisos actuales.');
     }
   }
 
-  const canSensitive =
-    session.role === 'admin' || session.permissions.can_view_sensitive_data;
+  async function revealContacts() {
+    try {
+      setAccessError('');
+      setContacts(await getOperationalContacts(visitor.user_id));
+    } catch {
+      setAccessError('Los teléfonos solo están disponibles durante un ascenso activo, pendiente o atrasado.');
+    }
+  }
+
   const canDocuments =
     session.role === 'admin' || session.permissions.can_view_identity_documents;
+  const canContacts =
+    session.role === 'admin' || session.permissions.can_view_emergency_contacts;
   return (
     <div
       className="drawer-layer"
@@ -105,6 +141,7 @@ function VisitorDrawer({
           <ErrorState />
         ) : (
           <div className="drawer-body">
+            {accessError && <div className="alert error" role="alert">{accessError}</div>}
             <div className="profile-heading">
               <Avatar
                 name={visitor.full_name}
@@ -114,8 +151,10 @@ function VisitorDrawer({
               <div>
                 <strong>{visitor.full_name}</strong>
                 <span>
-                  {summary.nationality_country_code ??
-                    'Nacionalidad no registrada'}
+                  {countryName(summary.nationality_country_code)}
+                  {visitor.nationality_country_code === 'GT' && visitor.department_code
+                    ? ` · ${departmentName(visitor.department_code)}`
+                    : ''}
                 </span>
               </div>
               <StatusBadge value={summary.member_status} />
@@ -141,30 +180,36 @@ function VisitorDrawer({
               <h3>Información personal</h3>
               <dl className="detail-grid">
                 <div>
-                  <dt>Fecha de nacimiento</dt>
-                  <dd>{sensitive?.date_of_birth ?? '•• / •• / ••••'}</dd>
+                  <dt>Nacionalidad</dt>
+                  <dd>{countryName(visitor.nationality_country_code)}</dd>
+                </div>
+                {visitor.nationality_country_code === 'GT' && (
+                  <div>
+                    <dt>Departamento</dt>
+                    <dd>{departmentName(visitor.department_code)}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Sexo</dt>
+                  <dd>{visitor.sex === 'female' ? 'Femenino' : visitor.sex === 'male' ? 'Masculino' : 'No registrado'}</dd>
                 </div>
                 <div>
-                  <dt>Teléfono</dt>
-                  <dd>
-                    {sensitive
-                      ? (sensitive.phone ?? 'No registrado')
-                      : maskPhone()}
-                  </dd>
+                  <dt>Fecha de nacimiento</dt>
+                  <dd>{identity?.date_of_birth ?? '•• / •• / ••••'}</dd>
                 </div>
               </dl>
-              {!sensitive && canSensitive && (
+              {!identity && canDocuments && (
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => void revealSensitive(false)}
+                  onClick={() => void revealIdentity()}
                 >
-                  Mostrar datos sensibles
+                  Mostrar identidad
                 </button>
               )}
-              {!canSensitive && (
+              {!canDocuments && (
                 <p className="permission-note">
-                  Su perfil no permite ver datos sensibles.
+                  Su perfil no permite ver datos de identidad.
                 </p>
               )}
             </section>
@@ -174,8 +219,8 @@ function VisitorDrawer({
                 <div>
                   <dt>Tipo</dt>
                   <dd>
-                    {documentsShown
-                      ? (sensitive?.document_type?.toUpperCase() ??
+                    {identity
+                      ? (identity.document_type?.toUpperCase() ??
                         'No registrado')
                       : 'Documento'}
                   </dd>
@@ -183,17 +228,17 @@ function VisitorDrawer({
                 <div>
                   <dt>Número</dt>
                   <dd>
-                    {documentsShown
-                      ? (sensitive?.document_number ?? 'No registrado')
+                    {identity
+                      ? (identity.document_number ?? 'No registrado')
                       : maskDocument()}
                   </dd>
                 </div>
               </dl>
-              {!documentsShown && canSensitive && canDocuments && (
+              {!identity && canDocuments && (
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => void revealSensitive(true)}
+                  onClick={() => void revealIdentity()}
                 >
                   Mostrar documento completo
                 </button>
@@ -205,31 +250,38 @@ function VisitorDrawer({
               )}
             </section>
             <section className="detail-section">
-              <h3>Contacto de emergencia</h3>
-              {sensitive ? (
-                sensitive.emergency_contact ? (
+              <h3>Teléfonos para emergencia operativa</h3>
+              {contacts ? (
+                <>
+                  <dl className="detail-grid">
+                    <div><dt>Teléfono personal</dt><dd>{contacts.phone ?? 'No registrado'}</dd></div>
+                    <div><dt>Teléfono alternativo</dt><dd>{contacts.alternate_phone ?? 'No registrado'}</dd></div>
+                  </dl>
+                  {contacts.emergency_contact ? (
                   <dl className="detail-grid">
                     <div>
                       <dt>Nombre</dt>
                       <dd>
-                        {sensitive.emergency_contact.first_name}{' '}
-                        {sensitive.emergency_contact.last_name}
+                        {contacts.emergency_contact.first_name}{' '}
+                        {contacts.emergency_contact.last_name}
                       </dd>
                     </div>
                     <div>
                       <dt>Relación</dt>
-                      <dd>{sensitive.emergency_contact.relationship}</dd>
+                      <dd>{adminLabel(contacts.emergency_contact.relationship)}</dd>
                     </div>
                     <div>
                       <dt>Teléfono</dt>
-                      <dd>{sensitive.emergency_contact.phone}</dd>
+                      <dd>{contacts.emergency_contact.phone}</dd>
                     </div>
                   </dl>
-                ) : (
-                  <p className="muted">No registrado.</p>
-                )
+                  ) : <p className="muted">Contacto de emergencia no registrado.</p>}
+                </>
               ) : (
-                <p className="masked-line">Contacto •••••••• · {maskPhone()}</p>
+                <>
+                  <p className="masked-line">Contacto •••••••• · {maskPhone()}</p>
+                  {canContacts ? <button type="button" className="text-button" onClick={() => void revealContacts()}>Consultar durante la operación</button> : <p className="permission-note">No cuenta con permiso para contactos de emergencia.</p>}
+                </>
               )}
             </section>
             <section className="detail-section">
@@ -305,7 +357,7 @@ function VisitorDrawer({
                           {item.minors.map((minor) => (
                             <span key={minor.id}>
                               {minor.full_name} · {minor.age} años ·{' '}
-                              {minor.relationship}
+                              {adminLabel(minor.relationship)}
                             </span>
                           ))}
                         </div>
@@ -323,7 +375,6 @@ function VisitorDrawer({
 }
 
 export function VisitorsPage({ session }: { session: AdminSession }) {
-  const [referenceTime] = useState(() => Date.now());
   const canView =
     session.role === 'admin' || Boolean(session.permissions.can_view_visitors);
   const [rows, setRows] = useState<VisitorRow[]>([]);
@@ -334,9 +385,6 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
   const [notice, setNotice] = useState('');
   const [filters, setFilters] = useState({
     search: '',
-    status: 'all',
-    from: '',
-    to: '',
   });
 
   const load = useCallback(
@@ -344,18 +392,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
       setLoading(true);
       setFailed(false);
       try {
-        const dates =
-          current.from && current.to
-            ? toHalfOpenRange(current.from, current.to)
-            : null;
-        setRows(
-          await searchVisitors({
-            search: current.search,
-            status: current.status,
-            from: dates?.from,
-            to: dates?.to,
-          })
-        );
+        setRows((await listVisitorDirectory(current.search)).map(directoryVisitor));
       } catch {
         setFailed(true);
       } finally {
@@ -370,9 +407,9 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
       return;
     }
     let current = true;
-    void searchVisitors({ status: 'all' })
+    void listVisitorDirectory()
       .then((result) => {
-        if (current) setRows(result);
+        if (current) setRows(result.map(directoryVisitor));
       })
       .catch(() => {
         if (current) setFailed(true);
@@ -423,43 +460,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                   }
                 />
               </label>
-              <label>
-                Estado
-                <select
-                  value={filters.status}
-                  onChange={(event) =>
-                    setFilters({ ...filters, status: event.target.value })
-                  }
-                >
-                  <option value="all">Todos</option>
-                  <option value="active">En recorrido</option>
-                  <option value="returning_early">Retorno anticipado</option>
-                  <option value="returned_early">Retornó antes</option>
-                  <option value="completed">Completado</option>
-                </select>
-              </label>
-              <label>
-                Desde
-                <input
-                  type="date"
-                  value={filters.from}
-                  onChange={(event) =>
-                    setFilters({ ...filters, from: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Hasta
-                <input
-                  type="date"
-                  min={filters.from}
-                  value={filters.to}
-                  onChange={(event) =>
-                    setFilters({ ...filters, to: event.target.value })
-                  }
-                />
-              </label>
-              <button type="submit">Aplicar filtros</button>
+              <button type="submit">Buscar</button>
             </form>
           </Panel>
           <Panel>
@@ -478,11 +479,10 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                   <thead>
                     <tr>
                       <th>Visitante</th>
-                      <th>Nacionalidad</th>
-                      <th>Modalidad</th>
-                      <th>Estado</th>
-                      <th>Inicio</th>
-                      <th>Retorno estimado</th>
+                      <th>Procedencia</th>
+                      <th>Ascensos</th>
+                      <th>Último ascenso</th>
+                      <th>Estado actual</th>
                       <th>
                         <span className="sr-only">Acción</span>
                       </th>
@@ -490,7 +490,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                   </thead>
                   <tbody>
                     {rows.map((row) => (
-                      <tr key={`${row.visit_id}-${row.user_id}`}>
+                      <tr key={row.user_id}>
                         <td>
                           <div className="person-cell">
                             <Avatar
@@ -501,44 +501,31 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                             <strong>{row.full_name}</strong>
                           </div>
                         </td>
-                        <td>{row.nationality_country_code ?? '—'}</td>
                         <td>
-                          {row.group_type === 'group'
-                            ? `Grupo · ${row.participant_count}`
-                            : 'Individual'}
+                          {countryName(row.nationality_country_code)}
+                          {row.nationality_country_code === 'GT' && row.department_code
+                            ? ` · ${departmentName(row.department_code)}`
+                            : ''}
                         </td>
+                        <td>{row.ascent_count ?? 0}</td>
+                        <td>{formatDateTime(row.last_ascent_at)}</td>
                         <td>
                           <StatusBadge
                             value={
-                              row.visit_status === 'in_progress' &&
-                              row.started_at &&
-                              ['active', 'returning_early'].includes(
-                                row.member_status
-                              )
+                              row.visit_status === 'in_progress' || row.visit_status === 'pending_returns'
                                 ? row.member_status
-                                : row.visit_status === 'forming'
-                                  ? row.planned_start_at &&
-                                    Date.parse(row.planned_start_at) >
-                                      referenceTime
-                                    ? 'scheduled_future'
-                                    : 'in_preparation'
-                                  : 'no_active_ascent'
+                                : 'no_active_ascent'
                             }
                           />
                         </td>
-                        <td>
-                          {formatDateTime(
-                            row.started_at ?? row.planned_start_at
-                          )}
-                        </td>
-                        <td>{formatDateTime(row.expected_return_at)}</td>
                         <td>
                           <button
                             type="button"
                             className="table-action"
                             onClick={() => setSelected(row)}
+                            disabled={!row.visit_id}
                           >
-                            Ver expediente
+                            {row.visit_id ? 'Ver visitante' : 'Sin ascensos'}
                           </button>
                         </td>
                       </tr>
@@ -574,7 +561,7 @@ export function VisitorsPage({ session }: { session: AdminSession }) {
                 ? visitor.full_name
                 : `${visitor.first_name} ${visitor.last_name}`;
             setNotice('Visitante registrado correctamente.');
-            const nextFilters = { ...filters, search: name, status: 'all' };
+            const nextFilters = { ...filters, search: name };
             setFilters(nextFilters);
             void load(nextFilters);
           }}

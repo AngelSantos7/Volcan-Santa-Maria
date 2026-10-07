@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAppLanguage } from '../../i18n';
 import { WeatherPanel } from '../weather/WeatherPanel';
@@ -9,9 +9,7 @@ import {
   getSummitRouteContent,
 } from './route-service';
 import type {
-  RouteCheckpointType,
   RouteContent,
-  RouteMedia,
   RouteTab,
 } from './route-types';
 
@@ -24,23 +22,16 @@ const routeTabs: RouteTab[] = [
   'recommendations',
   'map',
   'weather',
-  'references',
+  'gallery',
+  'donations',
 ];
+const PAYPAL_DONATION_URL =
+  import.meta.env.VITE_PAYPAL_DONATION_URL?.trim() || null;
 const RouteMap = lazy(() =>
   import('./components/RouteMap').then((module) => ({
     default: module.RouteMap,
   }))
 );
-
-function sortedMedia(media: RouteMedia[], checkpointId: string | null) {
-  return media
-    .filter((item) => item.checkpointId === checkpointId)
-    .toSorted(
-      (first, second) =>
-        Number(second.isCover) - Number(first.isCover) ||
-        first.sortOrder - second.sortOrder
-    );
-}
 
 export function RouteInfoScreen({
   initialTab = 'recommendations',
@@ -57,10 +48,6 @@ export function RouteInfoScreen({
     () => new Set()
   );
   const language = getAppLanguage(i18n.resolvedLanguage);
-  const numberFormatter = useMemo(
-    () => new Intl.NumberFormat(language === 'es' ? 'es-GT' : 'en'),
-    [language]
-  );
 
   useEffect(() => {
     let active = true;
@@ -190,82 +177,70 @@ export function RouteInfoScreen({
         </div>
       )}
 
-      {content && activeTab === 'references' && (
+      {content && activeTab === 'gallery' && (
         <div
-          className="route-tab-panel"
-          id="route-panel-references"
+          className="route-tab-panel route-gallery-panel"
+          id="route-panel-gallery"
           role="tabpanel"
-          aria-labelledby="route-tab-references"
+          aria-labelledby="route-tab-gallery"
         >
           {content.mediaLoadFailed && (
             <p className="route-media-error" role="status">
               {t('routes.photosLoadError')}
             </p>
           )}
-          {sortedMedia(visibleMedia, null).length > 0 && (
+          {visibleMedia.length > 0 ? (
             <section
               className="route-general-media"
               aria-labelledby="route-general-media-title"
             >
-              <h3 id="route-general-media-title">{t('routes.routePhotos')}</h3>
+              <h3 id="route-general-media-title">
+                {t('routes.gallery.title')}
+              </h3>
               <CheckpointMediaGallery
-                media={sortedMedia(visibleMedia, null)}
+                media={visibleMedia.toSorted(
+                  (first, second) => first.sortOrder - second.sortOrder
+                )}
                 fallbackAlt={routeName}
                 language={language}
                 onMediaError={hideFailedMedia}
               />
             </section>
-          )}
-          {content.checkpoints.length === 0 ? (
-            <p className="route-empty-state">{t('routes.noCheckpoints')}</p>
           ) : (
-            <ol className="route-checkpoint-list route-reference-list">
-              {content.checkpoints.map((checkpoint) => {
-                const name =
-                  language === 'es' ? checkpoint.nameEs : checkpoint.nameEn;
-                const description =
-                  language === 'es'
-                    ? checkpoint.descriptionEs
-                    : checkpoint.descriptionEn;
-                const media = sortedMedia(visibleMedia, checkpoint.id);
-                return (
-                  <li key={checkpoint.id}>
-                    <div className="route-checkpoint-marker" aria-hidden="true">
-                      {checkpoint.sequence}
-                    </div>
-                    <div className="route-reference-content">
-                      <CheckpointMediaGallery
-                        media={media}
-                        fallbackAlt={name}
-                        language={language}
-                        onMediaError={hideFailedMedia}
-                      />
-                      {checkpoint.checkpointType && (
-                        <span className="route-checkpoint-type">
-                          {t(
-                            `routes.checkpointTypes.${
-                              checkpoint.checkpointType as RouteCheckpointType
-                            }`
-                          )}
-                        </span>
-                      )}
-                      <h3>{name}</h3>
-                      {description && <p>{description}</p>}
-                      {checkpoint.altitudeM !== null && (
-                        <span className="route-checkpoint-altitude">
-                          {t('routes.altitude', {
-                            altitude: numberFormatter.format(
-                              checkpoint.altitudeM
-                            ),
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+            <p className="route-empty-state">{t('routes.gallery.empty')}</p>
           )}
+        </div>
+      )}
+
+      {content && activeTab === 'donations' && (
+        <div
+          className="route-tab-panel"
+          id="route-panel-donations"
+          role="tabpanel"
+          aria-labelledby="route-tab-donations"
+        >
+          <section className="donations-card">
+            <span className="eyebrow">{t('routes.donations.title')}</span>
+            <h3>{t('routes.donations.heading')}</h3>
+            <p>{t('routes.donations.body')}</p>
+            <strong>{t('legal.entity')}</strong>
+            {PAYPAL_DONATION_URL ? (
+              <a
+                className="primary-button"
+                href={PAYPAL_DONATION_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t('routes.donations.button')}
+              </a>
+            ) : (
+              <button className="primary-button" type="button" disabled>
+                {t('routes.donations.button')} ·{' '}
+                {t('routes.donations.comingSoon')}
+              </button>
+            )}
+            <small>{t('routes.donations.free')}</small>
+          </section>
         </div>
       )}
     </section>

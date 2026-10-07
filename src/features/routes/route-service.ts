@@ -43,6 +43,10 @@ type MediaRow = {
   storage_path: string;
   caption_es: string | null;
   caption_en: string | null;
+  title_es: string | null;
+  title_en: string | null;
+  description_es: string | null;
+  description_en: string | null;
   sort_order: number;
   is_cover: boolean;
 };
@@ -62,18 +66,22 @@ function mapCheckpoint(row: CheckpointRow): RouteCheckpoint {
   };
 }
 
-function mapMedia(row: MediaRow): RouteMedia {
-  const { data } = supabase.storage
+async function mapMedia(row: MediaRow): Promise<RouteMedia> {
+  const { data } = await supabase.storage
     .from(ROUTE_MEDIA_BUCKET)
-    .getPublicUrl(row.storage_path.replace(/^\/+/, ''));
+    .createSignedUrl(row.storage_path.replace(/^\/+/, ''), 60 * 60);
 
   return {
     id: row.id,
     checkpointId: row.checkpoint_id,
     storagePath: row.storage_path,
-    publicUrl: data.publicUrl,
+    publicUrl: data?.signedUrl ?? '',
     captionEs: row.caption_es,
     captionEn: row.caption_en,
+    titleEs: row.title_es,
+    titleEn: row.title_en,
+    descriptionEs: row.description_es,
+    descriptionEn: row.description_en,
     sortOrder: row.sort_order,
     isCover: row.is_cover,
   };
@@ -138,7 +146,7 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
     supabase
       .from('route_media')
       .select(
-        'id, checkpoint_id, storage_path, caption_es, caption_en, sort_order, is_cover'
+        'id, checkpoint_id, storage_path, caption_es, caption_en, title_es, title_en, description_es, description_en, sort_order, is_cover'
       )
       .eq('route_id', route.id)
       .order('sort_order', { ascending: true }),
@@ -155,7 +163,7 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
     ? cachedContent?.id === route.id
       ? cachedContent.media
       : []
-    : ((mediaResult.data ?? []) as MediaRow[]).map(mapMedia);
+    : await Promise.all(((mediaResult.data ?? []) as MediaRow[]).map(mapMedia));
 
   const content: RouteContent = {
     id: route.id,

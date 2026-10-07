@@ -22,6 +22,7 @@ import {
 } from '../features/auth/registration-validation';
 import { TurnstileWidget } from '../features/auth/TurnstileWidget';
 import { useAuth } from '../features/auth/useAuth';
+import { LegalLinks } from '../features/legal/LegalDocuments';
 
 type RegisterPageProps = {
   onShowLogin: () => void;
@@ -72,6 +73,7 @@ export function RegisterPage({
   const [submitting, setSubmitting] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
 
   const setField = (field: keyof RegistrationValues, value: string) => {
     const nextValues = { ...values, [field]: value };
@@ -146,6 +148,11 @@ export function RegisterPage({
     );
     setErrors(validationErrors);
 
+    if (!legalConsentAccepted) {
+      setSubmitError(t('legal.consent.required'));
+      return;
+    }
+
     const firstInvalidField = Object.keys(validationErrors)[0] as
       RegistrationField | undefined;
     if (firstInvalidField) {
@@ -175,6 +182,7 @@ export function RegisterPage({
         lastName: normalizedLastName,
         email: normalizedEmail,
         password: values.password,
+        legalConsentAccepted,
         captchaToken: captchaToken ?? undefined,
       });
 
@@ -401,6 +409,23 @@ export function RegisterPage({
               )}
             </div>
           )}
+
+          <div className="registration-legal-consent">
+            <LegalLinks compact />
+            <label className="terms-row">
+              <input
+                type="checkbox"
+                checked={legalConsentAccepted}
+                onChange={(event) => {
+                  setLegalConsentAccepted(event.target.checked);
+                  setSubmitError(null);
+                }}
+                disabled={submitting}
+                required
+              />
+              <span>{t('legal.consent.label')}</span>
+            </label>
+          </div>
 
           {submitError && (
             <p className="form-message error-message" role="alert">

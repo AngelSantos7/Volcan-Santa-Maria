@@ -13,6 +13,7 @@ type ProfileRow = {
   avatar_path: string | null;
   avatar_preset: AvatarPreset | null;
   nationality_country_code: string | null;
+  department_code: string | null;
   sex: 'male' | 'female' | null;
   date_of_birth: string | null;
   phone: string | null;
@@ -35,7 +36,7 @@ export async function loadTouristProfile(
     supabase
       .from('profiles')
       .select(
-        'first_name, last_name, avatar_kind, avatar_path, avatar_preset, nationality_country_code, sex, date_of_birth, phone, document_type, document_number'
+        'first_name, last_name, avatar_kind, avatar_path, avatar_preset, nationality_country_code, department_code, sex, date_of_birth, phone, document_type, document_number'
       )
       .eq('id', userId)
       .maybeSingle<ProfileRow>(),
@@ -69,6 +70,7 @@ export async function loadTouristProfile(
     avatarPreset: profile.avatar_preset,
     avatarUrl,
     nationalityCountryCode: profile.nationality_country_code ?? '',
+    departmentCode: profile.department_code ?? '',
     sex: profile.sex ?? '',
     dateOfBirth: profile.date_of_birth ?? '',
     phone: profile.phone ?? '',
@@ -119,6 +121,8 @@ export async function saveTouristProfile(
       avatar_preset:
         profile.avatarKind === 'preset' ? profile.avatarPreset : null,
       nationality_country_code: profile.nationalityCountryCode,
+      department_code:
+        profile.nationalityCountryCode === 'GT' ? profile.departmentCode : null,
       sex: profile.sex,
       date_of_birth: profile.dateOfBirth,
       phone: profile.phone,

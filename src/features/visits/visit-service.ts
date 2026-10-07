@@ -189,6 +189,8 @@ export async function createGroupVisit(
     p_guide_name: input.guideName,
     p_terms_accepted: true,
     p_recommendations_accepted: input.recommendationsAccepted,
+    p_responsibility_consent_accepted:
+      input.minorResponsibilityConsentAccepted,
     p_minors: input.minors.map((minor) => ({
       full_name: minor.fullName,
       age: minor.age,

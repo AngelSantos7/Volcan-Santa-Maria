@@ -11,6 +11,7 @@ import {
 import { formatDateTime } from '../lib/date-range';
 import { listReturns } from '../services/admin-service';
 import type { AdminSession, ReturnRow } from '../types';
+import { adminLabel } from '../lib/admin-labels';
 
 export function ReturnsPage({ session }: { session: AdminSession }) {
   const [rows, setRows] = useState<ReturnRow[]>([]);
@@ -117,7 +118,7 @@ export function ReturnsPage({ session }: { session: AdminSession }) {
                               {row.minors.map((minor) => (
                                 <li key={minor.id}>
                                   {minor.full_name} · {minor.age} años ·{' '}
-                                  {minor.relationship}
+                                  {adminLabel(minor.relationship)}
                                 </li>
                               ))}
                             </ul>

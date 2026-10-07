@@ -15,6 +15,10 @@ import {
   processAvatarImage,
 } from '../features/profile/avatar-utils';
 import { getCountryOptions } from '../features/profile/country-data';
+import {
+  GUATEMALA_DEPARTMENTS,
+  isGuatemalaDepartmentCode,
+} from '../features/profile/guatemala-departments';
 import { saveTouristProfile } from '../features/profile/profile-service';
 import {
   getSuggestedPhoneCountry,
@@ -41,6 +45,7 @@ type ProfileField =
   | 'lastName'
   | 'avatar'
   | 'nationalityCountryCode'
+  | 'departmentCode'
   | 'sex'
   | 'dateOfBirth'
   | 'phone'
@@ -205,8 +210,13 @@ export function ProfileFormPage({
   };
 
   const handleNationalityChange = (countryCode: string) => {
-    setField('nationalityCountryCode', countryCode);
+    setForm((current) => ({
+      ...current,
+      nationalityCountryCode: countryCode,
+      departmentCode: countryCode === 'GT' ? current.departmentCode : '',
+    }));
     clearFieldError('nationalityCountryCode');
+    if (countryCode !== 'GT') clearFieldError('departmentCode');
     const phoneCountry = getSuggestedPhoneCountry(countryCode);
 
     if (!phoneCountryOverridden) {
@@ -259,6 +269,12 @@ export function ProfileFormPage({
       errors.nationalityCountryCode = t(
         'profile.validation.nationalityRequired'
       );
+    }
+    if (
+      nationality === 'GT' &&
+      !isGuatemalaDepartmentCode(form.departmentCode)
+    ) {
+      errors.departmentCode = t('profile.validation.departmentRequired');
     }
     if (!['male', 'female'].includes(form.sex)) {
       errors.sex = t('profile.validation.sexRequired');
@@ -360,6 +376,10 @@ export function ProfileFormPage({
       firstName: normalizeSpaces(form.firstName),
       lastName: normalizeSpaces(form.lastName),
       nationalityCountryCode: form.nationalityCountryCode.toUpperCase(),
+      departmentCode:
+        form.nationalityCountryCode.toUpperCase() === 'GT'
+          ? form.departmentCode
+          : '',
       phone: e164Phone,
       documentNumber: normalizeSpaces(form.documentNumber),
       emergencyFirstName: normalizeSpaces(form.emergencyFirstName),
@@ -622,6 +642,45 @@ export function ProfileFormPage({
                 disabled={submitting}
                 required
               />
+
+              {form.nationalityCountryCode === 'GT' && (
+                <div
+                  className={`form-control${fieldErrors.departmentCode ? ' has-error' : ''}`}
+                >
+                  <label htmlFor="departmentCode">
+                    {t('profile.department')}
+                  </label>
+                  <select
+                    id="departmentCode"
+                    name="departmentCode"
+                    value={form.departmentCode}
+                    onChange={(event) => {
+                      setField('departmentCode', event.target.value);
+                      updateVisibleFieldError(
+                        'departmentCode',
+                        isGuatemalaDepartmentCode(event.target.value)
+                          ? null
+                          : t('profile.validation.departmentRequired')
+                      );
+                    }}
+                    aria-invalid={Boolean(fieldErrors.departmentCode)}
+                    disabled={submitting}
+                    required
+                  >
+                    <option value="">{t('profile.selectDepartment')}</option>
+                    {GUATEMALA_DEPARTMENTS.map(([code, name]) => (
+                      <option key={code} value={code}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  {fieldErrors.departmentCode && (
+                    <span className="field-error-message" role="alert">
+                      {fieldErrors.departmentCode}
+                    </span>
+                  )}
+                </div>
+              )}
 
               <DatePicker
                 id="dateOfBirth"

@@ -6,25 +6,23 @@ export type PageId =
   | 'dashboard'
   | 'visitors'
   | 'ascents'
-  | 'returns'
   | 'reports'
   | 'notifications'
   | 'staff'
-  | 'permissions'
-  | 'audit';
+  | 'audit'
+  | 'gallery';
 
 const mainNav: Array<[PageId, string, string]> = [
   ['dashboard', 'Dashboard', 'dashboard'],
-  ['visitors', 'Visitantes', 'visitors'],
   ['ascents', 'Ascensos', 'ascent'],
-  ['returns', 'Control de retornos', 'returns'],
+  ['visitors', 'Visitantes', 'visitors'],
   ['reports', 'Reportes', 'dashboard'],
   ['notifications', 'Notificaciones', 'audit'],
+  ['gallery', 'Galería', 'ascent'],
 ];
 
 const adminNav: Array<[PageId, string, string]> = [
   ['staff', 'Gestores', 'staff'],
-  ['permissions', 'Permisos', 'permissions'],
   ['audit', 'Auditoría', 'audit'],
 ];
 
@@ -44,6 +42,8 @@ export function AdminShell({
   const isAdmin = session.role === 'admin';
   const canManageNotifications =
     isAdmin || Boolean(session.permissions.can_manage_notifications);
+  const canManageGallery =
+    isAdmin || Boolean(session.permissions.can_manage_gallery);
   const name =
     [session.first_name, session.last_name].filter(Boolean).join(' ') ||
     session.email ||
@@ -60,7 +60,10 @@ export function AdminShell({
         </div>
         <nav aria-label="Navegación principal">
           <p className="nav-label">Operación</p>
-          {mainNav.filter(([id]) => id !== 'notifications' || canManageNotifications).map(([id, label, icon]) => (
+          {mainNav.filter(([id]) =>
+            (id !== 'notifications' || canManageNotifications) &&
+            (id !== 'gallery' || canManageGallery)
+          ).map(([id, label, icon]) => (
             <button
               type="button"
               key={id}

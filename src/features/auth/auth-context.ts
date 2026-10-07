@@ -6,6 +6,7 @@ export type SignUpCredentials = {
   lastName: string;
   email: string;
   password: string;
+  legalConsentAccepted: boolean;
   captchaToken?: string;
 };
 

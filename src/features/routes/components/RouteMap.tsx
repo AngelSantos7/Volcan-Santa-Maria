@@ -45,7 +45,24 @@ type RouteMapProps = {
 };
 
 type BaseMap = 'map' | 'satellite';
-type LivePosition = { longitude: number; latitude: number; accuracy: number };
+type LivePosition = {
+  longitude: number;
+  latitude: number;
+  accuracy: number;
+  timestamp: number;
+};
+
+function distanceMeters(first: LivePosition, second: LivePosition): number {
+  const radians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = radians(second.latitude - first.latitude);
+  const longitudeDelta = radians(second.longitude - first.longitude);
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(radians(first.latitude)) *
+      Math.cos(radians(second.latitude)) *
+      Math.sin(longitudeDelta / 2) ** 2;
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function createAccuracyCircle(position: LivePosition): GeoJSON {
   const points = 64;
@@ -488,12 +505,20 @@ export function RouteMap({ route }: RouteMapProps) {
     setLocationError(null);
     centerOnFirstPositionRef.current = true;
     watchIdRef.current = navigator.geolocation.watchPosition(
-      ({ coords }) => {
+      ({ coords, timestamp }) => {
         const position = {
           longitude: coords.longitude,
           latitude: coords.latitude,
           accuracy: coords.accuracy,
+          timestamp,
         };
+        const previous = latestPositionRef.current;
+        const implausibleJump =
+          previous !== null &&
+          timestamp - previous.timestamp < 15_000 &&
+          distanceMeters(previous, position) >
+            Math.max(3_000, previous.accuracy * 3 + position.accuracy * 3);
+        if (coords.accuracy > 2_000 || implausibleJump) return;
         latestPositionRef.current = position;
         const accuracyGeoJson = createAccuracyCircle(position);
         accuracyGeoJsonRef.current = accuracyGeoJson;
@@ -536,7 +561,7 @@ export function RouteMap({ route }: RouteMapProps) {
           watchIdRef.current = null;
         }
       },
-      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 }
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 2_000 }
     );
   };
 
@@ -784,10 +809,6 @@ export function RouteMap({ route }: RouteMapProps) {
           <span>{t('routes.stats.distance')}</span>
         </div>
         <div>
-          <strong>+{Math.round(route.elevationGainM ?? 934)} m</strong>
-          <span>{t('routes.stats.gain')}</span>
-        </div>
-        <div>
           <strong>
             {Math.floor((route.estimatedDurationMinutes ?? 185) / 60)} h{' '}
             {String((route.estimatedDurationMinutes ?? 185) % 60).padStart(
@@ -800,12 +821,6 @@ export function RouteMap({ route }: RouteMapProps) {
         </div>
         <p>{t('routes.stats.disclaimer')}</p>
       </section>
-      <details className="santiaguito-warning">
-        <summary>{t('routes.santiaguito.title')}</summary>
-        <p>{t('routes.santiaguito.body')}</p>
-        <small>{t('routes.santiaguito.source')}</small>
-      </details>
-
       {!routeGeoJson && (
         <p className="route-map-note">{t('routes.map.trackPending')}</p>
       )}

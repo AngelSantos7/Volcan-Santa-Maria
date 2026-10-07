@@ -27,15 +27,13 @@ import { CountryField, DateField, PhoneField } from './AdminFormFields';
 import {
   emptyPhone,
   formatInternationalPhone,
+  GUATEMALA_DEPARTMENTS,
   type PhoneValue,
 } from '../lib/admin-form-utils';
 import { StatusBadge } from './ui';
+import { adminLabel } from '../lib/admin-labels';
 
-function formatSex(sex: 'male' | 'female' | null) {
-  if (sex === 'male') return 'Masculino';
-  if (sex === 'female') return 'Femenino';
-  return 'Sin registrar';
-}
+const formatSex = adminLabel;
 
 function Modal({
   title,
@@ -143,6 +141,7 @@ interface VisitorDraft {
   firstName: string;
   lastName: string;
   nationality: CountryCode;
+  departmentCode: string;
   dateOfBirth: string;
   sex: 'male' | 'female';
   phone: PhoneValue;
@@ -159,6 +158,7 @@ const blankVisitorDraft = (): VisitorDraft => ({
   firstName: '',
   lastName: '',
   nationality: 'GT',
+  departmentCode: '',
   dateOfBirth: '',
   sex: 'male',
   phone: emptyPhone(),
@@ -202,6 +202,7 @@ export function VisitorRegistrationModal({
     setDraft({
       ...draft,
       nationality: countryCode,
+      departmentCode: countryCode === 'GT' ? draft.departmentCode : '',
       phone: suggest(draft.phone),
       alternatePhone: suggest(draft.alternatePhone),
       emergencyPhone: suggest(draft.emergencyPhone),
@@ -242,6 +243,10 @@ export function VisitorRegistrationModal({
       setError('Especifique el tipo de documento.');
       return;
     }
+    if (draft.nationality === 'GT' && !draft.departmentCode) {
+      setError('Seleccione el departamento del visitante guatemalteco.');
+      return;
+    }
     setSaving(true);
     try {
       const match = await findVisitorByDocument(
@@ -252,6 +257,10 @@ export function VisitorRegistrationModal({
         setExisting({
           ...match,
           registered_at: '',
+          department_code: null,
+          sex: null,
+          ascent_count: 0,
+          last_ascent_at: null,
           latest_visit_id: null,
           latest_visit_status: null,
           latest_member_status: null,
@@ -262,6 +271,7 @@ export function VisitorRegistrationModal({
         firstName: draft.firstName,
         lastName: draft.lastName,
         nationalityCountryCode: draft.nationality,
+        departmentCode: draft.nationality === 'GT' ? draft.departmentCode : undefined,
         dateOfBirth: draft.dateOfBirth,
         sex: draft.sex,
         phone: formatted[0] ?? '',
@@ -346,6 +356,20 @@ export function VisitorRegistrationModal({
             onChange={changeNationality}
             disabled={saving}
           />
+          {draft.nationality === 'GT' && (
+            <label>
+              Departamento
+              <select
+                value={draft.departmentCode}
+                onChange={(event) => setDraft({ ...draft, departmentCode: event.target.value })}
+                required
+                disabled={saving}
+              >
+                <option value="">Seleccione un departamento</option>
+                {GUATEMALA_DEPARTMENTS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </select>
+            </label>
+          )}
           <DateField
             label="Fecha de nacimiento"
             value={draft.dateOfBirth}
@@ -904,9 +928,7 @@ export function AscentDetailsModal({
           <div>
             <span>Estado</span>
             <strong>
-              {ascent.visit_status === 'in_progress'
-                ? 'En curso'
-                : ascent.visit_status}
+              {adminLabel(ascent.visit_status)}
             </strong>
           </div>
           <div>
@@ -973,7 +995,7 @@ export function AscentDetailsModal({
                       )}
                     </div>
                     {canConfirmReturns &&
-                      ascent.visit_status === 'in_progress' &&
+                      ['in_progress', 'pending_returns'].includes(ascent.visit_status) &&
                       ['active', 'returning_early'].includes(
                         member.member_status
                       ) && (
@@ -1033,7 +1055,7 @@ export function AscentDetailsModal({
                             <strong>{minor.visitor_name}</strong>
                             <span>
                               {minor.age} años · {formatSex(minor.sex)} ·{' '}
-                              {minor.relationship}
+                              {adminLabel(minor.relationship)}
                             </span>
                             <span>Responsable: {member.visitor_name}</span>
                             {minor.checked_out_at && (
@@ -1150,7 +1172,7 @@ export function AdministrativeReturnModal({
             <ul>
               {row.minors.map((minor) => (
                 <li key={minor.id}>
-                  {minor.full_name} · {minor.age} años · {minor.relationship}
+                  {minor.full_name} · {minor.age} años · {adminLabel(minor.relationship)}
                 </li>
               ))}
             </ul>

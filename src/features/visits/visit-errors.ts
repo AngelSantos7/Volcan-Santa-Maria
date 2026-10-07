@@ -47,6 +47,18 @@ export function getVisitErrorMessage(error: unknown): string {
     return i18n.t('visits.errors.scheduledStartNotReached');
   }
 
+  if (errorText.includes('minor responsibility consent')) {
+    return i18n.t('visits.errors.minorConsentRequired');
+  }
+
+  if (errorText.includes('each minor requires')) {
+    return i18n.t('visits.errors.invalidMinorData');
+  }
+
+  if (errorText.includes('responsible participant must be an adult')) {
+    return i18n.t('visits.errors.adultRequiredForMinors');
+  }
+
   return error instanceof TypeError
     ? i18n.t('errors.network')
     : i18n.t('visits.errors.generic');

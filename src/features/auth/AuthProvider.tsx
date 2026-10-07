@@ -69,13 +69,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       lastName,
       email,
       password,
+      legalConsentAccepted,
       captchaToken,
     }: SignUpCredentials): Promise<SignUpResult> => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName },
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            legal_consent_accepted: legalConsentAccepted,
+            terms_version: '1.0',
+            privacy_version: '1.0',
+          },
           emailRedirectTo: getAuthRedirectUrl(),
           captchaToken,
         },

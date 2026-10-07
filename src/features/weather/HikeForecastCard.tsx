@@ -5,6 +5,7 @@ import { WeatherIcon } from './WeatherIcon';
 import {
   findClosestForecastHour,
   getCachedVolcanoForecast,
+  getGuatemalaLocalTime,
   getVolcanoForecast,
   isWithinForecastRange,
 } from './weather-service';
@@ -12,7 +13,6 @@ import {
   classifyWeatherHour,
   classifyWeatherPeriod,
   getWeatherRecommendations,
-  selectRepresentativeHour,
   type WeatherRisk,
 } from './weather-rules';
 import type { VolcanoForecast, WeatherHour } from './weather-types';
@@ -121,8 +121,14 @@ export function HikeForecastCard({
     )
       return { unavailable: true } as const;
     const departure = findClosestForecastHour(forecast, plannedStart);
+    const duringTime = getGuatemalaLocalTime(
+      new Date(
+        new Date(`${plannedStart}:00-06:00`).getTime() + 2 * 60 * 60 * 1000
+      )
+    );
+    const during = findClosestForecastHour(forecast, duringTime);
     const returning = findClosestForecastHour(forecast, expectedReturn);
-    if (!departure || !returning) return null;
+    if (!departure || !during || !returning) return null;
     const period = forecast.hours.filter(
       (hour) => hour.time >= departure.time && hour.time <= returning.time
     );
@@ -130,7 +136,7 @@ export function HikeForecastCard({
     return {
       unavailable: false,
       departure,
-      during: selectRepresentativeHour(period),
+      during,
       returning,
       periodRisk: classifyWeatherPeriod(period),
       recommendations: getWeatherRecommendations(period),

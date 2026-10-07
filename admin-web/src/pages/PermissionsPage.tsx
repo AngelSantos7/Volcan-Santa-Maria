@@ -14,68 +14,22 @@ import {
 import type { PermissionKey, StaffPermissionRecord, StaffRow } from '../types';
 
 const permissionLabels: Array<[PermissionKey, string, string]> = [
-  [
-    'can_view_visitors',
-    'Ver visitantes',
-    'Acceso a listados y datos operativos mínimos.',
-  ],
-  [
-    'can_view_sensitive_data',
-    'Ver datos sensibles',
-    'Teléfono, nacimiento y contacto de emergencia.',
-  ],
-  [
-    'can_view_identity_documents',
-    'Ver documentos completos',
-    'Tipo y número completo de DPI o pasaporte.',
-  ],
-  [
-    'can_manage_visits',
-    'Gestionar ascensos',
-    'Preparado para acciones operativas futuras.',
-  ],
-  [
-    'can_confirm_returns',
-    'Confirmar retornos',
-    'Permite operaciones protegidas de retorno.',
-  ],
-  [
-    'can_register_walk_in_visitors',
-    'Registro asistido',
-    'Reservado para la siguiente fase.',
-  ],
-  [
-    'can_export_reports',
-    'Generar reportes',
-    'Permite consultar datos agregados y exportar reportes PDF institucionales.',
-  ],
-  [
-    'can_manage_announcements',
-    'Gestionar avisos',
-    'Reservado para la siguiente fase.',
-  ],
-  [
-    'can_manage_notifications',
-    'Gestionar notificaciones',
-    'Permite crear, programar y publicar mensajes dirigidos.',
-  ],
-  ['can_manage_route', 'Gestionar ruta', 'Reservado para la siguiente fase.'],
-  [
-    'can_manage_users',
-    'Gestionar usuarios',
-    'Reservado para la siguiente fase.',
-  ],
-  [
-    'can_manage_staff',
-    'Gestionar personal',
-    'No concede acceso a esta pantalla; solo Admin modifica permisos.',
-  ],
+  ['can_view_visitors', 'Consultar ascensos', 'Acceso a listados operativos.'],
+  ['can_register_walk_in_visitors', 'Registrar visitantes', 'Permite el registro administrativo de visitantes.'],
+  ['can_manage_visits', 'Crear ascensos', 'Permite crear, iniciar y administrar ascensos.'],
+  ['can_confirm_returns', 'Registrar retornos', 'Permite registrar retornos de adultos y sus menores.'],
+  ['can_manage_notifications', 'Crear notificaciones', 'Permite crear, programar y publicar mensajes.'],
+  ['can_manage_gallery', 'Gestionar galería', 'Permite subir, ordenar, activar y retirar fotografías.'],
+  ['can_view_identity_documents', 'Ver datos sensibles de identidad', 'DPI/CUI o pasaporte. Desactivado por defecto.'],
+  ['can_view_emergency_contacts', 'Ver contactos de emergencia', 'Solo durante un ascenso activo, pendiente o atrasado.'],
 ];
 
 export function PermissionsPage({
   initialUserId,
+  embedded = false,
 }: {
   initialUserId?: string | null;
+  embedded?: boolean;
 }) {
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [selectedId, setSelectedId] = useState(initialUserId ?? '');
@@ -132,7 +86,7 @@ export function PermissionsPage({
 
   return (
     <>
-      <PageHeader eyebrow="Administración" title="Permisos">
+      {!embedded && <PageHeader eyebrow="Administración" title="Permisos">
         <label className="staff-picker">
           <span>Gestor</span>
           <select
@@ -150,7 +104,7 @@ export function PermissionsPage({
             ))}
           </select>
         </label>
-      </PageHeader>
+      </PageHeader>}
       {message && (
         <div
           className={message.startsWith('No') ? 'alert error' : 'alert success'}

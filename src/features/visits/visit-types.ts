@@ -70,6 +70,7 @@ export type CreateGroupVisitInput = {
   hasLocalGuide: boolean;
   guideName: string | null;
   recommendationsAccepted: boolean;
+  minorResponsibilityConsentAccepted: boolean;
   minors: Array<{
     fullName: string;
     age: number;

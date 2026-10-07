@@ -11,6 +11,8 @@ export type PermissionKey =
   | 'can_manage_announcements'
   | 'can_manage_notifications'
   | 'can_manage_route'
+  | 'can_manage_gallery'
+  | 'can_view_emergency_contacts'
   | 'can_manage_users'
   | 'can_manage_staff';
 
@@ -23,6 +25,7 @@ export interface AdminSession {
   last_name?: string;
   role: AppRole;
   is_active: boolean;
+  invitation_status?: 'pending' | 'active' | 'inactive';
   permissions: Partial<Permissions>;
 }
 
@@ -68,6 +71,11 @@ export interface VisitorRow {
   expected_return_at: string | null;
   participant_count: number;
   total_count: number;
+  department_code?: string | null;
+  sex?: 'male' | 'female' | null;
+  ascent_count?: number;
+  last_ascent_at?: string | null;
+  registration_origin?: 'self' | 'administrative';
 }
 
 export interface VisitorSummary {
@@ -143,6 +151,19 @@ export interface SensitiveDetails {
   } | null;
 }
 
+export interface OperationalContactDetails {
+  phone: string | null;
+  alternate_phone: string | null;
+  emergency_contact: SensitiveDetails['emergency_contact'];
+  visit_id: string | null;
+}
+
+export interface IdentityDetails {
+  date_of_birth: string | null;
+  document_type: string | null;
+  document_number: string | null;
+}
+
 export interface AscentRow {
   visit_id: string;
   join_code: string;
@@ -185,8 +206,12 @@ export interface VisitorDirectoryRow {
   visitor_id: string;
   full_name: string;
   nationality_country_code: string | null;
+  department_code: string | null;
+  sex: 'male' | 'female' | null;
   registration_origin: 'self' | 'administrative';
   registered_at: string;
+  ascent_count: number;
+  last_ascent_at: string | null;
   latest_visit_id: string | null;
   latest_visit_status: string | null;
   latest_member_status: string | null;
@@ -233,6 +258,10 @@ export interface VisitorReportData {
     nationality_country_code: string | null;
     visitors: number;
   }>;
+  department_breakdown: Array<{
+    department_code: string;
+    visitors: number;
+  }>;
   rows: ReportDetailRow[];
 }
 
@@ -258,7 +287,39 @@ export interface StaffRow {
   email: string;
   role: AppRole;
   is_active: boolean;
+  invitation_status: 'pending' | 'active' | 'inactive';
   updated_at: string;
+}
+
+export interface OperationalDashboard {
+  people_on_route: number;
+  adults_on_route: number;
+  minors_on_route: number;
+  active_ascents: number;
+  pending_return_ascents: number;
+  overdue_ascents: number;
+  planned_today: number;
+  attention: Array<{
+    visit_id: string;
+    join_code: string;
+    expected_return_at: string;
+    minutes_late: number;
+    pending_people: number;
+  }>;
+}
+
+export interface GalleryRow {
+  id: string;
+  route_id: string;
+  storage_path: string;
+  title_es: string | null;
+  title_en: string | null;
+  description_es: string | null;
+  description_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+  updated_at: string;
+  signed_url?: string;
 }
 
 export interface StaffPermissionRecord extends Permissions {

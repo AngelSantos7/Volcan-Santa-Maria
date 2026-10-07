@@ -38,6 +38,21 @@ export const COUNTRY_BY_NAME = new Map(
 export const PHONE_COUNTRIES = COUNTRY_OPTIONS.filter((country) =>
   getCountries().includes(country.code)
 );
+export const GUATEMALA_DEPARTMENTS = [
+  ['alta_verapaz', 'Alta Verapaz'], ['baja_verapaz', 'Baja Verapaz'],
+  ['chimaltenango', 'Chimaltenango'], ['chiquimula', 'Chiquimula'],
+  ['el_progreso', 'El Progreso'], ['escuintla', 'Escuintla'],
+  ['guatemala', 'Guatemala'], ['huehuetenango', 'Huehuetenango'],
+  ['izabal', 'Izabal'], ['jalapa', 'Jalapa'], ['jutiapa', 'Jutiapa'],
+  ['peten', 'Petén'], ['quetzaltenango', 'Quetzaltenango'], ['quiche', 'Quiché'],
+  ['retalhuleu', 'Retalhuleu'], ['sacatepequez', 'Sacatepéquez'],
+  ['san_marcos', 'San Marcos'], ['santa_rosa', 'Santa Rosa'], ['solola', 'Sololá'],
+  ['suchitepequez', 'Suchitepéquez'], ['totonicapan', 'Totonicapán'], ['zacapa', 'Zacapa'],
+] as const;
+
+export function departmentName(code: string | null | undefined) {
+  return GUATEMALA_DEPARTMENTS.find(([value]) => value === code)?.[1] ?? 'No disponible';
+}
 
 export function countryName(code: string | null | undefined) {
   return (

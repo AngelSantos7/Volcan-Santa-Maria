@@ -148,6 +148,12 @@ export function ReportsPage() {
               <span>Ascensos completados</span>
             </div>
           </div>
+          {data.department_breakdown.length > 0 && (
+            <div className="report-breakdown">
+              <h3>Visitantes guatemaltecos por departamento</h3>
+              <p>{data.department_breakdown.length} departamentos representados en el período.</p>
+            </div>
+          )}
           <div className="form-actions">
             <button
               type="button"
