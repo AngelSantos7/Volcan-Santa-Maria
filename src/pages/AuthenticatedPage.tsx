@@ -10,6 +10,7 @@ import { getShortName } from '../features/profile/avatar-utils';
 import type { TouristProfileData } from '../features/profile/profile-types';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { LegalLinks } from '../features/legal/LegalDocuments';
+import { ThemeToggle } from '../features/theme/ThemeToggle';
 
 type AuthenticatedPageProps = {
   profile: TouristProfileData;
@@ -49,6 +50,7 @@ export function AuthenticatedPage({
         aria-labelledby="welcome-title"
       >
         <div className="authenticated-toolbar">
+          <ThemeToggle />
           <NotificationCenter />
           <LanguageSwitcher />
           <UserMenu

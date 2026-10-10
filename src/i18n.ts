@@ -88,7 +88,13 @@ const resources = {
         verificationPersistentNotice:
           'Confirma tu correo para habilitar el registro de ascensos.',
       },
-      theme: { label: 'Tema', light: 'Claro', dark: 'Oscuro' },
+      theme: {
+        label: 'Tema',
+        light: 'Claro',
+        dark: 'Oscuro',
+        switchToLight: 'Cambiar a tema claro',
+        switchToDark: 'Cambiar a tema oscuro',
+      },
       legal: {
         entity: 'Alcaldía Indígena de Llanos del Pinal',
         menu: 'Privacidad y términos',
@@ -912,7 +918,13 @@ const resources = {
         verificationPersistentNotice:
           'Confirm your email to enable ascent registration.',
       },
-      theme: { label: 'Theme', light: 'Light', dark: 'Dark' },
+      theme: {
+        label: 'Theme',
+        light: 'Light',
+        dark: 'Dark',
+        switchToLight: 'Switch to light theme',
+        switchToDark: 'Switch to dark theme',
+      },
       legal: {
         entity: 'Alcaldía Indígena de Llanos del Pinal',
         menu: 'Privacy and terms',
