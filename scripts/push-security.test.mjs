@@ -13,7 +13,7 @@ cases.push(['oversized', `https://fcm.googleapis.com/wp/${'a'.repeat(2048)}`, fa
 const notificationId = 'fa660000-0000-4000-8000-000000000001';
 const original = process.argv.includes('--baseline');
 
-function harness({ endpoint = cases[0][1], allowed = true, status = 201, lookupError = false } = {}) {
+function harness({ endpoint = cases[0][1], allowed = true, status = 201, lookupError = false, webPushEnabled = 'true' } = {}) {
   const calls = { transport: [], generated: 0, oldTransport: 0, deletes: [], filters: [] };
   let handler;
   const caller = { rpc: async (name, args) => {
@@ -61,7 +61,7 @@ function harness({ endpoint = cases[0][1], allowed = true, status = 201, lookupE
         if (specifier.startsWith('npm:@supabase/supabase-js@')) return { createClient: (_, key) => key === 'synthetic-service' ? admin : caller };
         throw new Error('Unexpected module: network is forbidden in this test');
       },
-      Deno: { env: { get: key => key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'synthetic-service' : 'synthetic-config' }, serve(value) { handler = value; } },
+      Deno: { env: { get: key => key === 'WEB_PUSH_ENABLED' ? webPushEnabled : key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'synthetic-service' : 'synthetic-config' }, serve(value) { handler = value; } },
     });
     cache.set(filename, exports); return exports;
   }
@@ -78,6 +78,15 @@ if (original) {
     assert.equal(server.calls.transport.length, 0);
   });
 } else {
+  test('disabled backend rejects delivery before database or transport access', async () => {
+    const server = harness({ webPushEnabled: null });
+    const response = await server.invoke();
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, 'Web Push is disabled');
+    assert.equal(server.calls.filters.length, 0);
+    assert.equal(server.calls.generated, 0);
+    assert.equal(server.calls.transport.length, 0);
+  });
   for (const [label, endpoint, expected] of cases) test(`endpoint policy and Edge transport: ${label}`, async () => {
     const server = harness({ endpoint });
     assert.equal(server.policy.isAllowedPushEndpoint(endpoint), expected);

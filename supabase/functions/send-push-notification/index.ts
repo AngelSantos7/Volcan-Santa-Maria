@@ -6,6 +6,12 @@ const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: cors });
+  if (Deno.env.get('WEB_PUSH_ENABLED')?.trim().toLowerCase() !== 'true') {
+    return new Response(JSON.stringify({ error: 'Web Push is disabled' }), {
+      status: 503,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
   try {
     const url = Deno.env.get('SUPABASE_URL'); const anon = Deno.env.get('SUPABASE_ANON_KEY'); const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const publicKey = Deno.env.get('VAPID_PUBLIC_KEY'); const privateKey = Deno.env.get('VAPID_PRIVATE_KEY'); const subject = Deno.env.get('VAPID_SUBJECT');

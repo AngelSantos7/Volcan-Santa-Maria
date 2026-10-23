@@ -5,6 +5,9 @@ import { listNotifications, saveNotification, uploadNotificationImage } from '..
 import type { NotificationRow } from '../types';
 import { adminLabel } from '../lib/admin-labels';
 
+const WEB_PUSH_ENABLED =
+  import.meta.env.VITE_WEB_PUSH_ENABLED?.trim().toLowerCase() === 'true';
+
 export function NotificationsPage() {
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [state, setState] = useState<'loading' | 'success' | 'error'>('loading');
@@ -59,7 +62,7 @@ export function NotificationsPage() {
       <label>Imagen opcional (JPG, PNG o WebP; máximo 5 MB)<input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label>
       <label>Vence (opcional)<input name="expiresAt" type="datetime-local" /></label>
       <div className="form-grid"><label>Acción<select name="status"><option value="draft">Guardar borrador</option><option value="published">Publicar ahora</option><option value="scheduled">Programar</option></select></label><label>Fecha programada<input name="scheduledAt" type="datetime-local" /></label></div>
-      <p className="muted">Push externo requiere VAPID configurado en el backend. La entrega dentro de la PWA funciona sin esas claves.</p>
+      <p className="muted">{WEB_PUSH_ENABLED ? 'Web Push está habilitado mediante la configuración de despliegue.' : 'Web Push está desactivado para producción. La publicación y entrega dentro de la PWA continúan funcionando.'}</p>
       <div className="form-actions"><button disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button></div>
     </div></Panel></form>}
     <Panel>{state === 'loading' ? <LoadingState rows={5} /> : state === 'error' ? <ErrorState retry={() => void load()} /> : rows.length === 0 ? <EmptyState title="Sin notificaciones" detail="Todavía no se han creado mensajes." /> : <div className="table-scroll"><table><thead><tr><th>Título</th><th>Prioridad</th><th>Audiencia</th><th>Estado</th><th>Publicación</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong>{row.title_es}</strong><br/><span className="muted">{row.body_es}</span></td><td><StatusBadge value={row.priority}/></td><td>{adminLabel(row.audience)}</td><td><StatusBadge value={row.status}/></td><td>{formatDateTime(row.published_at ?? row.scheduled_at ?? row.created_at)}</td></tr>)}</tbody></table></div>}</Panel>

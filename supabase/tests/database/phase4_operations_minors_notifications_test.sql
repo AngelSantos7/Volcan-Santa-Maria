@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(34);
+update public.runtime_feature_flags set enabled = true where feature = 'web_push';
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('e1000000-0000-4000-8000-000000000001','phase4-admin@example.invalid',now(),'{"date_of_birth":"1990-01-01","first_name":"Ana","last_name":"Admin"}'),

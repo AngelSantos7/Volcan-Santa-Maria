@@ -13,6 +13,7 @@ const quote = value => value === null ? 'null' : `'${String(value).replaceAll("'
 const sql = input => execFileSync('docker', args, { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 const actorA = randomUUID(); const actorB = randomUUID();
 const workers = [];
+let previousPushState;
 function worker() {
   const child = spawn('docker', args, { windowsHide: true, stdio: 'pipe' });
   workers.push(child);
@@ -36,6 +37,8 @@ function transaction(actor, endpoint, key, application) {
     select public.register_push_subscription(${quote(endpoint)},${quote(key)},${quote(key)});\n`;
 }
 try {
+  previousPushState = sql(`select enabled from public.runtime_feature_flags where feature='web_push';`);
+  sql(`update public.runtime_feature_flags set enabled=true,updated_at=now() where feature='web_push';`);
   const cases = JSON.parse(readFileSync(new URL('./fixtures/push-endpoints.json', import.meta.url), 'utf8'));
   cases.push(['oversized', `https://fcm.googleapis.com/wp/${'a'.repeat(2048)}`, false]);
   const result = sql(`select public.is_allowed_push_endpoint(value) from (values ${cases.map(([, value], i) => `(${i},${quote(value)}::text)`).join(',')}) as inputs(position,value) order by position;`).split(/\r?\n/u);
@@ -79,4 +82,7 @@ try {
   for (const child of workers) if (child.exitCode === null) child.kill();
   try { sql(`delete from auth.users where id in (${quote(actorA)},${quote(actorB)});`); }
   catch { console.error('Synthetic cleanup failed'); process.exitCode = 1; }
+  try {
+    if (previousPushState) sql(`update public.runtime_feature_flags set enabled=${previousPushState === 't' ? 'true' : 'false'},updated_at=now() where feature='web_push';`);
+  } catch { console.error('Feature flag cleanup failed'); process.exitCode = 1; }
 }

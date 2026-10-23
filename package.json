@@ -23,7 +23,8 @@
     "test:auth:security": "node scripts/auth-security.local.test.mjs",
     "test:staff:local": "node scripts/staff-invitation.local.test.mjs",
     "test:push": "node --test scripts/push-security.test.mjs",
-    "test:push:local": "node scripts/push-concurrency.local.test.mjs"
+    "test:push:local": "node scripts/push-concurrency.local.test.mjs",
+    "test:production": "node --test scripts/web-push-disabled.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

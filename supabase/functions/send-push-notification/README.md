@@ -1,10 +1,10 @@
 # send-push-notification
 
-Local backend prepared for Web Push. It is intentionally not deployed by the migration.
+Local backend prepared for Web Push. It is intentionally not deployed by the migration and is disabled by default.
 
-Required function secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (for example, `mailto:operations@example.com`). Supabase supplies its URL, anon key, and service-role key at runtime. Never expose the private key through a `VITE_*` variable.
+Enabling the function requires `WEB_PUSH_ENABLED=true`. Required function secrets are `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (for example, `mailto:operations@example.com`). Supabase supplies its URL, anon key, and service-role key at runtime. Never expose the private key through a `VITE_*` variable.
 
-The PWA receives only `VITE_VAPID_PUBLIC_KEY`. After publishing an in-app notification, call this function with `{ "notification_id": "..." }` using an authenticated admin or a visitor manager with `can_manage_notifications`. Responses 404/410 remove the expired subscription.
+The PWA requires `VITE_WEB_PUSH_ENABLED=true` and receives only `VITE_VAPID_PUBLIC_KEY`. PostgreSQL registration also requires the protected `web_push` feature flag to be enabled. After publishing an in-app notification, call this function with `{ "notification_id": "..." }` using an authenticated admin or a visitor manager with `can_manage_notifications`. Responses 404/410 remove the expired subscription.
 
 Production Web Push requires HTTPS. `localhost` can be a secure context during development; plain HTTP over a LAN IP cannot register Push. In-app notifications continue working without VAPID or Push support.
 
