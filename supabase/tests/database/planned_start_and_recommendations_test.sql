@@ -14,7 +14,7 @@ values (
   '91000000-0000-4000-8000-000000000001'::uuid,
   'planned-start@example.invalid',
   pg_catalog.now(),
-  '{"first_name":"Plan","last_name":"Prueba"}'::jsonb
+  '{"date_of_birth":"1990-01-01","first_name":"Plan","last_name":"Prueba"}'::jsonb
 );
 
 update public.profiles

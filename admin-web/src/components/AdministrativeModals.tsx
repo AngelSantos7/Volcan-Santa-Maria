@@ -1,3 +1,5 @@
+import { minimumReturnAt } from '../../../shared/account-policy';
+import { ChangeRouteControl } from './ChangeRouteControl';
 import {
   useEffect,
   useMemo,
@@ -621,6 +623,10 @@ export function AscentCreationModal({
       setError('Complete las fechas y horas del ascenso.');
       return;
     }
+    const startTimeValue = startMode === 'scheduled' ? Date.parse(guatemalaIso(plannedDate, plannedTime)) : Date.now();
+    if (Date.parse(guatemalaIso(returnDate, returnTime)) < minimumReturnAt(startTimeValue)) {
+      setError('El retorno estimado debe ser al menos 4 horas después del inicio.'); return;
+    }
     const form = new FormData(event.currentTarget);
     setSaving(true);
     try {
@@ -816,6 +822,7 @@ export function AscentCreationModal({
             </label>
           </div>
         </fieldset>
+        <p className="muted">El retorno estimado debe ser al menos 4 horas después del inicio.</p>
         <div className="form-grid">
           <label className="checkbox-field">
             <input
@@ -848,11 +855,13 @@ export function AscentCreationModal({
 export function AscentDetailsModal({
   ascent,
   canConfirmReturns,
+  canManage,
   close,
   onChanged,
 }: {
   ascent: AscentRow;
   canConfirmReturns: boolean;
+  canManage: boolean;
   close: () => void;
   onChanged: () => void;
 }) {
@@ -920,6 +929,8 @@ export function AscentDetailsModal({
   return (
     <Modal title={`Detalle del ascenso ${ascent.join_code}`} close={close}>
       <div className="operation-form">
+        <div><strong>Ruta: {ascent.route_name}</strong></div>
+        {canManage && ['forming', 'scheduled', 'in_progress', 'pending_returns'].includes(ascent.visit_status) && <ChangeRouteControl visitId={ascent.visit_id} routeId={ascent.route_id} started={Boolean(ascent.started_at) || ['in_progress', 'pending_returns'].includes(ascent.visit_status)} onChanged={() => { onChanged(); close(); }} />}
         <div className="return-summary">
           <div>
             <span>Organizador</span>

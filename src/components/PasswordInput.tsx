@@ -1,4 +1,5 @@
 import { useState, type InputHTMLAttributes } from 'react';
+import { PasswordRules } from './PasswordRules';
 import { useTranslation } from 'react-i18next';
 
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
@@ -8,6 +9,7 @@ export function PasswordInput(props: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
 
   return (
+    <>
     <span className="password-input-wrap">
       <input {...props} type={visible ? 'text' : 'password'} />
       <button
@@ -35,5 +37,7 @@ export function PasswordInput(props: PasswordInputProps) {
         </svg>
       </button>
     </span>
+    {props.autoComplete === 'new-password' && props.name !== 'confirmPassword' && <PasswordRules password={String(props.value ?? '')} />}
+    </>
   );
 }

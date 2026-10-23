@@ -181,6 +181,7 @@ export async function createGroupVisit(
   input: CreateGroupVisitInput
 ): Promise<string> {
   const { data, error } = await supabase.rpc('create_group_visit_with_minors', {
+    p_route_id: input.routeId,
     p_visit_type: input.visitType,
     p_start_mode: input.startMode,
     p_planned_start_at: input.plannedStartAt,
@@ -350,4 +351,24 @@ export async function getVisitHistoryMembers(
     memberStatus: row.member_status,
     checkedOutAt: row.checked_out_at,
   }));
+}
+
+export async function changeVisitRoute(visitId: string, routeId: string, returnedToStart = false): Promise<void> {
+  const { error } = await supabase.rpc('change_visit_route', { p_visit_id: visitId, p_route_id: routeId, p_returned_to_start: returnedToStart });
+  if (error) throw error;
+}
+export async function recordMyEarlyReturn(visitId: string, reason: EarlyReturnReason, notes: string | null): Promise<void> {
+  const { error } = await supabase.rpc('record_my_early_return', { p_visit_id: visitId, p_reason: reason, p_notes: notes });
+  if (error) throw error;
+}
+
+export async function addMyVisitMinors(visitId: string, minors: CreateGroupVisitInput['minors'], consent: boolean): Promise<void> {
+  const { error } = await supabase.rpc('add_my_visit_minors', { p_visit_id: visitId,
+    p_minors: minors.map((minor) => ({ full_name: minor.fullName, age: minor.age, sex: minor.sex, relationship: minor.relationship })),
+    p_responsibility_consent_accepted: consent });
+  if (error) throw error;
+}
+export async function removeMyVisitMinor(visitId: string, minorId: string): Promise<void> {
+  const { error } = await supabase.rpc('remove_my_visit_minor', { p_visit_id: visitId, p_minor_id: minorId });
+  if (error) throw error;
 }

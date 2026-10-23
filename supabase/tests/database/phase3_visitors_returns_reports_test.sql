@@ -1,13 +1,21 @@
 begin;
 
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('d1000000-0000-4000-8000-000000000001'::uuid,'d2000000-0000-4000-8000-000000000002'::uuid,'d3000000-0000-4000-8000-000000000003'::uuid,'d4000000-0000-4000-8000-000000000004'::uuid);
+$$;
+
+
 create extension if not exists pgtap with schema extensions;
 select plan(18);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
-  ('d1000000-0000-4000-8000-000000000001', 'phase3-admin@example.invalid', now(), '{"first_name":"Ada","last_name":"Admin"}'),
-  ('d2000000-0000-4000-8000-000000000002', 'phase3-manager@example.invalid', now(), '{"first_name":"Gina","last_name":"Gestora"}'),
-  ('d3000000-0000-4000-8000-000000000003', 'phase3-tourist1@example.invalid', now(), '{"first_name":"Luz","last_name":"Lider"}'),
-  ('d4000000-0000-4000-8000-000000000004', 'phase3-tourist2@example.invalid', now(), '{"first_name":"Mia","last_name":"Miembro"}');
+  ('d1000000-0000-4000-8000-000000000001', 'phase3-admin@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Ada","last_name":"Admin"}'),
+  ('d2000000-0000-4000-8000-000000000002', 'phase3-manager@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Gina","last_name":"Gestora"}'),
+  ('d3000000-0000-4000-8000-000000000003', 'phase3-tourist1@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Luz","last_name":"Lider"}'),
+  ('d4000000-0000-4000-8000-000000000004', 'phase3-tourist2@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Mia","last_name":"Miembro"}');
 
 update public.user_roles set role = 'admin' where user_id = 'd1000000-0000-4000-8000-000000000001';
 update public.user_roles set role = 'visitor_manager' where user_id = 'd2000000-0000-4000-8000-000000000002';
@@ -73,6 +81,7 @@ from public.staff_create_administrative_visit(
 grant select on phase3_visit to authenticated;
 
 select pg_temp.authenticate_as('d3000000-0000-4000-8000-000000000003');
+select pg_temp.elapse_fixture_visits();
 select lives_ok(format($$select public.complete_my_visit_participation(%L)$$, (select visit_id from phase3_visit)), 'leader of an administratively created ascent can finish normally');
 select lives_ok(format($$select public.complete_my_visit_participation(%L)$$, (select visit_id from phase3_visit)), 'normal completion is idempotent');
 

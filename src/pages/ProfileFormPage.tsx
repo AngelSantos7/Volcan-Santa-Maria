@@ -6,6 +6,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isAdult, latestAdultBirthDate } from '../../shared/account-policy';
 import { CountrySelect } from '../components/CountrySelect';
 import { DatePicker } from '../components/DatePicker';
 import { InternationalPhoneInput } from '../components/InternationalPhoneInput';
@@ -66,7 +67,7 @@ function toDateInputValue(date: Date): string {
 }
 
 const today = new Date();
-const MAX_DATE_OF_BIRTH = toDateInputValue(today);
+const MAX_DATE_OF_BIRTH = latestAdultBirthDate();
 const MIN_DATE_OF_BIRTH = toDateInputValue(
   new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
 );
@@ -93,7 +94,7 @@ function isValidDateOfBirth(value: string): boolean {
   return (
     parsedDate.toISOString().slice(0, 10) === value &&
     value >= MIN_DATE_OF_BIRTH &&
-    value <= MAX_DATE_OF_BIRTH
+    isAdult(value)
   );
 }
 
@@ -283,7 +284,7 @@ export function ProfileFormPage({
     if (!form.dateOfBirth) {
       errors.dateOfBirth = t('profile.validation.dateOfBirthRequired');
     } else if (!isValidDateOfBirth(form.dateOfBirth)) {
-      errors.dateOfBirth = t('profile.validation.dateOfBirthInvalid');
+      errors.dateOfBirth = t('final.adultRegistration');
     }
 
     if (!phone.nationalNumber) {
@@ -633,6 +634,30 @@ export function ProfileFormPage({
           <fieldset>
             <legend>{t('profile.personalInformation')}</legend>
             <div className="form-grid">
+              <DatePicker
+                id="dateOfBirth"
+                label={t('profile.dateOfBirth')}
+                value={form.dateOfBirth}
+                onChange={(value) => {
+                  setField('dateOfBirth', value);
+                  updateVisibleFieldError(
+                    'dateOfBirth',
+                    !value
+                      ? t('profile.validation.dateOfBirthRequired')
+                      : !isValidDateOfBirth(value)
+                        ? t('final.adultRegistration')
+                        : null
+                  );
+                }}
+                min={MIN_DATE_OF_BIRTH}
+                max={MAX_DATE_OF_BIRTH}
+                error={fieldErrors.dateOfBirth}
+                invalidDateMessage={t('final.adultRegistration')}
+                validationEnabled={submitAttempted}
+                autoComplete="bday"
+                disabled={submitting}
+                required
+              />
               <CountrySelect
                 id="nationalityCountryCode"
                 label={t('profile.nationality')}
@@ -682,30 +707,7 @@ export function ProfileFormPage({
                 </div>
               )}
 
-              <DatePicker
-                id="dateOfBirth"
-                label={t('profile.dateOfBirth')}
-                value={form.dateOfBirth}
-                onChange={(value) => {
-                  setField('dateOfBirth', value);
-                  updateVisibleFieldError(
-                    'dateOfBirth',
-                    !value
-                      ? t('profile.validation.dateOfBirthRequired')
-                      : !isValidDateOfBirth(value)
-                        ? t('profile.validation.dateOfBirthInvalid')
-                        : null
-                  );
-                }}
-                min={MIN_DATE_OF_BIRTH}
-                max={MAX_DATE_OF_BIRTH}
-                error={fieldErrors.dateOfBirth}
-                invalidDateMessage={t('profile.validation.dateOfBirthInvalid')}
-                validationEnabled={submitAttempted}
-                autoComplete="bday"
-                disabled={submitting}
-                required
-              />
+
 
               <div className={`form-control${fieldErrors.sex ? ' has-error' : ''}`}>
                 <label htmlFor="sex">{t('profile.sex')}</label>

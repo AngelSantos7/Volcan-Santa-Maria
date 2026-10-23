@@ -4,6 +4,7 @@ import type { EarlyReturnReason } from './visit-types';
 
 type EarlyReturnFormProps = {
   mode: 'self' | 'organizer';
+  arrived?: boolean;
   participantName?: string;
   onConfirm: (reason: EarlyReturnReason, notes: string | null) => Promise<void>;
   onCancel: () => void;
@@ -12,6 +13,7 @@ type EarlyReturnFormProps = {
 const REASONS: EarlyReturnReason[] = [
   'physical_discomfort',
   'injury',
+  'weather',
   'emergency',
   'personal_decision',
   'other',
@@ -19,6 +21,7 @@ const REASONS: EarlyReturnReason[] = [
 
 export function EarlyReturnForm({
   mode,
+  arrived = false,
   participantName,
   onConfirm,
   onCancel,
@@ -38,6 +41,7 @@ export function EarlyReturnForm({
       return;
     }
 
+    if (reason === 'other' && !notes.trim()) { setValidationError(t('final.otherRequired')); return; }
     setSubmitting(true);
     try {
       await onConfirm(reason, notes.trim() || null);
@@ -50,12 +54,13 @@ export function EarlyReturnForm({
     <form className="early-return-form" onSubmit={handleSubmit} noValidate>
       <h3>
         {mode === 'self'
-          ? t('visits.earlyReturn.title')
+          ? t(arrived ? 'final.earlyReturn' : 'visits.earlyReturn.title')
           : t('visits.earlyReturn.organizerTitle', {
               name: participantName,
             })}
       </h3>
 
+      {arrived && <p>{t('final.arrivedConfirmation')}</p>}
       <fieldset className="early-return-reasons">
         <legend>{t('visits.earlyReturn.selectReason')}</legend>
         {REASONS.map((option) => (
@@ -65,16 +70,16 @@ export function EarlyReturnForm({
               name="earlyReturnReason"
               value={option}
               checked={reason === option}
-              onChange={() => setReason(option)}
+              onChange={() => { setReason(option); setNotes(''); }}
               disabled={submitting}
               required
             />
-            <span>{t(`visits.earlyReturn.reasons.${option}`)}</span>
+            <span>{t(option === 'weather' ? 'final.weatherReason' : `visits.earlyReturn.reasons.${option}`)}</span>
           </label>
         ))}
       </fieldset>
 
-      <label className="visit-field" htmlFor="earlyReturnNotes">
+      {reason === 'other' && <label className="visit-field" htmlFor="earlyReturnNotes">
         {t('visits.earlyReturn.notes')}
         <textarea
           id="earlyReturnNotes"
@@ -84,7 +89,7 @@ export function EarlyReturnForm({
           onChange={(event) => setNotes(event.target.value)}
           disabled={submitting}
         />
-      </label>
+      </label>}
 
       {validationError && (
         <p className="form-message error-message" role="alert">
@@ -106,7 +111,7 @@ export function EarlyReturnForm({
             submitting
               ? 'visits.earlyReturn.saving'
               : mode === 'self'
-                ? 'visits.earlyReturn.confirm'
+                ? arrived ? 'final.earlyReturn' : 'visits.earlyReturn.confirm'
                 : 'visits.earlyReturn.organizerConfirm'
           )}
         </button>

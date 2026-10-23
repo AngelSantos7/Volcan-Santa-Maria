@@ -1,11 +1,19 @@
 begin;
+
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('fb000000-0000-4000-8000-000000000001'::uuid,'fb000000-0000-4000-8000-000000000002'::uuid,'fb000000-0000-4000-8000-000000000003'::uuid);
+$$;
+
 create extension if not exists pgtap with schema extensions;
 select plan(20);
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
-('fb000000-0000-4000-8000-000000000001','manager-security@example.invalid',now(),'{}'),
-('fb000000-0000-4000-8000-000000000002','visitor-security@example.invalid',now(),'{}'),
-('fb000000-0000-4000-8000-000000000003','consented-new@example.invalid',now(),'{"legal_consent_accepted":true,"terms_version":"1.0","privacy_version":"1.0"}');
+('fb000000-0000-4000-8000-000000000001','manager-security@example.invalid',now(),'{"date_of_birth":"1990-01-01"}'),
+('fb000000-0000-4000-8000-000000000002','visitor-security@example.invalid',now(),'{"date_of_birth":"1990-01-01"}'),
+('fb000000-0000-4000-8000-000000000003','consented-new@example.invalid',now(),'{"date_of_birth":"1990-01-01","legal_consent_accepted":true,"terms_version":"1.0","privacy_version":"1.0"}');
 update public.user_roles set role='visitor_manager' where user_id='fb000000-0000-4000-8000-000000000001';
 insert into public.staff_permissions(user_id,is_active,can_view_emergency_contacts,can_register_walk_in_visitors)
 values('fb000000-0000-4000-8000-000000000001',true,true,true);
@@ -48,6 +56,7 @@ grant select on exposed_contacts to authenticated;
 select is((select payload ? 'document_number' from exposed_contacts),false,'operational contact response never includes identity documents');
 reset role;
 select is((select count(*) from public.audit_logs where actor_user_id='fb000000-0000-4000-8000-000000000001' and action='emergency_contact_viewed' and target_id='fb000000-0000-4000-8000-000000000002'),1::bigint,'operational contact consultation is audited');
+select pg_temp.elapse_fixture_visits();
 update public.visit_members set member_status='completed' where visit_id='fb000000-0000-4000-8000-000000000010';
 update public.visits set status='completed',completed_at=now() where id='fb000000-0000-4000-8000-000000000010';
 set local role authenticated;

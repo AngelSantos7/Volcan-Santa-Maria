@@ -15,25 +15,25 @@ values
     'f1000000-0000-4000-8000-000000000001'::uuid,
     'verified-leader@example.invalid',
     pg_catalog.now(),
-    '{"first_name":"Valeria","last_name":"Verificada"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Valeria","last_name":"Verificada"}'::jsonb
   ),
   (
     'f2000000-0000-4000-8000-000000000002'::uuid,
     'verified-member@example.invalid',
     pg_catalog.now(),
-    '{"first_name":"Mateo","last_name":"Confirmado"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Mateo","last_name":"Confirmado"}'::jsonb
   ),
   (
     'f3000000-0000-4000-8000-000000000003'::uuid,
     'unverified-creator@example.invalid',
     null,
-    '{"first_name":"Carla","last_name":"Pendiente"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Carla","last_name":"Pendiente"}'::jsonb
   ),
   (
     'f4000000-0000-4000-8000-000000000004'::uuid,
     'unverified-member@example.invalid',
     null,
-    '{"first_name":"Julia","last_name":"Pendiente"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Julia","last_name":"Pendiente"}'::jsonb
   );
 
 update public.profiles

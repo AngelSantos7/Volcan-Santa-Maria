@@ -11,6 +11,13 @@ export function getVisitErrorMessage(error: unknown): string {
           .toLowerCase()
       : String(error ?? '').toLowerCase();
 
+  if (errorText.includes('minors can be registered only before') || errorText.includes('minors_before_start_only')) return i18n.t('final.minorsLocked');
+  if (errorText.includes('route_return_confirmation_required')) return i18n.t('final.returnToStart');
+  if (errorText.includes('adult_required')) return i18n.t('final.adultExisting');
+  if (errorText.includes('minimum_return_four_hours')) return i18n.t('final.minReturn');
+  if (errorText.includes('early_return_required')) return i18n.t('final.earlyRequired');
+  if (errorText.includes('early_return_description_required')) return i18n.t('final.otherRequired');
+
   if (
     errorText.includes('email_not_verified') ||
     errorText.includes('email not verified') ||

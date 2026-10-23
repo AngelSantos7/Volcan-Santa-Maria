@@ -10,6 +10,7 @@ type UserMenuProps = {
   disabled?: boolean;
   onEditProfile: () => void;
   onOpenLegal: () => void;
+  onChangePassword: () => void;
   onSignOut: () => void;
 };
 
@@ -19,6 +20,7 @@ export function UserMenu({
   disabled = false,
   onEditProfile,
   onOpenLegal,
+  onChangePassword,
   onSignOut,
 }: UserMenuProps) {
   const { t } = useTranslation();
@@ -92,6 +94,7 @@ export function UserMenu({
           >
             {t('legal.menu')}
           </button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onChangePassword(); }}>{t('final.changePassword')}</button>
           <hr />
           <button
             className="user-menu-signout"

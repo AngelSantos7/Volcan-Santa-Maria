@@ -8,6 +8,7 @@ const cors = {
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: cors });
   try {
     const url = Deno.env.get('SUPABASE_URL');
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
@@ -25,17 +26,13 @@ Deno.serve(async (request) => {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await request.json() as {
       action?: 'invite' | 'resend' | 'delete'; userId?: string;
-      fullName?: string; email?: string; permissions?: Record<string, boolean>;
+      firstName?: string; lastName?: string; email?: string; phone?: string; permissions?: Record<string, boolean>;
     };
 
     if (body.action === 'delete') {
       if (!body.userId) throw new Error('Falta el gestor pendiente.');
-      const pending = await admin.from('staff_permissions').select('invitation_status').eq('user_id', body.userId).single();
-      if (pending.data?.invitation_status !== 'pending')
-        return new Response(JSON.stringify({ error: 'Solo se puede eliminar una invitación que nunca fue activada.' }), { status: 409, headers: cors });
-      await admin.from('audit_logs').insert({ actor_user_id: session.data.user_id, action: 'staff_invitation_deleted', target_type: 'staff_user', target_id: body.userId, metadata: {} });
-      const removed = await admin.auth.admin.deleteUser(body.userId);
-      if (removed.error) throw removed.error;
+      const cancelled = await caller.rpc('cancel_pending_staff_invitation', { p_user_id: body.userId });
+      if (cancelled.error) throw cancelled.error;
       return new Response(JSON.stringify({ deleted: true }), { headers: cors });
     }
 
@@ -43,17 +40,26 @@ Deno.serve(async (request) => {
     if (!email) throw new Error('El correo es obligatorio.');
 
     if (body.action === 'resend') {
+      if (!body.userId) throw new Error('Falta la invitación pendiente.');
+      const pending = await admin.from('staff_permissions').select('invitation_status,invitation_revoked_at').eq('user_id', body.userId).single();
+      const account = await admin.auth.admin.getUserById(body.userId);
+      if (pending.error || account.error || pending.data.invitation_status !== 'pending' || pending.data.invitation_revoked_at || account.data.user.email?.toLowerCase() !== email)
+        throw new Error('Solo se puede reenviar una invitación pendiente al correo original.');
       const resent = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
       if (resent.error) throw resent.error;
       await admin.from('audit_logs').insert({ actor_user_id: session.data.user_id, action: 'staff_invitation_resent', target_type: 'staff_user', target_id: body.userId ?? resent.data.user.id, metadata: { email } });
       return new Response(JSON.stringify({ user_id: body.userId ?? resent.data.user.id }), { headers: cors });
     }
 
-    const fullName = body.fullName?.trim();
-    if (!fullName) throw new Error('El nombre completo es obligatorio.');
-    const nameParts = fullName.split(/\s+/u);
-    const firstName = nameParts.shift() ?? '';
-    const lastName = nameParts.join(' ') || '-';
+    if (body.action !== 'invite') throw new Error('Acción inválida.');
+    const available = await admin.rpc('staff_invitation_email_available', { p_email: email });
+    if (available.error || available.data !== true) throw new Error('Ya existe una identidad con ese correo. No se modificó su cuenta.');
+    const phone = body.phone?.trim();
+    if (!phone || !/^\+502[2-7]\d{7}$/.test(phone)) throw new Error('Ingrese un teléfono de Guatemala de 8 dígitos.');
+    const firstName = body.firstName?.trim();
+    const lastName = body.lastName?.trim();
+    if (!firstName || !lastName || firstName.length > 80 || lastName.length > 80) throw new Error('Nombre y apellido son obligatorios.');
+    const fullName = `${firstName} ${lastName}`;
     const invited = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,
       data: { first_name: firstName, last_name: lastName, staff_invitation: true },
@@ -62,8 +68,10 @@ Deno.serve(async (request) => {
     const userId = invited.data.user.id;
     const roleUpdate = await admin.from('user_roles').update({ role: 'visitor_manager' }).eq('user_id', userId);
     if (roleUpdate.error) throw roleUpdate.error;
+    const profileUpdate = await admin.from('profiles').update({ phone }).eq('id', userId);
+    if (profileUpdate.error) throw profileUpdate.error;
     const allowed = body.permissions ?? {};
-    const permissionInsert = await admin.from('staff_permissions').upsert({
+    const permissionInsert = await admin.from('staff_permissions').insert({
       user_id: userId, is_active: false, invitation_status: 'pending',
       can_view_visitors: Boolean(allowed.can_view_visitors),
       can_register_walk_in_visitors: Boolean(allowed.can_register_walk_in_visitors),

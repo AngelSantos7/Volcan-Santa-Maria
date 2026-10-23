@@ -1,3 +1,5 @@
+import { MinorDraftEditor } from './MinorDraftEditor';
+import { emptyMinor, type MinorDraft } from './minor-draft';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../components/DatePicker';
@@ -5,13 +7,14 @@ import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { ReturnTimePicker } from '../../components/ReturnTimePicker';
 import { AnnouncementBanner } from '../announcements/AnnouncementBanner';
 import { RouteRecommendations } from '../routes/components/RouteRecommendations';
-import { HikeForecastCard } from '../weather/HikeForecastCard';
+import { RouteHikeForecast } from '../weather/RouteHikeForecast';
 import { getGuatemalaLocalTime } from '../weather/weather-service';
 import { normalizeSpaces } from '../../lib/text';
 import { getVisitErrorMessage } from './visit-errors';
 import { createGroupVisit } from './visit-service';
 import type { VisitStartMode, VisitType } from './visit-types';
-import { LegalLinks } from '../legal/LegalDocuments';
+import { RouteSelector } from '../routes/RouteSelector';
+import { minimumReturnAt } from '../../../shared/account-policy';
 
 type CreateVisitFormProps = {
   currentUserName: string;
@@ -20,35 +23,6 @@ type CreateVisitFormProps = {
 };
 
 const VISIT_TYPES: VisitType[] = ['day_hike', 'expedition_camping'];
-const MINOR_RELATIONSHIPS = [
-  'child',
-  'sibling',
-  'niece_nephew',
-  'grandchild',
-  'cousin',
-  'other',
-] as const;
-type MinorRelationship = (typeof MINOR_RELATIONSHIPS)[number];
-type MinorDraft = {
-  id: string;
-  fullName: string;
-  age: string;
-  sex: 'male' | 'female';
-  relationship: MinorRelationship | '';
-  relationshipDetail: string;
-};
-
-function emptyMinor(): MinorDraft {
-  return {
-    id: crypto.randomUUID(),
-    fullName: '',
-    age: '',
-    sex: 'male',
-    relationship: '',
-    relationshipDetail: '',
-  };
-}
-
 type CreateVisitField =
   | 'startMode'
   | 'startDate'
@@ -74,10 +48,7 @@ const FIELD_FOCUS_ORDER: CreateVisitField[] = [
 ];
 
 function getLocalDateValue(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return getGuatemalaLocalTime(date).slice(0, 10);
 }
 
 function toVisitTimestamp(date: string, time: string): string | null {
@@ -85,18 +56,8 @@ function toVisitTimestamp(date: string, time: string): string | null {
     return null;
   }
 
-  const [year, month, day] = date.split('-').map(Number);
-  const [hour, minute] = time.split(':').map(Number);
-  const dateTime = new Date(year, month - 1, day, hour, minute, 0, 0);
-
-  const isValidLocalDateTime =
-    dateTime.getFullYear() === year &&
-    dateTime.getMonth() === month - 1 &&
-    dateTime.getDate() === day &&
-    dateTime.getHours() === hour &&
-    dateTime.getMinutes() === minute;
-
-  if (!isValidLocalDateTime) return null;
+  const dateTime = new Date(`${date}T${time}:00-06:00`);
+  if (!Number.isFinite(dateTime.getTime()) || getGuatemalaLocalTime(dateTime) !== `${date}T${time}`) return null;
 
   return dateTime.toISOString();
 }
@@ -148,6 +109,7 @@ export function CreateVisitForm({
   onCancel,
 }: CreateVisitFormProps) {
   const { t } = useTranslation();
+  const [routeId, setRouteId] = useState('');
   const [startMode, setStartMode] = useState<VisitStartMode>('now');
   const [visitType, setVisitType] = useState<VisitType>('day_hike');
   const [initialDate] = useState(getLocalDateValue);
@@ -170,6 +132,7 @@ export function CreateVisitForm({
   const [submitting, setSubmitting] = useState(false);
 
   const isDirty =
+    routeId !== '' ||
     startMode !== 'now' ||
     visitType !== 'day_hike' ||
     startDate !== initialDate ||
@@ -276,11 +239,9 @@ export function CreateVisitForm({
       }
 
       if (
-        plannedStartAt &&
-        expectedReturnAt &&
-        plannedStartAt >= expectedReturnAt
+        expectedReturnAt && Date.parse(expectedReturnAt) < minimumReturnAt(plannedStartAt ? Date.parse(plannedStartAt) : Date.now())
       ) {
-        next.schedule = t('visits.validation.startBeforeReturn');
+        next.schedule = t('final.minReturn');
       }
 
       return next;
@@ -292,6 +253,7 @@ export function CreateVisitForm({
     const form = event.currentTarget;
     setSubmitError(null);
 
+    if (!routeId) { setSubmitError(t('final.chooseRoute')); return; }
     const errors: CreateVisitErrors = {};
     const today = getLocalDateValue();
     const normalizedGuideName = normalizeSpaces(guideName);
@@ -345,11 +307,9 @@ export function CreateVisitForm({
     }
 
     if (
-      plannedStartAt &&
-      expectedReturnAt &&
-      plannedStartAt >= expectedReturnAt
+      expectedReturnAt && Date.parse(expectedReturnAt) < minimumReturnAt(plannedStartAt ? Date.parse(plannedStartAt) : Date.now())
     ) {
-      errors.schedule = t('visits.validation.startBeforeReturn');
+      errors.schedule = t('final.minReturn');
     }
 
     if (hasLocalGuide && !normalizedGuideName) {
@@ -398,6 +358,7 @@ export function CreateVisitForm({
 
     try {
       const visitId = await createGroupVisit({
+        routeId,
         visitType,
         startMode,
         plannedStartAt,
@@ -445,7 +406,7 @@ export function CreateVisitForm({
     startMode === 'now' ? nowReference.slice(11, 16) : startTime;
   const forecastStartAt =
     startMode === 'now'
-      ? Date.parse(nowReference)
+      ? Date.parse(`${nowReference}-06:00`)
       : Date.parse(toVisitTimestamp(startDate, startTime) ?? '');
   const forecastReturnAt = Date.parse(
     toVisitTimestamp(returnDate, returnTime) ?? ''
@@ -458,6 +419,9 @@ export function CreateVisitForm({
     Number.isFinite(forecastReturnAt) &&
     forecastStartAt < forecastReturnAt
   );
+  const minimumReturn = new Date(Math.ceil(minimumReturnAt(startMode === 'scheduled'
+    ? Date.parse(toVisitTimestamp(startDate, startTime) ?? '') : Date.parse(`${nowReference}-06:00`) + 60_000) / 60000) * 60000);
+  const minimumReturnLocal = Number.isFinite(minimumReturn.getTime()) ? getGuatemalaLocalTime(minimumReturn) : '';
   return (
     <section aria-labelledby="create-visit-title">
       <header className="visit-section-header">
@@ -481,17 +445,8 @@ export function CreateVisitForm({
           </p>
         )}
 
-        <div className="visit-summary-row">
-          <span>{t('visits.route')}</span>
-          <strong>{t('visits.summitRoute')}</strong>
-        </div>
-
-        <aside className="visit-safety-notice" role="note">
-          <strong>{t('legal.safety.title')}</strong>
-          <p>{t('legal.safety.sections.0.body')}</p>
-          <p>{t('legal.safety.sections.1.body')}</p>
-          <LegalLinks compact />
-        </aside>
+        <RouteSelector value={routeId} onChange={setRouteId} disabled={submitting} />
+        <p className="field-hint">{t('final.minReturn')}</p>
 
         <fieldset className="visit-type-fieldset" data-field-name="startMode">
           <legend>{t('visits.startMode.title')}</legend>
@@ -624,7 +579,7 @@ export function CreateVisitForm({
             name="returnDate"
             label={t('visits.returnDate')}
             value={returnDate}
-            min={getLocalDateValue()}
+            min={minimumReturnLocal.slice(0, 10) || initialDate}
             onChange={(nextValue) => {
               setReturnDate(nextValue);
               updateVisibleScheduleErrors(
@@ -649,6 +604,7 @@ export function CreateVisitForm({
 
           <ReturnTimePicker
             id="returnTime"
+            min={returnDate === minimumReturnLocal.slice(0, 10) ? minimumReturnLocal.slice(11, 16) : undefined}
             name="returnTime"
             value={returnTime}
             label={t('visits.returnTime')}
@@ -693,7 +649,7 @@ export function CreateVisitForm({
         )}
 
         {forecastEnabled && (
-          <HikeForecastCard
+          <RouteHikeForecast routeId={routeId}
             startDate={forecastStartDate}
             startTime={forecastStartTime}
             returnDate={returnDate}
@@ -776,171 +732,9 @@ export function CreateVisitForm({
             />
           </div>
           {travelsWithMinors && (
-            <div className="minor-list">
-              <p className="muted">{t('visits.minors.responsibleHelp')}</p>
-              {minors.map((minor, index) => (
-                <fieldset key={minor.id} className="minor-card">
-                  <legend>
-                    {t('visits.minors.item', { number: index + 1 })}
-                  </legend>
-                  <label>
-                    {t('visits.minors.fullName')}
-                    <input
-                      value={minor.fullName}
-                      onChange={(event) =>
-                        setMinors((current) =>
-                          current.map((item) =>
-                            item.id === minor.id
-                              ? { ...item, fullName: event.target.value }
-                              : item
-                          )
-                        )
-                      }
-                      required
-                      maxLength={160}
-                    />
-                  </label>
-                  <div className="form-grid">
-                    <label>
-                      {t('visits.minors.age')}
-                      <input
-                        type="number"
-                        min="0"
-                        max="17"
-                        value={minor.age}
-                        onChange={(event) =>
-                          setMinors((current) =>
-                            current.map((item) =>
-                              item.id === minor.id
-                                ? { ...item, age: event.target.value }
-                                : item
-                            )
-                          )
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      {t('profile.sex')}
-                      <select
-                        value={minor.sex}
-                        onChange={(event) =>
-                          setMinors((current) =>
-                            current.map((item) =>
-                              item.id === minor.id
-                                ? {
-                                    ...item,
-                                    sex: event.target.value as
-                                      'male' | 'female',
-                                  }
-                                : item
-                            )
-                          )
-                        }
-                      >
-                        <option value="male">
-                          {t('profile.sexOptions.male')}
-                        </option>
-                        <option value="female">
-                          {t('profile.sexOptions.female')}
-                        </option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    {t('visits.minors.relationship')}
-                    <select
-                      value={minor.relationship}
-                      onChange={(event) =>
-                        setMinors((current) =>
-                          current.map((item) =>
-                            item.id === minor.id
-                              ? {
-                                  ...item,
-                                  relationship: event.target.value as
-                                    MinorRelationship | '',
-                                  relationshipDetail:
-                                    event.target.value === 'other'
-                                      ? item.relationshipDetail
-                                      : '',
-                                }
-                              : item
-                          )
-                        )
-                      }
-                      required
-                    >
-                      <option value="">
-                        {t('visits.minors.selectRelationship')}
-                      </option>
-                      {MINOR_RELATIONSHIPS.map((relationship) => (
-                        <option key={relationship} value={relationship}>
-                          {t(`visits.minors.relationships.${relationship}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {minor.relationship === 'other' && (
-                    <label>
-                      {t('visits.minors.relationshipDetail')}
-                      <input
-                        value={minor.relationshipDetail}
-                        onChange={(event) =>
-                          setMinors((current) =>
-                            current.map((item) =>
-                              item.id === minor.id
-                                ? {
-                                    ...item,
-                                    relationshipDetail: event.target.value,
-                                  }
-                                : item
-                            )
-                          )
-                        }
-                        required
-                        maxLength={72}
-                      />
-                    </label>
-                  )}
-                  <p className="minor-responsible">
-                    <span>{t('visits.minors.responsible')}</span>
-                    <strong>{currentUserName}</strong>
-                  </p>
-                  <button
-                    className="text-button"
-                    type="button"
-                    onClick={() =>
-                      setMinors((current) =>
-                        current.filter((item) => item.id !== minor.id)
-                      )
-                    }
-                  >
-                    {t('visits.minors.remove')}
-                  </button>
-                </fieldset>
-              ))}
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() =>
-                  setMinors((current) => [...current, emptyMinor()])
-                }
-              >
-                {t('visits.minors.add')}
-              </button>
-              <label className="terms-row minor-consent-row">
-                <input
-                  type="checkbox"
-                  checked={minorResponsibilityConsentAccepted}
-                  onChange={(event) =>
-                    setMinorResponsibilityConsentAccepted(event.target.checked)
-                  }
-                  disabled={submitting}
-                  required
-                />
-                <span>{t('visits.minors.consent')}</span>
-              </label>
-            </div>
+            <MinorDraftEditor minors={minors} setMinors={setMinors} currentUserName={currentUserName}
+              minorResponsibilityConsentAccepted={minorResponsibilityConsentAccepted}
+              setMinorResponsibilityConsentAccepted={setMinorResponsibilityConsentAccepted} submitting={submitting} />
           )}
         </section>
 

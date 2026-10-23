@@ -4,8 +4,8 @@ create extension if not exists pgtap with schema extensions;
 select plan(12);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
-  ('f1000000-0000-4000-8000-000000000001', 'profile-owner@example.invalid', now(), '{"first_name":"Perfil","last_name":"Propio"}'),
-  ('f2000000-0000-4000-8000-000000000002', 'profile-other@example.invalid', now(), '{"first_name":"Perfil","last_name":"Ajeno"}');
+  ('f1000000-0000-4000-8000-000000000001', 'profile-owner@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Perfil","last_name":"Propio"}'),
+  ('f2000000-0000-4000-8000-000000000002', 'profile-other@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Perfil","last_name":"Ajeno"}');
 
 create function pg_temp.authenticate_as(requested_user_id uuid, requested_role text default 'authenticated')
 returns void language plpgsql as $$

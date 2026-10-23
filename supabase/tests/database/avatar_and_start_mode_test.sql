@@ -1,5 +1,13 @@
 begin;
 
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('92000000-0000-4000-8000-000000000001'::uuid,'92000000-0000-4000-8000-000000000002'::uuid,'92000000-0000-4000-8000-000000000003'::uuid);
+$$;
+
+
 create extension if not exists pgtap with schema extensions;
 
 select plan(27);
@@ -10,19 +18,19 @@ values
     '92000000-0000-4000-8000-000000000001'::uuid,
     'avatar-leader@example.invalid',
     pg_catalog.now(),
-    '{"first_name":"Avatar","last_name":"Leader"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Avatar","last_name":"Leader"}'::jsonb
   ),
   (
     '92000000-0000-4000-8000-000000000002'::uuid,
     'avatar-member@example.invalid',
     pg_catalog.now(),
-    '{"first_name":"Avatar","last_name":"Member"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Avatar","last_name":"Member"}'::jsonb
   ),
   (
     '92000000-0000-4000-8000-000000000003'::uuid,
     'avatar-outsider@example.invalid',
     pg_catalog.now(),
-    '{"first_name":"Avatar","last_name":"Outsider"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Avatar","last_name":"Outsider"}'::jsonb
   );
 
 update public.profiles
@@ -310,6 +318,7 @@ select results_eq(
   'started_at is generated from server time when the organizer starts'
 );
 
+select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
     'select public.complete_group_visit(%L::uuid)',

@@ -1,3 +1,6 @@
+import { listAvailableRoutes } from '../route-service';
+import { routeBounds, routeLineCoordinates, syncRouteLayers, type RouteOverlay } from './route-map-layers';
+import { acceptsPosition, watchOrientation } from '../../../../shared/gps-policy';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GeoJSON } from 'geojson';
 import {
@@ -24,24 +27,22 @@ const SATELLITE_STYLE_URL = MAPTILER_KEY
   : null;
 const DEFAULT_BASE_MAP = SATELLITE_STYLE_URL ? 'satellite' : 'map';
 const DEFAULT_STYLE_URL = SATELLITE_STYLE_URL ?? MAP_STYLE_URL;
-const ROUTE_SOURCE_ID = 'summit-route-path';
-const ROUTE_CASING_LAYER_ID = 'summit-route-path-casing';
-const ROUTE_LAYER_ID = 'summit-route-path-line';
 const ACCURACY_SOURCE_ID = 'user-location-accuracy';
 const ACCURACY_FILL_LAYER_ID = 'user-location-accuracy-fill';
 const ACCURACY_LINE_LAYER_ID = 'user-location-accuracy-line';
 const VOLCANO_CENTER: [number, number] = [-91.552, 14.757];
 const INITIAL_ZOOM = 13;
-const VOLCANO_ALTITUDE_M = 3745;
+
 
 type MapSelection =
   | { kind: 'start' }
-  | { kind: 'summit' }
+  | { kind: 'destination'; slug: string }
   | { kind: 'checkpoint'; checkpointId: string }
   | null;
 
 type RouteMapProps = {
   route: RouteContent;
+  onChangeRoute?: () => void;
 };
 
 type BaseMap = 'map' | 'satellite';
@@ -51,18 +52,6 @@ type LivePosition = {
   accuracy: number;
   timestamp: number;
 };
-
-function distanceMeters(first: LivePosition, second: LivePosition): number {
-  const radians = (value: number) => (value * Math.PI) / 180;
-  const latitudeDelta = radians(second.latitude - first.latitude);
-  const longitudeDelta = radians(second.longitude - first.longitude);
-  const a =
-    Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(radians(first.latitude)) *
-      Math.cos(radians(second.latitude)) *
-      Math.sin(longitudeDelta / 2) ** 2;
-  return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 function createAccuracyCircle(position: LivePosition): GeoJSON {
   const points = 64;
@@ -109,29 +98,10 @@ function syncAccuracyLayer(map: Map, accuracyGeoJson: GeoJSON | null): void {
     });
 }
 
-function hasLineGeometry(geoJson: GeoJSON): boolean {
-  switch (geoJson.type) {
-    case 'LineString':
-    case 'MultiLineString':
-      return true;
-    case 'Feature':
-      return geoJson.geometry ? hasLineGeometry(geoJson.geometry) : false;
-    case 'FeatureCollection':
-      return geoJson.features.some(hasLineGeometry);
-    case 'GeometryCollection':
-      return geoJson.geometries.some(hasLineGeometry);
-    default:
-      return false;
-  }
-}
-
-function getRouteGeoJson(
-  value: Record<string, unknown> | null
-): GeoJSON | null {
+function getRouteGeoJson(value: Record<string, unknown> | null): GeoJSON | null {
   if (!value || typeof value.type !== 'string') return null;
-
-  const geoJson = value as unknown as GeoJSON;
-  return hasLineGeometry(geoJson) ? geoJson : null;
+  const geometry = value as unknown as GeoJSON;
+  return routeLineCoordinates(geometry).length ? geometry : null;
 }
 
 function getLocalizedCheckpoint(
@@ -145,83 +115,7 @@ function getLocalizedCheckpoint(
   };
 }
 
-function removeRouteLayers(map: Map): void {
-  if (map.getLayer(ROUTE_LAYER_ID)) map.removeLayer(ROUTE_LAYER_ID);
-  if (map.getLayer(ROUTE_CASING_LAYER_ID)) {
-    map.removeLayer(ROUTE_CASING_LAYER_ID);
-  }
-  if (map.getSource(ROUTE_SOURCE_ID)) map.removeSource(ROUTE_SOURCE_ID);
-}
-
-function syncRouteLayers(
-  map: Map,
-  routeGeoJson: GeoJSON | null,
-  baseMap: BaseMap
-): void {
-  if (!routeGeoJson) {
-    removeRouteLayers(map);
-    return;
-  }
-
-  const existingSource = map.getSource<GeoJSONSource>(ROUTE_SOURCE_ID);
-  if (existingSource) {
-    void existingSource.setData(routeGeoJson);
-  } else {
-    map.addSource(ROUTE_SOURCE_ID, {
-      type: 'geojson',
-      data: routeGeoJson,
-    });
-  }
-
-  const isSatellite = baseMap === 'satellite';
-  const casingColor = isSatellite ? '#08251c' : '#f5fff9';
-  const routeColor = isSatellite ? '#78f0bd' : '#116149';
-
-  if (!map.getLayer(ROUTE_CASING_LAYER_ID)) {
-    map.addLayer({
-      id: ROUTE_CASING_LAYER_ID,
-      type: 'line',
-      source: ROUTE_SOURCE_ID,
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-      paint: {
-        'line-color': casingColor,
-        'line-opacity': 0.88,
-        'line-width': isSatellite ? 9 : 8,
-      },
-    });
-  }
-
-  if (!map.getLayer(ROUTE_LAYER_ID)) {
-    map.addLayer({
-      id: ROUTE_LAYER_ID,
-      type: 'line',
-      source: ROUTE_SOURCE_ID,
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-      paint: {
-        'line-color': routeColor,
-        'line-opacity': 0.96,
-        'line-width': isSatellite ? 5.5 : 5,
-      },
-    });
-  }
-
-  map.setPaintProperty(ROUTE_CASING_LAYER_ID, 'line-color', casingColor);
-  map.setPaintProperty(
-    ROUTE_CASING_LAYER_ID,
-    'line-width',
-    isSatellite ? 9 : 8
-  );
-  map.setPaintProperty(ROUTE_LAYER_ID, 'line-color', routeColor);
-  map.setPaintProperty(ROUTE_LAYER_ID, 'line-width', isSatellite ? 5.5 : 5);
-}
-
-export function RouteMap({ route }: RouteMapProps) {
+export function RouteMap({ route, onChangeRoute }: RouteMapProps) {
   const { t, i18n } = useTranslation();
   const language = getAppLanguage(i18n.resolvedLanguage);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -238,7 +132,7 @@ export function RouteMap({ route }: RouteMapProps) {
   >('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [livePosition, setLivePosition] = useState<LivePosition | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+  const stopWatchRef = useRef<(() => void) | null>(null);
   const userMarkerRef = useRef<Marker | null>(null);
   const latestPositionRef = useRef<LivePosition | null>(null);
   const accuracyGeoJsonRef = useRef<GeoJSON | null>(null);
@@ -255,11 +149,25 @@ export function RouteMap({ route }: RouteMapProps) {
       ),
     [route.checkpoints]
   );
-  const routeGeoJson = useMemo(
-    () => getRouteGeoJson(route.pathGeojson),
-    [route.pathGeojson]
-  );
-  const routeGeoJsonRef = useRef(routeGeoJson);
+  const [availableRoutes, setAvailableRoutes] = useState<RouteContent[]>([]);
+  const [alternativeFailed, setAlternativeFailed] = useState(false);
+  const [routeAttempt, setRouteAttempt] = useState(0);
+  const fittedRoutesRef = useRef('');
+  useEffect(() => {
+    let active = true;
+    void listAvailableRoutes().then((items) => {
+      if (active) { setAvailableRoutes(items); setAlternativeFailed(items.length < 2); }
+    }).catch(() => { if (active) setAlternativeFailed(true); });
+    return () => { active = false; };
+  }, [routeAttempt]);
+  const routes = useMemo(() => [route, ...availableRoutes.filter((item) => item.id !== route.id)], [route, availableRoutes]);
+  const routeOverlays = useMemo<RouteOverlay[]>(() => {
+    return routes.flatMap((item) => {
+      const geojson = getRouteGeoJson(item.pathGeojson);
+      return geojson ? [{ id: item.id, slug: item.slug, geojson, active: item.id === route.id }] : [];
+    });
+  }, [route.id, routes]);
+  const routeOverlaysRef = useRef(routeOverlays);
   const baseMapRef = useRef<BaseMap>(DEFAULT_BASE_MAP);
   const pendingBaseMapRef = useRef<BaseMap | null>(null);
   const fallbackInProgressRef = useRef(false);
@@ -291,6 +199,7 @@ export function RouteMap({ route }: RouteMapProps) {
     let loaded = false;
     let active = true;
     let map: Map | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
     try {
       baseMapRef.current = DEFAULT_BASE_MAP;
@@ -305,6 +214,16 @@ export function RouteMap({ route }: RouteMapProps) {
         touchZoomRotate: true,
       });
       mapRef.current = map;
+      fittedRoutesRef.current = '';
+      resizeObserver = new ResizeObserver(() => {
+        if (!map || !active) return;
+        map.resize();
+        if (loaded && !latestPositionRef.current) {
+          const bounds = routeBounds(routeOverlaysRef.current);
+          if (bounds) map.fitBounds(bounds, { padding: { top: 100, bottom: 65, left: 60, right: 60 }, maxZoom: 14, duration: 0 });
+        }
+      });
+      resizeObserver.observe(containerRef.current);
 
       map.addControl(
         new NavigationControl({ showCompass: false, showZoom: true }),
@@ -320,7 +239,7 @@ export function RouteMap({ route }: RouteMapProps) {
 
         const appliedBaseMap = pendingBaseMapRef.current ?? baseMapRef.current;
         baseMapRef.current = appliedBaseMap;
-        syncRouteLayers(map, routeGeoJsonRef.current, appliedBaseMap);
+        syncRouteLayers(map, routeOverlaysRef.current, appliedBaseMap);
         syncAccuracyLayer(map, accuracyGeoJsonRef.current);
 
         if (fallbackInProgressRef.current && appliedBaseMap === 'map') {
@@ -337,7 +256,7 @@ export function RouteMap({ route }: RouteMapProps) {
       map.on('load', () => {
         if (!map) return;
         loaded = true;
-        syncRouteLayers(map, routeGeoJsonRef.current, baseMapRef.current);
+        syncRouteLayers(map, routeOverlaysRef.current, baseMapRef.current);
         setMapLoaded(true);
         setMapFailed(false);
       });
@@ -377,9 +296,10 @@ export function RouteMap({ route }: RouteMapProps) {
 
     return () => {
       active = false;
-      if (watchIdRef.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
+      resizeObserver?.disconnect();
+      if (stopWatchRef.current !== null && navigator.geolocation) {
+        stopWatchRef.current();
+        stopWatchRef.current = null;
       }
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
@@ -393,33 +313,47 @@ export function RouteMap({ route }: RouteMapProps) {
   }, [mapAttempt]);
 
   useEffect(() => {
-    routeGeoJsonRef.current = routeGeoJson;
+    routeOverlaysRef.current = routeOverlays;
     const map = mapRef.current;
-    if (!map || !mapLoaded || !map.isStyleLoaded()) return;
+    if (!map || !mapLoaded) return;
 
-    syncRouteLayers(map, routeGeoJson, baseMapRef.current);
-  }, [mapLoaded, routeGeoJson]);
+    const syncWhenReady = () => syncRouteLayers(map, routeOverlaysRef.current, baseMapRef.current);
+    if (map.isStyleLoaded()) syncWhenReady();
+    else map.once('idle', syncWhenReady);
+    const fitKey = routeOverlays.map((item) => item.id).sort().join(',');
+    if (fitKey !== fittedRoutesRef.current && !latestPositionRef.current) {
+      const bounds = routeBounds(routeOverlays);
+      if (bounds) map.fitBounds(bounds, { padding: { top: 100, bottom: 65, left: 60, right: 60 }, maxZoom: 14, duration: 0 });
+      fittedRoutesRef.current = fitKey;
+    }
+    return () => { map.off('idle', syncWhenReady); };
+  }, [mapLoaded, routeOverlays]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
     const markers: Marker[] = [];
-    const summitButton = document.createElement('button');
-    summitButton.type = 'button';
-    summitButton.className = 'route-map-marker route-map-summit-marker';
-    summitButton.setAttribute('aria-label', t('routes.map.summitMarkerLabel'));
-    const summitIcon = document.createElement('span');
-    summitIcon.textContent = '▲';
-    summitButton.append(summitIcon);
-    summitButton.addEventListener('click', () => {
-      setSelection({ kind: 'summit' });
-    });
-    markers.push(
-      new Marker({ element: summitButton, anchor: 'bottom' })
-        .setLngLat(route.summitCoordinate ?? VOLCANO_CENTER)
-        .addTo(map)
-    );
+    for (const destination of routes) {
+      if (!destination.summitCoordinate) continue;
+      const picacho = destination.slug === 'mirador-picacho';
+      const label = t(picacho ? 'final.picachoDestination' : 'final.summitDestination');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `route-map-marker route-destination-marker ${picacho ? 'picacho' : 'summit'} ${destination.id === route.id ? 'active' : ''}`;
+      button.setAttribute('aria-label', label);
+      button.title = label;
+      const icon = document.createElement('span');
+      icon.className = 'destination-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = picacho ? '◆' : '▲';
+      const caption = document.createElement('span');
+      caption.className = 'destination-label';
+      caption.textContent = label;
+      button.append(caption, icon);
+      button.addEventListener('click', () => setSelection({ kind: 'destination', slug: destination.slug }));
+      markers.push(new Marker({ element: button, anchor: 'bottom' }).setLngLat(destination.summitCoordinate).addTo(map));
+    }
     if (route.startCoordinate) {
       const startButton = document.createElement('button');
       startButton.type = 'button';
@@ -469,17 +403,15 @@ export function RouteMap({ route }: RouteMapProps) {
     language,
     locatedCheckpoints,
     mapLoaded,
+    routes,
+    route.id,
     route.startCoordinate,
-    route.summitCoordinate,
     t,
   ]);
 
   const recenterMap = () => {
-    mapRef.current?.easeTo({
-      center: VOLCANO_CENTER,
-      zoom: INITIAL_ZOOM,
-      duration: 700,
-    });
+    const bounds = routeBounds(routeOverlays);
+    if (bounds) mapRef.current?.fitBounds(bounds, { padding: { top: 100, bottom: 65, left: 60, right: 60 }, maxZoom: 14, duration: 700 });
   };
 
   const centerOnPosition = (position: LivePosition) => {
@@ -492,7 +424,7 @@ export function RouteMap({ route }: RouteMapProps) {
 
   const activateLocation = () => {
     const currentPosition = latestPositionRef.current;
-    if (watchIdRef.current !== null) {
+    if (stopWatchRef.current !== null) {
       if (currentPosition) centerOnPosition(currentPosition);
       return;
     }
@@ -504,7 +436,7 @@ export function RouteMap({ route }: RouteMapProps) {
     setLocationStatus('locating');
     setLocationError(null);
     centerOnFirstPositionRef.current = true;
-    watchIdRef.current = navigator.geolocation.watchPosition(
+    stopWatchRef.current = watchOrientation(navigator.geolocation,
       ({ coords, timestamp }) => {
         const position = {
           longitude: coords.longitude,
@@ -512,13 +444,7 @@ export function RouteMap({ route }: RouteMapProps) {
           accuracy: coords.accuracy,
           timestamp,
         };
-        const previous = latestPositionRef.current;
-        const implausibleJump =
-          previous !== null &&
-          timestamp - previous.timestamp < 15_000 &&
-          distanceMeters(previous, position) >
-            Math.max(3_000, previous.accuracy * 3 + position.accuracy * 3);
-        if (coords.accuracy > 2_000 || implausibleJump) return;
+        if (!acceptsPosition(latestPositionRef.current, position)) return;
         latestPositionRef.current = position;
         const accuracyGeoJson = createAccuracyCircle(position);
         accuracyGeoJsonRef.current = accuracyGeoJson;
@@ -556,12 +482,11 @@ export function RouteMap({ route }: RouteMapProps) {
               ? 'positionUnavailable'
               : 'timeout';
         setLocationError(t(`routes.map.locationErrors.${key}`));
-        if (watchIdRef.current !== null) {
-          navigator.geolocation.clearWatch(watchIdRef.current);
-          watchIdRef.current = null;
+        if (error.code === error.PERMISSION_DENIED && stopWatchRef.current !== null) {
+          stopWatchRef.current();
+          stopWatchRef.current = null;
         }
-      },
-      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 2_000 }
+      }
     );
   };
 
@@ -624,6 +549,15 @@ export function RouteMap({ route }: RouteMapProps) {
 
   return (
     <div className="route-map-section">
+      {mapLoaded && <div className="route-map-route-key">
+          <div className="route-map-active-badge" role="status"><small>{t('final.selectedDestination')}</small><strong>{t(route.slug === 'mirador-picacho' ? 'final.picachoBadge' : 'final.summitBadge')}</strong></div>
+          <ul className="route-map-legend" aria-label={t('final.routeLegend')}>
+            {routeOverlays.map((item) => <li key={item.id} className={item.active ? 'active' : ''}>
+              <span aria-hidden="true" />{t(item.slug === 'mirador-picacho' ? 'final.picachoBadge' : 'final.summitBadge')}
+            </li>)}
+          </ul>
+        </div>}
+      {onChangeRoute && <button type="button" className="secondary-button map-change-route" onClick={onChangeRoute}>{t('final.changeRoute')}</button>}
       <div className="route-map-frame">
         <div
           ref={containerRef}
@@ -632,11 +566,7 @@ export function RouteMap({ route }: RouteMapProps) {
           aria-label={t('routes.map.mapLabel')}
         />
 
-        {mapLoaded && (
-          <p className="route-map-loaded-status" aria-live="polite">
-            {t('routes.map.loaded')}
-          </p>
-        )}
+
 
         {!mapLoaded && !mapFailed && (
           <div className="route-map-state" role="status">
@@ -726,19 +656,15 @@ export function RouteMap({ route }: RouteMapProps) {
               ×
             </button>
 
-            {selection.kind === 'summit' && (
+            {selection.kind === 'destination' && (
               <>
                 <span className="route-checkpoint-type">
-                  {t('routes.map.volcanoReference')}
+                  {t('visits.route')}
                 </span>
                 <h3>
-                  {language === 'es'
-                    ? 'Volcán Santa María'
-                    : 'Santa María Volcano'}
+                  {t(selection.slug === 'mirador-picacho' ? 'final.picachoDestination' : 'final.summitDestination')}
                 </h3>
-                <span className="route-checkpoint-altitude">
-                  {t('routes.altitude', { altitude: VOLCANO_ALTITUDE_M })}
-                </span>
+
               </>
             )}
             {selection.kind === 'start' && (
@@ -787,6 +713,9 @@ export function RouteMap({ route }: RouteMapProps) {
         )}
       </div>
 
+      {alternativeFailed && <p className="route-map-note" role="status">{t('final.alternativeUnavailable')}{' '}
+        <button type="button" className="text-button" onClick={() => { setAlternativeFailed(false); setRouteAttempt((attempt) => attempt + 1); }}>{t('profile.retry')}</button>
+      </p>}
       <div className="route-location-status" aria-live="polite">
         {locationStatus === 'locating' && <p>{t('routes.map.locating')}</p>}
         {livePosition && (
@@ -803,15 +732,15 @@ export function RouteMap({ route }: RouteMapProps) {
       </div>
 
       <section className="route-stats-card">
-        <h3>{t('routes.stats.title')}</h3>
+        <h3>{language === 'es' ? route.nameEs : route.nameEn}</h3>
         <div>
-          <strong>{route.distanceKm?.toFixed(1) ?? '6.1'} km</strong>
-          <span>{t('routes.stats.distance')}</span>
+          <strong>{route.distanceKm?.toFixed(2) ?? '—'} km</strong>
+          <span>{t(route.returnSamePath ? 'final.oneWay' : 'final.roundTrip')}</span>
         </div>
         <div>
           <strong>
-            {Math.floor((route.estimatedDurationMinutes ?? 185) / 60)} h{' '}
-            {String((route.estimatedDurationMinutes ?? 185) % 60).padStart(
+            {Math.floor((route.estimatedDurationMinutes ?? 0) / 60)} h{' '}
+            {String((route.estimatedDurationMinutes ?? 0) % 60).padStart(
               2,
               '0'
             )}{' '}
@@ -819,11 +748,10 @@ export function RouteMap({ route }: RouteMapProps) {
           </strong>
           <span>{t('routes.stats.time')}</span>
         </div>
+        {route.returnSamePath && <p><strong>{route.totalDistanceKm?.toFixed(2)} km</strong> — {t('final.total')}<br />{t('final.sameWay')}</p>}
         <p>{t('routes.stats.disclaimer')}</p>
       </section>
-      {!routeGeoJson && (
-        <p className="route-map-note">{t('routes.map.trackPending')}</p>
-      )}
+
       {locatedCheckpoints.length === 0 && (
         <p className="route-map-note">{t('routes.map.noCheckpoints')}</p>
       )}

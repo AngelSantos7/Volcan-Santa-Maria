@@ -5,10 +5,10 @@ select plan(20);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
-  ('c1000000-0000-4000-8000-000000000001', 'phase2-admin@example.invalid', now(), '{"first_name":"Ana","last_name":"Admin"}'),
-  ('c2000000-0000-4000-8000-000000000002', 'phase2-manager@example.invalid', now(), '{"first_name":"Mario","last_name":"Gestor"}'),
-  ('c3000000-0000-4000-8000-000000000003', 'phase2-no-permission@example.invalid', now(), '{"first_name":"Nora","last_name":"Gestora"}'),
-  ('c4000000-0000-4000-8000-000000000004', 'phase2-tourist@example.invalid', now(), '{"first_name":"Tania","last_name":"Turista"}');
+  ('c1000000-0000-4000-8000-000000000001', 'phase2-admin@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Ana","last_name":"Admin"}'),
+  ('c2000000-0000-4000-8000-000000000002', 'phase2-manager@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Mario","last_name":"Gestor"}'),
+  ('c3000000-0000-4000-8000-000000000003', 'phase2-no-permission@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Nora","last_name":"Gestora"}'),
+  ('c4000000-0000-4000-8000-000000000004', 'phase2-tourist@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Tania","last_name":"Turista"}');
 
 update public.user_roles set role = 'admin' where user_id = 'c1000000-0000-4000-8000-000000000001';
 update public.user_roles set role = 'visitor_manager'

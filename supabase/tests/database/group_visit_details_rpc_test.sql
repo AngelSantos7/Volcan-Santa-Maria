@@ -9,17 +9,17 @@ values
   (
     'c1000000-0000-4000-8000-000000000001'::uuid,
     'details-leader@example.invalid',
-    '{"first_name":"Laura","last_name":"Lider"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Laura","last_name":"Lider"}'::jsonb
   ),
   (
     'c2000000-0000-4000-8000-000000000002'::uuid,
     'details-member@example.invalid',
-    '{"first_name":"Miguel","last_name":"Miembro"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Miguel","last_name":"Miembro"}'::jsonb
   ),
   (
     'c3000000-0000-4000-8000-000000000003'::uuid,
     'details-outsider@example.invalid',
-    '{"first_name":"Olivia","last_name":"Externa"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Olivia","last_name":"Externa"}'::jsonb
   );
 
 update auth.users
@@ -148,7 +148,7 @@ with created as (
   from public.create_group_visit(
     'day_hike'::public.visit_type,
     pg_catalog.now() + interval '1 hour',
-    pg_catalog.now() + interval '4 hours',
+    pg_catalog.now() + interval '5 hours',
     true,
     'Guia de Prueba',
     true,
@@ -170,7 +170,7 @@ select lives_ok(
 select results_eq(
   $$
     select status::text, join_code is not null, visit_type::text,
-      expected_return_at = pg_catalog.now() + interval '4 hours',
+      expected_return_at = pg_catalog.now() + interval '5 hours',
       has_local_guide, guide_name, jsonb_array_length(participants)
     from public.get_group_visit_details(
       (select visit_id from pg_temp.test_group_visit_details)

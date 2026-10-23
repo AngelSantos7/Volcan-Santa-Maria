@@ -1,3 +1,5 @@
+import { ChangeRouteDialog } from '../routes/ChangeRouteDialog';
+import { isAdult } from '../../../shared/account-policy';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RouteInfoScreen } from '../routes/RouteInfoScreen';
@@ -12,6 +14,7 @@ import { useToast } from '../../components/toast-context';
 type GroupVisitsProps = {
   currentUserId: string;
   currentUserName: string;
+  dateOfBirth: string;
 };
 
 type VisitView = 'home' | 'create' | 'join' | 'route';
@@ -19,10 +22,12 @@ type VisitView = 'home' | 'create' | 'join' | 'route';
 export function GroupVisits({
   currentUserId,
   currentUserName,
+  dateOfBirth,
 }: GroupVisitsProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [view, setView] = useState<VisitView>('home');
+  const [changingRoute, setChangingRoute] = useState(false);
   const [routeTab, setRouteTab] = useState<RouteTab>('recommendations');
   const {
     details,
@@ -44,7 +49,12 @@ export function GroupVisits({
 
   if (view === 'route') {
     return (
-      <RouteInfoScreen initialTab={routeTab} onBack={() => setView('home')} />
+      <>
+        <RouteInfoScreen key={details?.routeId} routeId={details?.routeId} initialTab={routeTab} onTabChange={setRouteTab} onBack={() => setView('home')}
+          onChangeRoute={details && ['forming', 'in_progress'].includes(details.status) && details.participants.some((p) => p.userId === currentUserId && p.memberRole === 'leader' && ['active', 'returning_early'].includes(p.memberStatus)) ? () => setChangingRoute(true) : undefined} />
+        {changingRoute && details && <ChangeRouteDialog visitId={details.visitId} routeId={details.routeId}
+          started={Boolean(details.startedAt) || details.status === 'in_progress'} onClose={() => setChangingRoute(false)} onChanged={refreshDetails} />}
+      </>
     );
   }
 
@@ -110,11 +120,13 @@ export function GroupVisits({
           <h2 id="visits-title">{t('visits.title')}</h2>
           <p>{t('visits.subtitle')}</p>
         </header>
+        {!isAdult(dateOfBirth) && <p role="alert" className="form-message error-message">{t('final.adultExisting')}</p>}
         <div className="visit-primary-actions">
           <button
             className="primary-button"
             type="button"
             onClick={() => setView('create')}
+            disabled={!isAdult(dateOfBirth)}
           >
             {t('visits.create.action')}
           </button>
@@ -122,6 +134,7 @@ export function GroupVisits({
             className="secondary-button"
             type="button"
             onClick={() => setView('join')}
+            disabled={!isAdult(dateOfBirth)}
           >
             {t('visits.join.action')}
           </button>

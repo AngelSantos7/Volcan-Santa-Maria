@@ -1,18 +1,26 @@
 {
-  "source": "ruta-santa-maria.gpx",
-  "pointCount": 959,
-  "distanceKm": 6.062,
-  "elevationGainM": 934,
-  "startElevationM": 2797,
-  "maxElevationM": 3703,
-  "durationMinutes": 186,
-  "direction": "one_way_ascent",
+  "source": "volcan-santa-maria.gpx",
+  "sha256": "fcedb1e6be9590686d99be30794c51d8dbf87272e8ddc42b4ae8379d9607d454",
+  "slug": "ascenso-a-la-cima",
+  "pointCount": 1935,
+  "segmentCount": 1,
+  "distanceKm": 10.481064,
+  "totalDistanceKm": 10.481064,
+  "durationMinutes": 502,
+  "direction": "round_trip",
+  "startedAt": "2026-02-03T08:27:27Z",
+  "endedAt": "2026-02-03T16:49:44Z",
   "start": [
-    -91.553217,
-    14.773321
+    -91.548599,
+    14.787427
   ],
   "summit": [
-    -91.551552,
-    14.757406
-  ]
+    -91.551731,
+    14.75719
+  ],
+  "end": [
+    -91.548605,
+    14.787453
+  ],
+  "maxElevationM": 3700.947
 }

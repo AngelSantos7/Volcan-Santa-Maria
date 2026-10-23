@@ -46,7 +46,7 @@ select columns_are(
     'distance_km',
     'estimated_duration_minutes',
     'elevation_gain_m',
-    'path_geojson'
+    'path_geojson', 'gpx_path', 'asset_prefix', 'total_distance_km', 'journey_type', 'gpx_metadata'
   ],
   'routes exposes the informational fields'
 );
@@ -104,8 +104,8 @@ select results_eq(
   $$
     values (
       'ascenso-a-la-cima'::text,
-      'Ascenso a la Cima'::text,
-      'Summit Route'::text,
+      'Cima del Volcán Santa María'::text,
+      'Santa María Volcano Summit'::text,
       true
     )
   $$,
@@ -124,15 +124,15 @@ select results_eq(
       description_es is null,
       description_en is null,
       difficulty is null,
-      distance_km is null,
-      estimated_duration_minutes is null,
+      distance_km > 0,
+      estimated_duration_minutes > 0,
       elevation_gain_m is null,
       path_geojson is null
     from public.routes
     where slug = 'ascenso-a-la-cima'
   $$,
   $$ values (true, true, true, true, true, true, true) $$,
-  'unknown route facts and geometry remain null'
+  'GPX metrics are populated without inventing other facts'
 );
 
 select ok(
@@ -196,7 +196,7 @@ select is(
 );
 
 select is(
-  (select count(*) from public.route_media),
+  (select count(*) from public.route_media where storage_path like 'routes/test-%'),
   0::bigint,
   'the migration creates no fictional media'
 );
@@ -277,7 +277,7 @@ set local role authenticated;
 
 select is(
   (select count(*) from public.routes),
-  1::bigint,
+  2::bigint,
   'RLS exposes only active routes to authenticated tourists'
 );
 
@@ -288,7 +288,7 @@ select is(
 );
 
 select is(
-  (select count(*) from public.route_media),
+  (select count(*) from public.route_media where storage_path like 'routes/test-%'),
   1::bigint,
   'RLS exposes media only for active routes'
 );

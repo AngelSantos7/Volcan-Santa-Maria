@@ -5,6 +5,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { latestAdultBirthDate } from '../../shared/account-policy';
 import { PasswordInput } from '../components/PasswordInput';
 import {
   getAuthErrorMessage,
@@ -31,6 +32,7 @@ type RegisterPageProps = {
 };
 
 const INITIAL_VALUES: RegistrationValues = {
+  dateOfBirth: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -178,6 +180,7 @@ export function RegisterPage({
 
     try {
       const result = await signUp({
+        dateOfBirth: values.dateOfBirth,
         firstName: normalizedFirstName,
         lastName: normalizedLastName,
         email: normalizedEmail,
@@ -294,6 +297,12 @@ export function RegisterPage({
                 {t(errors.lastName)}
               </span>
             )}
+          </label>
+
+          <label>{t('profile.dateOfBirth')}
+            <input type="date" name="dateOfBirth" data-field="dateOfBirth" value={values.dateOfBirth} max={latestAdultBirthDate()} onChange={(event) => setField('dateOfBirth', event.target.value)} disabled={submitting} required aria-invalid={Boolean(errors.dateOfBirth)} />
+            <small>{t('final.adultRegistration')}</small>
+            {errors.dateOfBirth && <span className="field-error" role="alert">{t(errors.dateOfBirth)}</span>}
           </label>
 
           <label>

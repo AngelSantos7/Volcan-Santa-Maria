@@ -9,9 +9,16 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "preview": "vite preview"
-    ,"generate:route": "node scripts/process-gpx.mjs"
-    ,"test:gpx": "node scripts/process-gpx.mjs --check"
+    "preview": "vite preview",
+    "generate:route": "node scripts/process-gpx.mjs",
+    "test:gpx": "node scripts/process-gpx.mjs --check",
+    "test:policy": "node --test scripts/account-policy.test.mjs",
+    "test:ui": "node scripts/ux-ui.test.mjs",
+    "test:map": "node --test scripts/route-map.test.mjs",
+    "test:staff": "node --test scripts/staff-invitation.test.mjs",
+    "test:auth:local": "node scripts/auth-policy.local.test.mjs",
+    "test:password": "node --test scripts/password-change.test.mjs",
+    "test:ui:final": "node scripts/final-flows-ui.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

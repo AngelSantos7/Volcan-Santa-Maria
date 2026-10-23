@@ -8,7 +8,6 @@ import {
 } from '../features/auth/auth-errors';
 import { normalizeEmail } from '../features/auth/registration-validation';
 import { useAuth } from '../features/auth/useAuth';
-import { LegalLinks } from '../features/legal/LegalDocuments';
 
 type LoginPageProps = {
   onShowRegister: () => void;
@@ -371,7 +370,7 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
                 {t('auth.createAccountLink')}
               </button>
             </p>
-            <LegalLinks compact />
+
           </section>
         </div>
       </div>

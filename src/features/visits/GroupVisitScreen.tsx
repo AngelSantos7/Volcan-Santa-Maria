@@ -1,10 +1,14 @@
+import { AddMyMinorsForm } from './AddMyMinorsForm';
+import { removeMyVisitMinor } from './visit-service';
+import { minimumReturnAt, requiresEarlyReturn } from '../../../shared/account-policy';
+import { ChangeRouteDialog } from '../routes/ChangeRouteDialog';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { UserAvatar } from '../../components/UserAvatar';
 import { getAppLanguage } from '../../i18n';
 import type { RouteTab } from '../routes/route-types';
-import { HikeForecastCard } from '../weather/HikeForecastCard';
+import { RouteHikeForecast } from '../weather/RouteHikeForecast';
 import { getGuatemalaLocalTime } from '../weather/weather-service';
 import { EarlyReturnForm } from './EarlyReturnForm';
 import { getVisitErrorMessage } from './visit-errors';
@@ -15,6 +19,7 @@ import {
   markMemberReturningEarly,
   removeMemberBeforeStart,
   startEarlyReturn,
+  recordMyEarlyReturn,
   startGroupVisit,
   withdrawFromGroup,
   getVisitMinors,
@@ -37,7 +42,7 @@ type GroupVisitScreenProps = {
 };
 
 type EarlyReturnTarget =
-  | { mode: 'self' }
+  | { mode: 'self'; arrived?: boolean }
   | { mode: 'organizer'; userId: string; participantName: string };
 
 type PendingConfirmation =
@@ -58,6 +63,7 @@ function formatExpectedReturn(value: string | null, language: string): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Guatemala',
   }).format(date);
 }
 
@@ -70,6 +76,7 @@ function formatTime(value: string | null, language: string): string {
   return new Intl.DateTimeFormat(language === 'es' ? 'es-GT' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Guatemala',
   }).format(date);
 }
 
@@ -94,6 +101,8 @@ export function GroupVisitScreen({
   onOpenRoute,
 }: GroupVisitScreenProps) {
   const { t, i18n } = useTranslation();
+  const [addingMinors, setAddingMinors] = useState(false);
+  const [changingRoute, setChangingRoute] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,6 +116,15 @@ export function GroupVisitScreen({
     const interval = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(interval);
   }, []);
+  const finishAt = details.startedAt ? minimumReturnAt(Date.parse(details.startedAt)) : null;
+  const finishLocked = requiresEarlyReturn(now, details.startedAt);
+  useEffect(() => {
+    if (finishAt === null || !Number.isFinite(finishAt)) return;
+    const delay = finishAt - Date.now();
+    if (delay <= 0) return;
+    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(delay + 20, 2_147_483_647));
+    return () => window.clearTimeout(timer);
+  }, [finishAt]);
   useEffect(() => {
     let active = true;
     void getVisitMinors(details.visitId)
@@ -117,13 +135,21 @@ export function GroupVisitScreen({
     return () => {
       active = false;
     };
-  }, [details.visitId]);
+  }, [details.visitId, details.participants, details.status]);
   const language = getAppLanguage(i18n.resolvedLanguage);
   const routeName =
     language === 'es' ? details.routeNameEs : details.routeNameEn;
   const currentParticipant = details.participants.find(
     (participant) => participant.userId === currentUserId
   );
+  const canEditMinors = details.status === 'forming' && !details.startedAt && currentParticipant?.memberStatus === 'active';
+  const reloadMinors = async () => { setMinors(await getVisitMinors(details.visitId)); };
+  async function removeMinor(id: string) {
+    setBusy(true); setActionError(null);
+    try { await removeMyVisitMinor(details.visitId, id); await reloadMinors(); }
+    catch (reason) { setActionError(getVisitErrorMessage(reason)); }
+    finally { setBusy(false); }
+  }
   const isOrganizer = currentParticipant?.memberRole === 'leader';
   const participantCount = details.participants.filter(
     (participant) => participant.memberStatus !== 'withdrawn_before_start'
@@ -268,7 +294,8 @@ export function GroupVisitScreen({
     setActionError(null);
     try {
       if (earlyReturnTarget.mode === 'self') {
-        await startEarlyReturn(details.visitId, reason, notes);
+        if (earlyReturnTarget.arrived) await recordMyEarlyReturn(details.visitId, reason, notes);
+        else await startEarlyReturn(details.visitId, reason, notes);
       } else {
         await markMemberReturningEarly(
           details.visitId,
@@ -446,7 +473,7 @@ export function GroupVisitScreen({
       )}
 
       {forecastReturn && details.status !== 'completed' && (
-        <HikeForecastCard
+        <RouteHikeForecast routeId={details.routeId}
           startDate={forecastStart.slice(0, 10)}
           startTime={forecastStart.slice(11, 16)}
           returnDate={forecastReturn.slice(0, 10)}
@@ -476,6 +503,7 @@ export function GroupVisitScreen({
               participant.userId !== currentUserId &&
               participant.memberStatus === 'active';
 
+            const ownMinors = minors.filter((minor) => minor.responsibleMemberId === participant.userId);
             return (
               <li key={participant.userId}>
                 <UserAvatar
@@ -500,6 +528,15 @@ export function GroupVisitScreen({
                       : t(`visits.memberStatus.${participant.memberStatus}`)}
                     {statusTime && ` · ${formatTime(statusTime, language)}`}
                   </small>
+                  {ownMinors.length > 0 && <div className="adult-minors">
+                    <strong>{t('final.minorsInCare', { count: ownMinors.length })}</strong>
+                    <ul>{ownMinors.map((minor) => <li key={minor.id}>
+                      <span>{minor.fullName}</span>
+                      <small>{t('final.minorAge', { age: minor.age })} · {minorRelationshipLabel(minor.relationship, t)}</small>
+                      {canEditMinors && participant.userId === currentUserId && <button type="button" className="text-button" disabled={busy}
+                        aria-label={t('final.removeMinor', { name: minor.fullName })} onClick={() => void removeMinor(minor.id)}>{t('visits.minors.remove')}</button>}
+                    </li>)}</ul>
+                  </div>}
                 </div>
 
                 {canManageParticipant && details.status === 'forming' && (
@@ -520,47 +557,13 @@ export function GroupVisitScreen({
         </ul>
       </section>
 
-      {minors.length > 0 && (
-        <section
-          className="participants-section"
-          aria-labelledby="minors-title"
-        >
-          <div className="participants-heading">
-            <h3 id="minors-title">
-              {language === 'es'
-                ? 'Menores acompañantes'
-                : 'Accompanying minors'}
-            </h3>
-            <span>{minors.length}</span>
-          </div>
-          <ul className="participants-list">
-            {minors.map((minor) => (
-              <li key={minor.id}>
-                <div className="participant-details">
-                  <div className="participant-name">
-                    <span>{minor.fullName}</span>
-                    <strong>
-                      {language === 'es'
-                        ? 'Menor acompañado'
-                        : 'Accompanied minor'}
-                    </strong>
-                  </div>
-                  <small>
-                    {minor.age} {language === 'es' ? 'años' : 'years'} ·{' '}
-                    {minorRelationshipLabel(minor.relationship, t)}
-                  </small>
-                  <small>
-                    {language === 'es' ? 'Responsable' : 'Responsible'}:{' '}
-                    {minor.responsibleName}
-                  </small>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {canEditMinors ? addingMinors ? <AddMyMinorsForm visitId={details.visitId}
+        currentUserName={participantName(currentParticipant!)} onCancel={() => setAddingMinors(false)}
+        onSaved={async () => { await reloadMinors(); setAddingMinors(false); }} /> :
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => setAddingMinors(true)}>{t('final.addMyMinors')}</button>
+        : <p className="muted">{t('final.minorsLocked')}</p>}
 
-      {details.status === 'in_progress' && (
+      {['forming', 'in_progress'].includes(details.status) && (
         <div className="future-actions ascent-route-actions">
           {(['route', 'map', 'gallery'] as const).map((feature) => (
             <button
@@ -586,10 +589,10 @@ export function GroupVisitScreen({
               <button
                 className="early-return-button"
                 type="button"
-                onClick={() => setEarlyReturnTarget({ mode: 'self' })}
+                onClick={() => setEarlyReturnTarget({ mode: 'self', arrived: true })}
                 disabled={busy}
               >
-                {t('visits.earlyReturn.action')}
+                {t('final.earlyReturn')}
               </button>
             )}
             {isOrganizer &&
@@ -625,6 +628,7 @@ export function GroupVisitScreen({
       {earlyReturnTarget && (
         <EarlyReturnForm
           mode={earlyReturnTarget.mode}
+          arrived={earlyReturnTarget.mode === 'self' && earlyReturnTarget.arrived}
           participantName={
             earlyReturnTarget.mode === 'organizer'
               ? earlyReturnTarget.participantName
@@ -704,12 +708,17 @@ export function GroupVisitScreen({
               className="primary-button complete-visit-button"
               type="button"
               onClick={() => setPendingConfirmation({ action: 'complete' })}
-              disabled={busy}
+              disabled={busy || finishLocked}
+              aria-describedby={finishLocked ? 'finish-availability' : undefined}
             >
-              {t(
-                busy ? 'visits.complete.completing' : 'visits.complete.action'
-              )}
+              {t('visits.complete.action')}
             </button>
+          )}
+          {currentParticipant?.memberStatus === 'active' && finishLocked && finishAt !== null && (
+            <p id="finish-availability" className="finish-availability" role="status">
+              {t('final.finishAvailable', { time: formatTime(new Date(finishAt).toISOString(), language) })}
+              <br />{t('final.finishEarlyHelp')}
+            </p>
           )}
         </div>
       )}
@@ -724,6 +733,8 @@ export function GroupVisitScreen({
         </button>
       )}
 
+      {isOrganizer && ['forming', 'in_progress'].includes(details.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => setChangingRoute(true)}>{t('final.changeRoute')}</button>}
+      {changingRoute && <ChangeRouteDialog visitId={details.visitId} routeId={details.routeId} started={Boolean(details.startedAt) || details.status === 'in_progress'} onClose={() => setChangingRoute(false)} onChanged={onRefresh} />}
       <ConfirmationDialog
         open={pendingConfirmation !== null}
         message={confirmationMessage}

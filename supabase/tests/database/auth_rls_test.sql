@@ -11,17 +11,17 @@ values
   (
     'a1000000-0000-4000-8000-000000000001'::uuid,
     'rls-tourist-one@example.invalid',
-    '{"first_name":"Ana","last_name":"Turista"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Ana","last_name":"Turista"}'::jsonb
   ),
   (
     'a2000000-0000-4000-8000-000000000002'::uuid,
     'rls-tourist-two@example.invalid',
-    '{"first_name":"Bruno","last_name":"Visitante"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Bruno","last_name":"Visitante"}'::jsonb
   ),
   (
     'a3000000-0000-4000-8000-000000000003'::uuid,
     'rls-tourist-three@example.invalid',
-    '{"first_name":"Carla","last_name":"Caminante"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Carla","last_name":"Caminante"}'::jsonb
   );
 
 update public.profiles

@@ -1,3 +1,4 @@
+import { supabase } from '../../lib/supabase';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthErrorMessage } from '../auth/auth-errors';
@@ -18,6 +19,7 @@ export function ProfileGate() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { user, signOut } = useAuth();
+  const [staffAccount, setStaffAccount] = useState(false);
   const [profile, setProfile] = useState<TouristProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -31,8 +33,14 @@ export function ProfileGate() {
 
     let active = true;
 
-    void Promise.all([loadTouristProfile(user.id), hasCurrentLegalConsent()])
-      .then(([loadedProfile, hasConsent]) => {
+    void Promise.resolve(supabase.from('user_roles').select('role').eq('user_id', user.id).single()).then(async ({ data, error }) => {
+      if (error) throw error;
+      if (data.role !== 'tourist') { if (active) setStaffAccount(true); return null; }
+      return Promise.all([loadTouristProfile(user.id), hasCurrentLegalConsent()]);
+    })
+      .then((result) => {
+        if (!result) return;
+        const [loadedProfile, hasConsent] = result;
         if (!active) return;
 
         setProfile(loadedProfile);
@@ -63,6 +71,11 @@ export function ProfileGate() {
       </>
     );
   }
+
+  if (staffAccount) return <main className="auth-shell"><section className="auth-card">
+    <h1>{t('final.staffAccount')}</h1><p>{t('final.staffAccountHelp')}</p>
+    <button type="button" className="secondary-button" onClick={() => void signOut()}>{t('common.signOut')}</button>
+  </section></main>;
 
   if (loadError || !profile) {
     const retry = () => {

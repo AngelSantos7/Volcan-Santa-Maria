@@ -9,22 +9,22 @@ values
   (
     'f1000000-0000-4000-8000-000000000001'::uuid,
     'history-members-leader@example.invalid',
-    '{"first_name":"Miguel","last_name":"Santos"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Miguel","last_name":"Santos"}'::jsonb
   ),
   (
     'f2000000-0000-4000-8000-000000000002'::uuid,
     'history-members-return@example.invalid',
-    '{"first_name":"Juan","last_name":"Perez"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Juan","last_name":"Perez"}'::jsonb
   ),
   (
     'f3000000-0000-4000-8000-000000000003'::uuid,
     'history-members-withdrawn@example.invalid',
-    '{"first_name":"Carlos","last_name":"Lopez"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Carlos","last_name":"Lopez"}'::jsonb
   ),
   (
     'f4000000-0000-4000-8000-000000000004'::uuid,
     'history-members-outsider@example.invalid',
-    '{"first_name":"Olivia","last_name":"Externa"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Olivia","last_name":"Externa"}'::jsonb
   );
 
 insert into public.visits (

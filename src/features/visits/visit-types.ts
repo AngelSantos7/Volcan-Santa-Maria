@@ -15,6 +15,7 @@ export type VisitMemberStatus =
 
 export type EarlyReturnReason =
   | 'physical_discomfort'
+  | 'weather'
   | 'injury'
   | 'emergency'
   | 'personal_decision'
@@ -63,6 +64,7 @@ export type GroupVisitDetails = {
 };
 
 export type CreateGroupVisitInput = {
+  routeId: string;
   visitType: VisitType;
   startMode: VisitStartMode;
   plannedStartAt: string | null;

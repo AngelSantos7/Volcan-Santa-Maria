@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { PasswordInput } from '../components/PasswordInput';
 import { getAuthErrorMessage } from '../features/auth/auth-errors';
 import { MIN_PASSWORD_LENGTH } from '../features/auth/registration-validation';
+import { isValidPassword } from '../../shared/account-policy';
 import { useAuth } from '../features/auth/useAuth';
 
 type PasswordRecoveryPageProps = {
   onPasswordUpdated: () => void;
+  changing?: boolean;
+  onCancel?: () => void;
 };
 
 type PasswordErrors = {
@@ -24,10 +27,13 @@ function focusFirstInvalid(form: HTMLFormElement | null) {
 
 export function PasswordRecoveryPage({
   onPasswordUpdated,
+  changing = false,
+  onCancel,
 }: PasswordRecoveryPageProps) {
   const { t } = useTranslation();
   const { updatePassword, completePasswordRecovery, signOut } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<PasswordErrors>({});
@@ -37,8 +43,8 @@ export function PasswordRecoveryPage({
   const validate = (): PasswordErrors => {
     const errors: PasswordErrors = {};
     if (!password) errors.password = 'validation.passwordRequired';
-    else if (password.length < MIN_PASSWORD_LENGTH) {
-      errors.password = 'validation.passwordLength';
+    else if (!isValidPassword(password)) {
+      errors.password = 'final.passwordPolicy';
     }
 
     if (!confirmPassword) {
@@ -62,8 +68,9 @@ export function PasswordRecoveryPage({
 
     setSubmitting(true);
     try {
-      await updatePassword(password);
-      await signOut();
+      await updatePassword(password, changing ? currentPassword : undefined);
+      setCurrentPassword(''); setPassword(''); setConfirmPassword('');
+      if (!changing) await signOut();
       completePasswordRecovery();
       onPasswordUpdated();
     } catch (updateError) {
@@ -78,7 +85,7 @@ export function PasswordRecoveryPage({
     setError(null);
     setFieldErrors((currentErrors) => {
       const nextErrors = { ...currentErrors };
-      if (value.length >= MIN_PASSWORD_LENGTH) delete nextErrors.password;
+      if (isValidPassword(value)) delete nextErrors.password;
       if (currentErrors.confirmPassword && value === confirmPassword) {
         delete nextErrors.confirmPassword;
       }
@@ -106,7 +113,7 @@ export function PasswordRecoveryPage({
       <section className="auth-card" aria-labelledby="new-password-title">
         <header className="auth-header">
           <span className="eyebrow">{t('common.brand')}</span>
-          <h1 id="new-password-title">{t('auth.newPasswordTitle')}</h1>
+          <h1 id="new-password-title">{t(changing ? 'final.changePassword' : 'auth.newPasswordTitle')}</h1>
           <p>{t('auth.newPasswordSubtitle')}</p>
         </header>
 
@@ -122,10 +129,15 @@ export function PasswordRecoveryPage({
             </p>
           )}
 
+          {changing && <label>{t('final.currentPassword')}
+            <PasswordInput name="currentPassword" autoComplete="current-password" value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)} disabled={submitting} required />
+          </label>}
           <label>
             {t('auth.newPassword')}
             <PasswordInput
               name="password"
+              aria-label={t('auth.newPassword')}
               autoComplete="new-password"
               value={password}
               onChange={(event) => handlePasswordChange(event.target.value)}
@@ -190,6 +202,7 @@ export function PasswordRecoveryPage({
           >
             {t(submitting ? 'auth.updatingPassword' : 'auth.updatePassword')}
           </button>
+          {onCancel && <button type="button" className="secondary-button" onClick={onCancel} disabled={submitting}>{t('common.cancel')}</button>}
         </form>
       </section>
     </main>

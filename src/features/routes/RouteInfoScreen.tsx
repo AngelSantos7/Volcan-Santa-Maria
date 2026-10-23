@@ -5,8 +5,8 @@ import { WeatherPanel } from '../weather/WeatherPanel';
 import { CheckpointMediaGallery } from './components/CheckpointMediaGallery';
 import { RouteRecommendations } from './components/RouteRecommendations';
 import {
-  getCachedSummitRouteContent,
-  getSummitRouteContent,
+  getCachedRouteContent,
+  getRouteContent,
 } from './route-service';
 import type {
   RouteContent,
@@ -15,7 +15,10 @@ import type {
 
 type RouteInfoScreenProps = {
   initialTab?: RouteTab;
+  routeId?: string;
   onBack: () => void;
+  onChangeRoute?: () => void;
+  onTabChange?: (tab: RouteTab) => void;
 };
 
 const routeTabs: RouteTab[] = [
@@ -23,10 +26,7 @@ const routeTabs: RouteTab[] = [
   'map',
   'weather',
   'gallery',
-  'donations',
 ];
-const PAYPAL_DONATION_URL =
-  import.meta.env.VITE_PAYPAL_DONATION_URL?.trim() || null;
 const RouteMap = lazy(() =>
   import('./components/RouteMap').then((module) => ({
     default: module.RouteMap,
@@ -35,12 +35,15 @@ const RouteMap = lazy(() =>
 
 export function RouteInfoScreen({
   initialTab = 'recommendations',
+  routeId,
   onBack,
+  onChangeRoute,
+  onTabChange,
 }: RouteInfoScreenProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<RouteTab>(initialTab);
   const [content, setContent] = useState<RouteContent | null>(() =>
-    getCachedSummitRouteContent()
+    getCachedRouteContent(routeId)
   );
   const [loading, setLoading] = useState(content === null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -51,7 +54,7 @@ export function RouteInfoScreen({
 
   useEffect(() => {
     let active = true;
-    void getSummitRouteContent()
+    void getRouteContent(routeId)
       .then((nextContent) => {
         if (!active) return;
         setContent(nextContent);
@@ -66,7 +69,7 @@ export function RouteInfoScreen({
     return () => {
       active = false;
     };
-  }, []);
+  }, [routeId]);
 
   const routeName = content
     ? language === 'es'
@@ -106,7 +109,7 @@ export function RouteInfoScreen({
             role="tab"
             aria-selected={activeTab === tab}
             aria-controls={`route-panel-${tab}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); onTabChange?.(tab); }}
           >
             {t(`routes.tabs.${tab}`)}
           </button>
@@ -161,7 +164,7 @@ export function RouteInfoScreen({
               </p>
             }
           >
-            <RouteMap route={content} />
+            <RouteMap route={content} onChangeRoute={onChangeRoute} />
           </Suspense>
         </div>
       )}
@@ -173,7 +176,7 @@ export function RouteInfoScreen({
           role="tabpanel"
           aria-labelledby="route-tab-weather"
         >
-          <WeatherPanel />
+          <WeatherPanel key={content.id} coordinate={content.summitCoordinate ?? undefined} />
         </div>
       )}
 
@@ -212,37 +215,7 @@ export function RouteInfoScreen({
         </div>
       )}
 
-      {content && activeTab === 'donations' && (
-        <div
-          className="route-tab-panel"
-          id="route-panel-donations"
-          role="tabpanel"
-          aria-labelledby="route-tab-donations"
-        >
-          <section className="donations-card">
-            <span className="eyebrow">{t('routes.donations.title')}</span>
-            <h3>{t('routes.donations.heading')}</h3>
-            <p>{t('routes.donations.body')}</p>
-            <strong>{t('legal.entity')}</strong>
-            {PAYPAL_DONATION_URL ? (
-              <a
-                className="primary-button"
-                href={PAYPAL_DONATION_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('routes.donations.button')}
-              </a>
-            ) : (
-              <button className="primary-button" type="button" disabled>
-                {t('routes.donations.button')} ·{' '}
-                {t('routes.donations.comingSoon')}
-              </button>
-            )}
-            <small>{t('routes.donations.free')}</small>
-          </section>
-        </div>
-      )}
+
     </section>
   );
 }

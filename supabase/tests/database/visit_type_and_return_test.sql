@@ -1,5 +1,13 @@
 begin;
 
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('d1000000-0000-4000-8000-000000000001'::uuid,'d2000000-0000-4000-8000-000000000002'::uuid,'d3000000-0000-4000-8000-000000000003'::uuid);
+$$;
+
+
 create extension if not exists pgtap with schema extensions;
 
 select plan(14);
@@ -9,17 +17,17 @@ values
   (
     'd1000000-0000-4000-8000-000000000001'::uuid,
     'day-hike@example.invalid',
-    '{"first_name":"Diana","last_name":"Dia"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Diana","last_name":"Dia"}'::jsonb
   ),
   (
     'd2000000-0000-4000-8000-000000000002'::uuid,
     'expedition@example.invalid',
-    '{"first_name":"Esteban","last_name":"Expedicion"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Esteban","last_name":"Expedicion"}'::jsonb
   ),
   (
     'd3000000-0000-4000-8000-000000000003'::uuid,
     'expired-return@example.invalid',
-    '{"first_name":"Rita","last_name":"Retorno"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Rita","last_name":"Retorno"}'::jsonb
   );
 
 update auth.users
@@ -175,7 +183,7 @@ select lives_ok(
       select *
       from public.create_group_visit(
         'day_hike'::public.visit_type,
-        pg_catalog.now() + interval '1 hour',
+        pg_catalog.now() + interval '5 hours',
         pg_catalog.now() + interval '6 hours',
         false,
         null,
@@ -272,7 +280,7 @@ select lives_ok(
       from public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '30 minutes',
-        pg_catalog.now() + interval '1 hour',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         true,
@@ -289,7 +297,7 @@ select lives_ok(
       'expired-before-start',
       visit_id,
       join_code,
-      pg_catalog.now() + interval '1 hour'
+      pg_catalog.now() + interval '5 hours'
     from created
   $$,
   'a future return is accepted while forming'
@@ -298,7 +306,7 @@ select lives_ok(
 reset role;
 update public.visits
 set
-  planned_start_at = null,
+  planned_start_at = pg_catalog.clock_timestamp() - interval '6 hours',
   expected_return_at = pg_catalog.clock_timestamp() - interval '1 minute'
 where id = (
   select visit_id
@@ -356,6 +364,7 @@ select results_eq(
   'start sets started_at, preserves expected return, and leaves completion null'
 );
 
+select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
     'select public.complete_group_visit(%L::uuid)',

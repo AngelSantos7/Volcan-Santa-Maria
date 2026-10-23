@@ -22,7 +22,8 @@ import {
   metricValue,
 } from './weather-format';
 
-type HikeForecastCardProps = {
+export type HikeForecastCardProps = {
+  coordinate?: [number, number];
   startDate: string;
   startTime: string;
   returnDate: string;
@@ -87,17 +88,18 @@ export function HikeForecastCard({
   returnDate,
   returnTime,
   enabled,
+  coordinate,
 }: HikeForecastCardProps) {
   const { t, i18n } = useTranslation();
   const language = getAppLanguage(i18n.resolvedLanguage);
   const [forecast, setForecast] = useState<VolcanoForecast | null>(() =>
-    getCachedVolcanoForecast()
+    getCachedVolcanoForecast(coordinate)
   );
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void getVolcanoForecast()
+    void getVolcanoForecast({ coordinate })
       .then((nextForecast) => {
         if (!active) return;
         setForecast(nextForecast);
@@ -109,7 +111,7 @@ export function HikeForecastCard({
     return () => {
       active = false;
     };
-  }, []);
+  }, [coordinate]);
 
   const summary = useMemo(() => {
     if (!enabled || !forecast) return null;

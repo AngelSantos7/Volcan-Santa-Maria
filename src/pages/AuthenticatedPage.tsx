@@ -1,3 +1,4 @@
+import { PasswordRecoveryPage } from './PasswordRecoveryPage';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnnouncementBanner } from '../features/announcements/AnnouncementBanner';
@@ -26,6 +27,7 @@ export function AuthenticatedPage({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const email = user?.email ?? '';
   const displayName = getShortName(profile.firstName, profile.lastName, email);
   const fullName =
@@ -43,6 +45,8 @@ export function AuthenticatedPage({
     }
   };
 
+  if (changingPassword) return <PasswordRecoveryPage changing onPasswordUpdated={() => setChangingPassword(false)} onCancel={() => setChangingPassword(false)} />;
+
   return (
     <main className="auth-shell visits-shell">
       <section
@@ -58,6 +62,7 @@ export function AuthenticatedPage({
             email={email}
             disabled={submitting}
             onEditProfile={onEditProfile}
+            onChangePassword={() => setChangingPassword(true)}
             onOpenLegal={() => setLegalOpen(true)}
             onSignOut={() => void handleSignOut()}
           />
@@ -69,13 +74,13 @@ export function AuthenticatedPage({
               ? t('auth.welcome', { name: displayName })
               : t('auth.welcomeGeneric')}
           </h1>
-          <p>{email || t('common.unavailable')}</p>
+
         </header>
 
         <AnnouncementBanner placement="login" />
 
         {user && (
-          <GroupVisits currentUserId={user.id} currentUserName={fullName} />
+          <GroupVisits currentUserId={user.id} currentUserName={fullName} dateOfBirth={profile.dateOfBirth} />
         )}
 
         {error && (

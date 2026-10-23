@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { AdminSession } from '../types';
 import { Icon } from './ui';
 
@@ -31,14 +31,24 @@ export function AdminShell({
   page,
   setPage,
   signOut,
+  changePassword,
   children,
 }: {
   session: AdminSession;
   page: PageId;
   setPage: (page: PageId) => void;
   signOut: () => void;
+  changePassword: () => void;
   children: ReactNode;
 }) {
+  const accountRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !accountRef.current?.contains(event.target)) accountRef.current?.removeAttribute('open');
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, []);
   const isAdmin = session.role === 'admin';
   const canManageNotifications =
     isAdmin || Boolean(session.permissions.can_manage_notifications);
@@ -91,21 +101,20 @@ export function AdminShell({
             </>
           )}
         </nav>
-        <div className="sidebar-user">
-          <div className="user-dot">{name[0]?.toUpperCase()}</div>
-          <div>
-            <strong>{name}</strong>
-            <span>{isAdmin ? 'Administrador' : 'Gestor de visitantes'}</span>
+        <details ref={accountRef} className="sidebar-account" onKeyDown={(event) => {
+          if (event.key === 'Escape') { accountRef.current?.removeAttribute('open'); accountRef.current?.querySelector('summary')?.focus(); }
+        }}>
+          <summary className="sidebar-user" aria-label={`Mi cuenta: ${name}`}>
+            <div className="user-dot">{name[0]?.toUpperCase()}</div>
+            <div className="sidebar-user-name"><strong>{name}</strong><span>{isAdmin ? 'Administrador' : 'Gestor de visitantes'}</span></div>
+            <span className="account-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div className="sidebar-account-menu">
+            <strong>Mi cuenta</strong><span>{name}</span><small>{session.email}</small>
+            <button type="button" onClick={() => { accountRef.current?.removeAttribute('open'); changePassword(); }}>Cambiar contraseña</button>
+            <button type="button" onClick={signOut}><Icon name="logout" />Cerrar sesión</button>
           </div>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Cerrar sesión"
-            onClick={signOut}
-          >
-            <Icon name="logout" />
-          </button>
-        </div>
+        </details>
       </aside>
       <div className="workspace">
         <div className="small-screen-note">

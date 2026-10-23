@@ -1,5 +1,13 @@
 begin;
 
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('e1000000-0000-4000-8000-000000000001'::uuid,'e2000000-0000-4000-8000-000000000002'::uuid,'e3000000-0000-4000-8000-000000000003'::uuid,'e4000000-0000-4000-8000-000000000004'::uuid,'e5000000-0000-4000-8000-000000000005'::uuid,'e6000000-0000-4000-8000-000000000006'::uuid,'e7000000-0000-4000-8000-000000000007'::uuid,'e8000000-0000-4000-8000-000000000008'::uuid,'e9000000-0000-4000-8000-000000000009'::uuid);
+$$;
+
+
 create extension if not exists pgtap with schema extensions;
 
 select plan(42);
@@ -9,47 +17,47 @@ values
   (
     'e1000000-0000-4000-8000-000000000001'::uuid,
     'return-leader@example.invalid',
-    '{"first_name":"Lina","last_name":"Lider"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Lina","last_name":"Lider"}'::jsonb
   ),
   (
     'e2000000-0000-4000-8000-000000000002'::uuid,
     'self-withdraw@example.invalid',
-    '{"first_name":"Wendy","last_name":"Retiro"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Wendy","last_name":"Retiro"}'::jsonb
   ),
   (
     'e3000000-0000-4000-8000-000000000003'::uuid,
     'leader-removes@example.invalid',
-    '{"first_name":"Rosa","last_name":"Retirada"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Rosa","last_name":"Retirada"}'::jsonb
   ),
   (
     'e4000000-0000-4000-8000-000000000004'::uuid,
     'self-return@example.invalid',
-    '{"first_name":"Elsa","last_name":"Retorna"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Elsa","last_name":"Retorna"}'::jsonb
   ),
   (
     'e5000000-0000-4000-8000-000000000005'::uuid,
     'leader-marks@example.invalid',
-    '{"first_name":"Marco","last_name":"Marcado"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Marco","last_name":"Marcado"}'::jsonb
   ),
   (
     'e6000000-0000-4000-8000-000000000006'::uuid,
     'active-member@example.invalid',
-    '{"first_name":"Alba","last_name":"Activa"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Alba","last_name":"Activa"}'::jsonb
   ),
   (
     'e7000000-0000-4000-8000-000000000007'::uuid,
     'return-outsider@example.invalid',
-    '{"first_name":"Oscar","last_name":"Externo"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Oscar","last_name":"Externo"}'::jsonb
   ),
   (
     'e8000000-0000-4000-8000-000000000008'::uuid,
     'solo-history@example.invalid',
-    '{"first_name":"Sofia","last_name":"Individual"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Sofia","last_name":"Individual"}'::jsonb
   ),
   (
     'e9000000-0000-4000-8000-000000000009'::uuid,
     'checkout-admin@example.invalid',
-    '{"first_name":"Ada","last_name":"Admin"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Ada","last_name":"Admin"}'::jsonb
   );
 
 update auth.users
@@ -612,6 +620,7 @@ select pg_temp.authenticate_as(
 );
 
 -- 29
+select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
     'select public.complete_group_visit(%L::uuid)',
@@ -745,6 +754,7 @@ select lives_ok(
 );
 
 -- 39
+select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
     'select public.complete_group_visit(%L::uuid)',

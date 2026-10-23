@@ -2,6 +2,7 @@ import { createContext } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type SignUpCredentials = {
+  dateOfBirth: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -25,7 +26,7 @@ export type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   resendSignUpEmail: (email: string, captchaToken?: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
+  updatePassword: (password: string, currentPassword?: string) => Promise<void>;
   completePasswordRecovery: () => void;
   signOut: () => Promise<void>;
 };

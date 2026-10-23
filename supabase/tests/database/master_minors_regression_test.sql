@@ -12,7 +12,7 @@ insert into auth.users (
   'f1000000-0000-4000-8000-000000000001',
   'multiple-minors@example.invalid',
   now(),
-  '{"first_name":"Persona","last_name":"Responsable"}'
+  '{"date_of_birth":"1990-01-01","first_name":"Persona","last_name":"Responsable"}'
 );
 
 update public.profiles

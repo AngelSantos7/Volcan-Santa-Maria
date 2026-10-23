@@ -148,6 +148,7 @@ export function ReportsPage() {
               <span>Ascensos completados</span>
             </div>
           </div>
+          <section className="report-section"><h3>Ascensos por ruta</h3>{data.route_breakdown?.map((route) => <p key={route.route_id}>{route.route_name}: {route.ascents}</p>)}</section>
           {data.department_breakdown.length > 0 && (
             <div className="report-breakdown">
               <h3>Visitantes guatemaltecos por departamento</h3>

@@ -31,6 +31,10 @@ export const formatRelationship = adminLabel;
 export const formatVisitType = adminLabel;
 
 const AUDIT_ACTIONS: Record<string, string> = {
+  visit_route_changed: 'Cambió la ruta del ascenso',
+  early_return_recorded: 'Registró retorno anticipado',
+  staff_invitation_created: 'Invitó gestor',
+  staff_invitation_accepted: 'Aceptó invitación',
   sensitive_data_viewed: 'Consultó datos sensibles',
   identity_document_viewed: 'Consultó documento de identidad',
   emergency_contact_viewed: 'Consultó contacto de emergencia',
@@ -53,6 +57,7 @@ export function auditActionLabel(value: string): string {
 export function auditTargetLabel(targetType: string, metadata: Record<string, unknown>, targetId: string | null) {
   const name = typeof metadata.target_name === 'string' ? metadata.target_name : null;
   const code = typeof metadata.join_code === 'string' ? metadata.join_code : null;
+  if (typeof metadata.description === 'string') return metadata.description;
   if (name) return name;
   if (code) return `Grupo ${code}`;
   const type = ({ visitor: 'Visitante', visit: 'Ascenso', staff_user: 'Gestor', notification: 'Notificación' } as Record<string, string>)[targetType] ?? 'Registro';

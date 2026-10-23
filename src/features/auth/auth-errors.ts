@@ -49,6 +49,9 @@ export function getPrivateRequestErrorMessage(error: unknown): string | null {
 }
 
 export function getAuthErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message === 'adult_required') return i18n.t('final.adultRegistration');
+  if (error instanceof Error && error.message === 'current_password_incorrect') return i18n.t('final.currentPasswordIncorrect');
+  if (error instanceof Error && error.message === 'password_policy') return i18n.t('final.passwordPolicy');
   const code = getAuthErrorCode(error);
 
   switch (code) {

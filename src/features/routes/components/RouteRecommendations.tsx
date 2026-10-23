@@ -33,6 +33,9 @@ export function RouteRecommendations() {
           </section>
         ))}
       </div>
+      <details className="safety-details"><summary>{t('legal.safety.title')}</summary>
+        <p>{t('legal.safety.sections.0.body')}</p><p>{t('legal.safety.sections.1.body')}</p>
+      </details>
       <aside className="santiaguito-warning" role="note">
         <h3>{t('routes.santiaguito.title')}</h3>
         <p>{t('routes.santiaguito.body')}</p>

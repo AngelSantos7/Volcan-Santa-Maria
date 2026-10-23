@@ -12,6 +12,7 @@ type ReturnTimePickerProps = {
   id: string;
   name: string;
   value: string;
+  min?: string;
   label: string;
   hourLabel: string;
   minuteLabel: string;
@@ -62,6 +63,7 @@ export function ReturnTimePicker({
   id,
   name,
   value,
+  min,
   label,
   hourLabel,
   minuteLabel,
@@ -99,6 +101,7 @@ export function ReturnTimePicker({
             id={id}
             name={name}
             type="time"
+            min={min}
             lang="en-GB"
             step={60}
             value={value}
@@ -129,7 +132,8 @@ export function ReturnTimePicker({
               value={hour}
               onChange={(event) => {
                 const nextHour = event.target.value;
-                onChange(nextHour ? `${nextHour}:${minute || '00'}` : '');
+                const next = nextHour ? `${nextHour}:${minute || '00'}` : '';
+                onChange(min && next && next < min ? min : next);
               }}
               aria-invalid={invalid}
               aria-describedby={describedBy}
@@ -138,7 +142,7 @@ export function ReturnTimePicker({
             >
               <option value="">--</option>
               {HOURS.map((option) => (
-                <option key={option} value={option}>
+                <option key={option} value={option} disabled={Boolean(min && option < min.slice(0, 2))}>
                   {option}
                 </option>
               ))}
@@ -160,7 +164,7 @@ export function ReturnTimePicker({
               required={required}
             >
               {MINUTES.map((option) => (
-                <option key={option} value={option}>
+                <option key={option} value={option} disabled={Boolean(min && `${hour}:${option}` < min)}>
                   {option}
                 </option>
               ))}

@@ -1,6 +1,9 @@
+import { changeOwnPassword } from '../../../shared/password-change';
+import { createPasswordVerificationClient } from '../../lib/supabase';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import { isAdult, isValidPassword } from '../../../shared/account-policy';
 import { supabase } from '../../lib/supabase';
 import {
   AuthContext,
@@ -65,6 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signUp = useCallback(
     async ({
+      dateOfBirth,
       firstName,
       lastName,
       email,
@@ -72,11 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       legalConsentAccepted,
       captchaToken,
     }: SignUpCredentials): Promise<SignUpResult> => {
+      if (!isAdult(dateOfBirth)) throw new Error('adult_required');
+      if (!isValidPassword(password)) throw new Error('password_policy');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
+            date_of_birth: dateOfBirth,
             first_name: firstName,
             last_name: lastName,
             legal_consent_accepted: legalConsentAccepted,
@@ -139,7 +146,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error;
   }, []);
 
-  const updatePassword = useCallback(async (password: string) => {
+  const updatePassword = useCallback(async (password: string, currentPassword?: string) => {
+    if (currentPassword !== undefined) return changeOwnPassword(supabase, createPasswordVerificationClient, currentPassword, password);
+    if (!isValidPassword(password)) throw new Error('password_policy');
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) throw error;

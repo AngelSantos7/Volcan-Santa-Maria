@@ -1,5 +1,13 @@
 begin;
 
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('b1000000-0000-4000-8000-000000000001'::uuid,'b2000000-0000-4000-8000-000000000002'::uuid,'b3000000-0000-4000-8000-000000000003'::uuid,'b4000000-0000-4000-8000-000000000004'::uuid,'b5000000-0000-4000-8000-000000000005'::uuid,'b6000000-0000-4000-8000-000000000006'::uuid,'b7000000-0000-4000-8000-000000000007'::uuid);
+$$;
+
+
 create extension if not exists pgtap with schema extensions;
 
 select plan(41);
@@ -10,37 +18,37 @@ values
   (
     'b1000000-0000-4000-8000-000000000001'::uuid,
     'group-leader@example.invalid',
-    '{"first_name":"Lidia","last_name":"Lider"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Lidia","last_name":"Lider"}'::jsonb
   ),
   (
     'b2000000-0000-4000-8000-000000000002'::uuid,
     'group-member@example.invalid',
-    '{"first_name":"Mario","last_name":"Miembro"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Mario","last_name":"Miembro"}'::jsonb
   ),
   (
     'b3000000-0000-4000-8000-000000000003'::uuid,
     'group-outsider@example.invalid',
-    '{"first_name":"Olga","last_name":"Externa"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Olga","last_name":"Externa"}'::jsonb
   ),
   (
     'b4000000-0000-4000-8000-000000000004'::uuid,
     'group-incomplete@example.invalid',
-    '{"first_name":"Ines","last_name":"Incompleta"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Ines","last_name":"Incompleta"}'::jsonb
   ),
   (
     'b5000000-0000-4000-8000-000000000005'::uuid,
     'group-no-contact@example.invalid',
-    '{"first_name":"Nora","last_name":"Sin Contacto"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Nora","last_name":"Sin Contacto"}'::jsonb
   ),
   (
     'b6000000-0000-4000-8000-000000000006'::uuid,
     'group-cancel-leader@example.invalid',
-    '{"first_name":"Carlos","last_name":"Cancela"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Carlos","last_name":"Cancela"}'::jsonb
   ),
   (
     'b7000000-0000-4000-8000-000000000007'::uuid,
     'group-late-member@example.invalid',
-    '{"first_name":"Tania","last_name":"Tardia"}'::jsonb
+    '{"date_of_birth":"1990-01-01","first_name":"Tania","last_name":"Tardia"}'::jsonb
   );
 
 update auth.users
@@ -153,7 +161,7 @@ select results_eq(
     from public.routes
     where slug = 'ascenso-a-la-cima'
   $$,
-  $$ values ('ascenso-a-la-cima'::text, 'Ascenso a la Cima'::text, 'Summit Route'::text, true) $$,
+  $$ values ('ascenso-a-la-cima'::text, 'Cima del Volcán Santa María'::text, 'Santa María Volcano Summit'::text, true) $$,
   'default summit route exists and is active'
 );
 
@@ -168,7 +176,7 @@ select is(
       select public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '1 hour',
-        pg_catalog.now() + interval '4 hours',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         false,
@@ -187,7 +195,7 @@ select lives_ok(
       from public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '1 hour',
-        pg_catalog.now() + interval '4 hours',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         true,
@@ -206,7 +214,7 @@ select results_eq(
     select
       visit.status::text,
       visit.visit_type::text,
-      visit.expected_return_at = pg_catalog.now() + interval '4 hours',
+      visit.expected_return_at = pg_catalog.now() + interval '5 hours',
       visit.has_local_guide,
       visit.guide_name is null,
       visit.join_code ~ '^[A-Z0-9]{6}$',
@@ -365,7 +373,7 @@ select is(
       select public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '1 hour',
-        pg_catalog.now() + interval '4 hours',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         true,
@@ -398,7 +406,7 @@ select is(
       select public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '1 hour',
-        pg_catalog.now() + interval '4 hours',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         true,
@@ -588,7 +596,7 @@ select results_eq(
 
 select results_eq(
   $$
-    select expected_return_at = pg_catalog.now() + interval '4 hours'
+    select expected_return_at = pg_catalog.now() + interval '5 hours'
     from public.visits
     where id = (
       select visit_id from pg_temp.test_created_visits where label = 'main'
@@ -632,6 +640,7 @@ select pg_temp.authenticate_as(
   'b1000000-0000-4000-8000-000000000001'::uuid
 );
 
+select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
     'select public.complete_group_visit(%L::uuid)',
@@ -731,7 +740,7 @@ select is(
       select public.create_group_visit(
         'day_hike'::public.visit_type,
         pg_catalog.now() + interval '1 hour',
-        pg_catalog.now() + interval '4 hours',
+        pg_catalog.now() + interval '5 hours',
         false,
         null,
         true,

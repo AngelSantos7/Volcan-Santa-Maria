@@ -5,7 +5,7 @@ import { listAudit } from '../services/admin-service'
 import type { AuditRow } from '../types'
 import { auditActionLabel, auditTargetLabel } from '../lib/admin-labels'
 
-const actions = ['sensitive_data_viewed','identity_document_viewed','emergency_contact_viewed','visitor_registered','administrative_visit_created','administrative_return_recorded','user_role_changed','staff_permissions_changed','staff_activated','staff_deactivated']
+const actions = ['visit_route_changed','early_return_recorded','staff_invitation_created','staff_invitation_accepted','staff_invitation_resent','staff_invitation_deleted','sensitive_data_viewed','identity_document_viewed','emergency_contact_viewed','visitor_registered','administrative_visit_created','administrative_return_recorded','user_role_changed','staff_permissions_changed','staff_activated','staff_deactivated']
 
 export function AuditPage() {
   const [rows, setRows] = useState<AuditRow[]>([])

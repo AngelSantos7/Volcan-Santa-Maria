@@ -1,0 +1,26 @@
+{
+  "source": "mirador-picacho.gpx",
+  "sha256": "4fa5f9f4d5f0b7bb98dfedc03385841baf88ae8d939c2939b237f85249ed0202",
+  "slug": "mirador-picacho",
+  "pointCount": 858,
+  "segmentCount": 1,
+  "distanceKm": 4.753648,
+  "totalDistanceKm": 9.507296,
+  "durationMinutes": 124,
+  "direction": "one_way_return_same_path",
+  "startedAt": "2026-04-11T21:40:30Z",
+  "endedAt": "2026-04-11T23:44:48Z",
+  "start": [
+    -91.548608,
+    14.787156
+  ],
+  "summit": [
+    -91.560011,
+    14.75507
+  ],
+  "end": [
+    -91.560011,
+    14.75507
+  ],
+  "maxElevationM": 3132.527
+}

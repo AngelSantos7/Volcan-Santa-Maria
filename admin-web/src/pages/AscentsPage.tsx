@@ -226,6 +226,7 @@ export function AscentsPage({ session, initialSearch = '' }: { session: AdminSes
                 <tr>
                   <th>Código</th>
                   <th>Organizador</th>
+                  <th>Ruta</th>
                   <th>Tipo</th>
                   <th>Participantes</th>
                   <th>Inicio planificado</th>
@@ -256,6 +257,7 @@ export function AscentsPage({ session, initialSearch = '' }: { session: AdminSes
                         </small>
                       ))}
                     </td>
+                    <td>{row.route_name}</td>
                     <td>
                       {row.visit_type === 'day_hike' ? 'Día' : 'Campamento'}
                     </td>
@@ -344,6 +346,7 @@ export function AscentsPage({ session, initialSearch = '' }: { session: AdminSes
         <AscentDetailsModal
           ascent={selected}
           canConfirmReturns={canConfirmReturns}
+          canManage={canManage}
           close={() => setSelected(null)}
           onChanged={() => {
             setMessage('Retorno administrativo registrado.');

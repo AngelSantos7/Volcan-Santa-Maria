@@ -130,11 +130,11 @@ function WeatherSkeleton() {
   );
 }
 
-export function WeatherPanel() {
+export function WeatherPanel({ coordinate }: { coordinate?: [number, number] }) {
   const { t, i18n } = useTranslation();
   const language = getAppLanguage(i18n.resolvedLanguage);
   const [forecast, setForecast] = useState<VolcanoForecast | null>(() =>
-    getCachedVolcanoForecast()
+    getCachedVolcanoForecast(coordinate)
   );
   const [loading, setLoading] = useState(forecast === null);
   const [failed, setFailed] = useState(false);
@@ -147,7 +147,7 @@ export function WeatherPanel() {
       setRefreshLocked(true);
       window.setTimeout(() => setRefreshLocked(false), REFRESH_COOLDOWN_MS);
     }
-    void getVolcanoForecast({ force })
+    void getVolcanoForecast({ force, coordinate })
       .then((nextForecast) => {
         setForecast(nextForecast);
         setFailed(nextForecast.isStale);
@@ -161,7 +161,7 @@ export function WeatherPanel() {
 
   useEffect(() => {
     let active = true;
-    void getVolcanoForecast()
+    void getVolcanoForecast({ coordinate })
       .then((nextForecast) => {
         if (!active) return;
         setForecast(nextForecast);
@@ -176,7 +176,7 @@ export function WeatherPanel() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [coordinate]);
 
   const current = forecast
     ? findClosestForecastHour(forecast, getGuatemalaLocalTime())

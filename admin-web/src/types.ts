@@ -122,6 +122,8 @@ export interface MinorSummary {
 }
 
 export interface VisitorHistoryItem {
+  route_id: string;
+  route_name: string;
   visit_id: string;
   join_code: string;
   visit_type: string;
@@ -165,6 +167,8 @@ export interface IdentityDetails {
 }
 
 export interface AscentRow {
+  route_id: string;
+  route_name: string;
   visit_id: string;
   join_code: string;
   organizer_name: string;
@@ -233,6 +237,7 @@ export interface AdministrativeVisitResult {
 }
 
 export interface ReportDetailRow {
+  route_name: string;
   event_date: string;
   visitor_name: string;
   nationality_country_code: string | null;
@@ -248,6 +253,7 @@ export interface ReportDetailRow {
 }
 
 export interface VisitorReportData {
+  route_breakdown: Array<{ route_id: string; route_name: string; ascents: number }>;
   generated_at: string;
   from: string;
   to: string;

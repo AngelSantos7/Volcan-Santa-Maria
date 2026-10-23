@@ -5,17 +5,17 @@ select plan(17);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
-  ('b1000000-0000-4000-8000-000000000001', 'admin@example.invalid', now(), '{"first_name":"Ada","last_name":"Admin"}'),
-  ('b2000000-0000-4000-8000-000000000002', 'manager@example.invalid', now(), '{"first_name":"Gina","last_name":"Gestora"}'),
-  ('b3000000-0000-4000-8000-000000000003', 'inactive@example.invalid', now(), '{"first_name":"Inés","last_name":"Inactiva"}'),
-  ('b4000000-0000-4000-8000-000000000004', 'tourist@example.invalid', now(), '{"first_name":"Tomás","last_name":"Turista"}'),
-  ('b5000000-0000-4000-8000-000000000005', 'visitor1@example.invalid', now(), '{"first_name":"Uno","last_name":"Visitante"}'),
-  ('b6000000-0000-4000-8000-000000000006', 'visitor2@example.invalid', now(), '{"first_name":"Dos","last_name":"Visitante"}'),
-  ('b7000000-0000-4000-8000-000000000007', 'visitor3@example.invalid', now(), '{"first_name":"Tres","last_name":"Visitante"}'),
-  ('b8000000-0000-4000-8000-000000000008', 'visitor4@example.invalid', now(), '{"first_name":"Cuatro","last_name":"Visitante"}'),
-  ('b9000000-0000-4000-8000-000000000009', 'visitor5@example.invalid', now(), '{"first_name":"Cinco","last_name":"Visitante"}'),
-  ('ba000000-0000-4000-8000-000000000010', 'visitor6@example.invalid', now(), '{"first_name":"Seis","last_name":"Visitante"}'),
-  ('bb000000-0000-4000-8000-000000000011', 'withdrawn@example.invalid', now(), '{"first_name":"Siete","last_name":"Retirado"}');
+  ('b1000000-0000-4000-8000-000000000001', 'admin@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Ada","last_name":"Admin"}'),
+  ('b2000000-0000-4000-8000-000000000002', 'manager@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Gina","last_name":"Gestora"}'),
+  ('b3000000-0000-4000-8000-000000000003', 'inactive@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Inés","last_name":"Inactiva"}'),
+  ('b4000000-0000-4000-8000-000000000004', 'tourist@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Tomás","last_name":"Turista"}'),
+  ('b5000000-0000-4000-8000-000000000005', 'visitor1@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Uno","last_name":"Visitante"}'),
+  ('b6000000-0000-4000-8000-000000000006', 'visitor2@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Dos","last_name":"Visitante"}'),
+  ('b7000000-0000-4000-8000-000000000007', 'visitor3@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Tres","last_name":"Visitante"}'),
+  ('b8000000-0000-4000-8000-000000000008', 'visitor4@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Cuatro","last_name":"Visitante"}'),
+  ('b9000000-0000-4000-8000-000000000009', 'visitor5@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Cinco","last_name":"Visitante"}'),
+  ('ba000000-0000-4000-8000-000000000010', 'visitor6@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Seis","last_name":"Visitante"}'),
+  ('bb000000-0000-4000-8000-000000000011', 'withdrawn@example.invalid', now(), '{"date_of_birth":"1990-01-01","first_name":"Siete","last_name":"Retirado"}');
 
 update public.user_roles set role = 'admin' where user_id = 'b1000000-0000-4000-8000-000000000001';
 update public.user_roles set role = 'visitor_manager' where user_id in (
@@ -67,6 +67,15 @@ join public.visits as visit on visit.id = member.visit_id
 where visit.status = 'in_progress'
   and visit.id <> 'bc000000-0000-4000-8000-000000000012'
   and member.member_status in ('active', 'returning_early');
+-- Existing local minors contribute to the global on-route total too.
+update admin_test_baseline set current_on_route = current_on_route + (
+  select count(*)::integer from public.visit_minors minor
+  join public.visit_members responsible on responsible.visit_id=minor.visit_id and responsible.user_id=minor.responsible_member_id
+  join public.visits visit on visit.id=minor.visit_id
+  where visit.status='in_progress' and visit.started_at is not null
+    and visit.id <> 'bc000000-0000-4000-8000-000000000012'
+    and responsible.member_status in ('active','returning_early')
+);
 grant select on admin_test_baseline to authenticated;
 
 create function pg_temp.authenticate_as(requested_user_id uuid)

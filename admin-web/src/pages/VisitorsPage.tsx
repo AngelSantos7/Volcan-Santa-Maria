@@ -330,6 +330,7 @@ function VisitorDrawer({
                     <article key={item.visit_id}>
                       <div className="history-ascent-heading">
                         <StatusBadge value={item.member_status} />
+                        <strong>{item.route_name}</strong>
                         <span>
                           {item.join_code} ·{' '}
                           {formatDateTime(

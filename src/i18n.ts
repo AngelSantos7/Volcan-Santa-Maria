@@ -1,3 +1,4 @@
+import { finalTranslations } from './final-translations';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -124,7 +125,7 @@ const resources = {
             },
             {
               title: 'Ubicación en el dispositivo',
-              body: 'La ubicación GPS mostrada en el mapa se utiliza únicamente en el dispositivo como referencia. No se almacena en Supabase ni se comparte con la Alcaldía u otros usuarios.',
+              body: 'La ubicación GPS mostrada en el mapa se utiliza únicamente en el dispositivo como referencia. No se almacena en la base de datos de la aplicación ni se comparte con la Alcaldía Indígena de Llanos del Pinal u otros usuarios.',
             },
             {
               title: 'Menores y conservación',
@@ -364,8 +365,8 @@ const resources = {
           reason: 'Motivo',
           selectReason: 'Seleccione el motivo:',
           reasons: {
-            physical_discomfort: 'Malestar físico',
-            injury: 'Lesión',
+            physical_discomfort: 'Enfermedad o malestar físico',
+            injury: 'Lesión o esguince',
             emergency: 'Emergencia',
             personal_decision: 'Decisión personal',
             other: 'Otro',
@@ -465,7 +466,7 @@ const resources = {
           status: 'En curso',
           title: 'Ascenso en curso',
           startedAt: 'Inicio',
-          route: 'Ver ruta',
+          route: 'Recomendaciones',
           map: 'Mapa',
           gallery: 'Galería',
           futureFeature: '{{feature}} se implementará posteriormente.',
@@ -953,7 +954,7 @@ const resources = {
             },
             {
               title: 'On-device location',
-              body: 'GPS location shown on the map is used only on the device as a reference. It is not stored in Supabase or shared with the Municipality or other users.',
+              body: 'GPS location shown on the map is used only on the device as a reference. It is not stored in the application database or shared with the Indigenous Municipality of Llanos del Pinal or other users.',
             },
             {
               title: 'Minors and retention',
@@ -1292,7 +1293,7 @@ const resources = {
           status: 'In progress',
           title: 'Hike in progress',
           startedAt: 'Start',
-          route: 'View route',
+          route: 'Recommendations',
           map: 'Map',
           gallery: 'Gallery',
           futureFeature: '{{feature}} will be implemented later.',
@@ -1684,6 +1685,10 @@ void i18n.use(initReactI18next).init({
   initAsync: false,
   interpolation: { escapeValue: false },
 });
+
+for (const language of ['es', 'en'] as const) {
+  i18n.addResourceBundle(language, 'translation', { final: finalTranslations[language] }, true, true);
+}
 
 i18n.on('languageChanged', (language) => {
   try {

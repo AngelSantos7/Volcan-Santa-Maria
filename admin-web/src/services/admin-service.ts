@@ -339,7 +339,8 @@ export async function activateMyStaffInvitation() {
 export async function manageStaffInvitation(input: {
   action: 'invite' | 'resend' | 'delete';
   userId?: string;
-  fullName?: string;
+  firstName?: string; lastName?: string;
+  phone?: string;
   email?: string;
   permissions?: Record<string, boolean>;
 }) {

@@ -5,7 +5,8 @@ import type {
 } from './weather-types';
 
 const FORECAST_URL = new URL('https://api.open-meteo.com/v1/forecast');
-const CACHE_KEY = 'santa-maria-weather:v2';
+type Coordinate = readonly [number, number];
+const cacheKey = (coordinate?: Coordinate) => `santa-maria-weather:v3:${coordinate?.join(',') ?? 'summit'}`;
 const CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 export const REFRESH_COOLDOWN_MS = 60 * 1000;
 const HOURLY_FIELDS = [
@@ -44,9 +45,9 @@ type OpenMeteoResponse = {
   };
 };
 
-let cachedForecast: VolcanoForecast | null = null;
-let inFlightRequest: Promise<VolcanoForecast> | null = null;
-let lastNetworkRequestAt = 0;
+const cachedForecasts = new Map<string, VolcanoForecast>();
+const inFlightRequests = new Map<string, Promise<VolcanoForecast>>();
+const lastRequestTimes = new Map<string, number>();
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -111,9 +112,9 @@ function parseForecast(payload: OpenMeteoResponse): VolcanoForecast {
   };
 }
 
-function readStoredForecast(): VolcanoForecast | null {
+function readStoredForecast(key: string): VolcanoForecast | null {
   try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<VolcanoForecast>;
     if (
@@ -130,9 +131,9 @@ function readStoredForecast(): VolcanoForecast | null {
   }
 }
 
-function storeForecast(forecast: VolcanoForecast): void {
+function storeForecast(key: string, forecast: VolcanoForecast): void {
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(forecast));
+    window.localStorage.setItem(key, JSON.stringify(forecast));
   } catch {
     // The fresh response remains available in memory when storage is disabled.
   }
@@ -142,45 +143,38 @@ function isFresh(forecast: VolcanoForecast): boolean {
   return Date.now() - Date.parse(forecast.fetchedAt) < CACHE_MAX_AGE_MS;
 }
 
-export function getCachedVolcanoForecast(): VolcanoForecast | null {
-  cachedForecast ??= readStoredForecast();
-  return cachedForecast;
+export function getCachedVolcanoForecast(coordinate?: Coordinate): VolcanoForecast | null {
+  const key = cacheKey(coordinate);
+  const cached = cachedForecasts.get(key) ?? readStoredForecast(key);
+  if (cached) cachedForecasts.set(key, cached);
+  return cached;
 }
 
-export async function getVolcanoForecast(options?: {
-  force?: boolean;
-}): Promise<VolcanoForecast> {
-  const existing = getCachedVolcanoForecast();
+export async function getVolcanoForecast(options?: { force?: boolean; coordinate?: Coordinate }): Promise<VolcanoForecast> {
+  const key = cacheKey(options?.coordinate);
+  const existing = getCachedVolcanoForecast(options?.coordinate);
   const force = options?.force === true;
-  const refreshIsThrottled =
-    force && Date.now() - lastNetworkRequestAt < REFRESH_COOLDOWN_MS;
-  if (existing && ((!force && isFresh(existing)) || refreshIsThrottled)) {
-    return existing;
+  if (existing && ((!force && isFresh(existing)) || (force && Date.now() - (lastRequestTimes.get(key) ?? 0) < REFRESH_COOLDOWN_MS))) return existing;
+  const pending = inFlightRequests.get(key);
+  if (pending) return pending;
+  const url = new URL(FORECAST_URL);
+  if (options?.coordinate) {
+    url.searchParams.set('longitude', String(options.coordinate[0]));
+    url.searchParams.set('latitude', String(options.coordinate[1]));
   }
-  if (inFlightRequest) return inFlightRequest;
-
-  lastNetworkRequestAt = Date.now();
-  inFlightRequest = fetch(FORECAST_URL, {
-    headers: { Accept: 'application/json' },
-  })
+  lastRequestTimes.set(key, Date.now());
+  const request = fetch(url, { headers: { Accept: 'application/json' } })
     .then(async (response) => {
       if (!response.ok) throw new Error('Weather service unavailable');
       return parseForecast((await response.json()) as OpenMeteoResponse);
-    })
-    .then((forecast) => {
-      cachedForecast = forecast;
-      storeForecast(forecast);
-      return forecast;
-    })
-    .catch((error: unknown) => {
+    }).then((forecast) => {
+      cachedForecasts.set(key, forecast); storeForecast(key, forecast); return forecast;
+    }).catch((error: unknown) => {
       if (existing) return { ...existing, isStale: true };
       throw error;
-    })
-    .finally(() => {
-      inFlightRequest = null;
-    });
-
-  return inFlightRequest;
+    }).finally(() => { inFlightRequests.delete(key); });
+  inFlightRequests.set(key, request);
+  return request;
 }
 
 export function getGuatemalaLocalTime(date = new Date()): string {

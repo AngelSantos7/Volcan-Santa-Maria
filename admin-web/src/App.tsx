@@ -1,3 +1,5 @@
+import { PasswordField } from './components/PasswordField';
+import { AccountPassword, PasswordResetRequest } from './components/AccountPassword';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AdminShell, type PageId } from './components/AdminShell';
@@ -9,7 +11,7 @@ import { AuditPage } from './pages/AuditPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { GalleryPage } from './pages/GalleryPage';
-import { activateMyStaffInvitation, getAdminSession } from './services/admin-service';
+import { getAdminSession } from './services/admin-service';
 import { supabase } from './lib/supabase';
 import type { AdminSession } from './types';
 
@@ -18,9 +20,11 @@ type AccessState = 'loading' | 'signed-out' | 'allowed' | 'forbidden' | 'error';
 function Login({
   signIn,
   error,
+  onRecover,
 }: {
   signIn: (event: FormEvent<HTMLFormElement>) => void;
   error: string;
+  onRecover: () => void;
 }) {
   return (
     <main className="login-page">
@@ -39,10 +43,9 @@ function Login({
             required
           />
           <label htmlFor="password">Contraseña</label>
-          <input
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
           />
@@ -52,6 +55,7 @@ function Login({
             </div>
           )}
           <button type="submit">Iniciar sesión</button>
+          <button type="button" className="login-recovery-link" onClick={onRecover}>¿Olvidó su contraseña?</button>
         </form>
       </section>
       <p className="small-screen-note login-note">
@@ -86,6 +90,8 @@ function AccessMessage({
 }
 
 export default function App() {
+  const [requestingReset, setRequestingReset] = useState(false);
+  const [passwordMode, setPasswordMode] = useState<'change' | 'recovery' | null>(null);
   const [access, setAccess] = useState<AccessState>('loading');
   const [session, setSession] = useState<Session | null>(null);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
@@ -102,7 +108,6 @@ export default function App() {
     }
     setAccess('loading');
     try {
-      await activateMyStaffInvitation();
       const profile = await getAdminSession();
       setAdminSession(profile);
       setAccess(
@@ -121,7 +126,9 @@ export default function App() {
       .getSession()
       .then(({ data }) => checkAccess(data.session));
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void checkAccess(nextSession);
+      if (_event === 'PASSWORD_RECOVERY') setPasswordMode('recovery');
+      if (_event === 'SIGNED_OUT') setPasswordMode(null);
+      window.setTimeout(() => { void checkAccess(nextSession); }, 0);
     });
     return () => data.subscription.unsubscribe();
   }, []);
@@ -146,6 +153,16 @@ export default function App() {
   function signOut() {
     void supabase.auth.signOut();
   }
+  if (requestingReset) return <PasswordResetRequest close={() => setRequestingReset(false)} />;
+  if (session && (passwordMode || adminSession?.invitation_status === 'pending')) return <AccountPassword
+    invitation={adminSession?.invitation_status === 'pending'}
+    recovery={passwordMode === 'recovery'}
+    close={adminSession?.invitation_status === 'pending' ? undefined : () => setPasswordMode(null)}
+    onSaved={async () => {
+      setPasswordMode(null);
+      window.history.replaceState({}, '', window.location.pathname);
+      await checkAccess(session);
+    }} />;
   if (access === 'loading')
     return (
       <main className="access-page">
@@ -153,7 +170,7 @@ export default function App() {
         <p>Verificando acceso seguro…</p>
       </main>
     );
-  if (access === 'signed-out') return <Login signIn={signIn} error={error} />;
+  if (access === 'signed-out') return <Login signIn={signIn} error={error} onRecover={() => setRequestingReset(true)} />;
   if (access === 'forbidden')
     return (
       <AccessMessage
@@ -255,6 +272,7 @@ export default function App() {
         setPage(next);
       }}
       signOut={signOut}
+      changePassword={() => setPasswordMode('change')}
     >
       {content}
     </AdminShell>

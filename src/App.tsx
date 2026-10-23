@@ -1,3 +1,4 @@
+import { LegalLinks } from './features/legal/LegalDocuments';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
@@ -110,6 +111,7 @@ function App() {
         </aside>
       )}
       {content}
+      <footer className="app-legal-footer"><LegalLinks compact /></footer>
     </>
   );
 }

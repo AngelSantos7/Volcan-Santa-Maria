@@ -45,6 +45,8 @@ export type RouteContent = {
   descriptionEn: string | null;
   difficulty: string | null;
   distanceKm: number | null;
+  totalDistanceKm: number | null;
+  returnSamePath: boolean;
   estimatedDurationMinutes: number | null;
   elevationGainM: number | null;
   pathGeojson: Record<string, unknown> | null;

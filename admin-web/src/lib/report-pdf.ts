@@ -129,6 +129,12 @@ export function buildVisitorReportPdf(data: VisitorReportData) {
     cursor = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? cursor;
   }
 
+  if (data.route_breakdown?.length) {
+    autoTable(pdf, { startY: cursor + 8, head: [['Ruta', 'Ascensos']],
+      body: data.route_breakdown.map((route) => [route.route_name, route.ascents]),
+      theme: 'striped', headStyles: { fillColor: DARK_GREEN }, styles: { fontSize: 9 } });
+    cursor = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? cursor;
+  }
   if (detailed) {
     autoTable(pdf, {
       startY: cursor + 8,
@@ -138,6 +144,7 @@ export function buildVisitorReportPdf(data: VisitorReportData) {
           'Visitante',
           'Nacionalidad',
           'Código',
+          'Ruta',
           'Tipo',
           'Ingreso',
           'Retorno estimado',
@@ -153,6 +160,7 @@ export function buildVisitorReportPdf(data: VisitorReportData) {
         row.visitor_name,
         countryName(row.nationality_country_code),
         row.join_code,
+        row.route_name,
         adminLabel(row.ascent_type),
         dateTime(row.started_at),
         dateTime(row.expected_return_at),

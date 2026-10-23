@@ -1,4 +1,8 @@
+import { isAdult, isValidPassword } from '../../../shared/account-policy';
+export { MIN_PASSWORD_LENGTH } from '../../../shared/account-policy';
+
 export type RegistrationField =
+  | 'dateOfBirth'
   | 'firstName'
   | 'lastName'
   | 'email'
@@ -7,6 +11,7 @@ export type RegistrationField =
   | 'captcha';
 
 export type RegistrationValues = {
+  dateOfBirth: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -21,7 +26,7 @@ const PERSON_NAME_PATTERN =
   /^[\p{L}\p{M}]+(?:[ '\u2019\p{Pd}][\p{L}\p{M}]+)*$/u;
 const MAX_NAME_LENGTH = 80;
 const MAX_EMAIL_LENGTH = 254;
-export const MIN_PASSWORD_LENGTH = 8;
+
 
 export function normalizePersonName(value: string): string {
   return value.trim().replace(/\s+/gu, ' ').normalize('NFC');
@@ -46,6 +51,8 @@ export function validateRegistrationField(
   const email = normalizeEmail(values.email);
 
   switch (field) {
+    case 'dateOfBirth':
+      return isAdult(values.dateOfBirth) ? null : 'final.adultRegistration';
     case 'firstName':
       if (!firstName) return 'validation.firstNameRequired';
       if (
@@ -72,8 +79,8 @@ export function validateRegistrationField(
       return null;
     case 'password':
       if (!values.password) return 'validation.passwordRequired';
-      if (values.password.length < MIN_PASSWORD_LENGTH) {
-        return 'validation.passwordLength';
+      if (!isValidPassword(values.password)) {
+        return 'final.passwordPolicy';
       }
       return null;
     case 'confirmPassword':
@@ -99,6 +106,7 @@ export function validateRegistration(
   const fields: RegistrationField[] = [
     'firstName',
     'lastName',
+    'dateOfBirth',
     'email',
     'password',
     'confirmPassword',

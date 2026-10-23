@@ -8,7 +8,7 @@ import type {
 
 const SUMMIT_ROUTE_SLUG = 'ascenso-a-la-cima';
 const ROUTE_MEDIA_BUCKET = 'route-media';
-const ROUTE_CACHE_KEY = `route-content:v2:${SUMMIT_ROUTE_SLUG}`;
+const routeCacheKey = (key: string) => `route-content:v3:${key}`;
 
 type RouteRow = {
   id: string;
@@ -22,6 +22,9 @@ type RouteRow = {
   estimated_duration_minutes: number | null;
   elevation_gain_m: number | null;
   path_geojson: Record<string, unknown> | null;
+  asset_prefix: string | null;
+  total_distance_km: number | null;
+  journey_type: string | null;
 };
 
 type CheckpointRow = {
@@ -89,16 +92,17 @@ async function mapMedia(row: MediaRow): Promise<RouteMedia> {
 
 function cacheRouteContent(content: RouteContent): void {
   try {
-    window.localStorage.setItem(ROUTE_CACHE_KEY, JSON.stringify(content));
+    window.localStorage.setItem(routeCacheKey(content.id), JSON.stringify(content));
+    window.localStorage.setItem(routeCacheKey(content.slug), JSON.stringify(content));
   } catch {
     // Route data remains available for the current session when storage is full
     // or disabled by the browser.
   }
 }
 
-export function getCachedSummitRouteContent(): RouteContent | null {
+export function getCachedRouteContent(key = SUMMIT_ROUTE_SLUG): RouteContent | null {
   try {
-    const cached = window.localStorage.getItem(ROUTE_CACHE_KEY);
+    const cached = window.localStorage.getItem(routeCacheKey(key));
     if (!cached) return null;
 
     const parsed: unknown = JSON.parse(cached);
@@ -106,7 +110,7 @@ export function getCachedSummitRouteContent(): RouteContent | null {
       typeof parsed !== 'object' ||
       parsed === null ||
       !('slug' in parsed) ||
-      parsed.slug !== SUMMIT_ROUTE_SLUG ||
+      (parsed.slug !== key && (!('id' in parsed) || parsed.id !== key)) ||
       !('checkpoints' in parsed) ||
       !Array.isArray(parsed.checkpoints) ||
       !('media' in parsed) ||
@@ -121,13 +125,13 @@ export function getCachedSummitRouteContent(): RouteContent | null {
   }
 }
 
-export async function getSummitRouteContent(): Promise<RouteContent> {
+export async function getRouteContent(key = SUMMIT_ROUTE_SLUG): Promise<RouteContent> {
   const { data: routeData, error: routeError } = await supabase
     .from('routes')
     .select(
-      'id, slug, name_es, name_en, description_es, description_en, difficulty, distance_km, estimated_duration_minutes, elevation_gain_m, path_geojson'
+      'id, slug, name_es, name_en, description_es, description_en, difficulty, distance_km, estimated_duration_minutes, elevation_gain_m, path_geojson, asset_prefix, total_distance_km, journey_type'
     )
-    .eq('slug', SUMMIT_ROUTE_SLUG)
+    .eq(/^[0-9a-f-]{36}$/i.test(key) ? 'id' : 'slug', key)
     .eq('is_active', true)
     .maybeSingle();
 
@@ -150,14 +154,15 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
       )
       .eq('route_id', route.id)
       .order('sort_order', { ascending: true }),
-    fetch('/data/santa-maria-route.geojson').then((response) => response.ok ? response.json() as Promise<Record<string, unknown>> : null).catch(() => null),
-    fetch('/data/santa-maria-route-metadata.json').then((response) => response.ok ? response.json() as Promise<{ distanceKm: number; elevationGainM: number; durationMinutes: number; start: [number, number]; summit: [number, number] }> : null).catch(() => null),
+    fetch(`/data/${route.asset_prefix}.geojson`).then((response) => response.ok ? response.json() as Promise<Record<string, unknown>> : null).catch(() => null),
+    fetch(`/data/${route.asset_prefix}-metadata.json`).then((response) => response.ok ? response.json() as Promise<{ distanceKm: number; totalDistanceKm: number; durationMinutes: number | null; start: [number, number]; summit: [number, number] }> : null).catch(() => null),
   ]);
 
   if (checkpointResult.error) throw checkpointResult.error;
+  if (!staticRouteResult || !metadataResult) throw new Error('Route assets unavailable');
 
   const cachedContent = mediaResult.error
-    ? getCachedSummitRouteContent()
+    ? getCachedRouteContent(key)
     : null;
   const media = mediaResult.error
     ? cachedContent?.id === route.id
@@ -175,8 +180,10 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
     difficulty: route.difficulty,
     distanceKm: metadataResult?.distanceKm ?? route.distance_km,
     estimatedDurationMinutes: metadataResult?.durationMinutes ?? route.estimated_duration_minutes,
-    elevationGainM: metadataResult?.elevationGainM ?? route.elevation_gain_m,
-    pathGeojson: staticRouteResult ?? route.path_geojson,
+    elevationGainM: null,
+    totalDistanceKm: metadataResult?.totalDistanceKm ?? route.total_distance_km,
+    returnSamePath: route.journey_type === 'one_way_return_same_path',
+    pathGeojson: staticRouteResult,
     checkpoints: ((checkpointResult.data ?? []) as CheckpointRow[]).map(
       mapCheckpoint
     ),
@@ -188,4 +195,10 @@ export async function getSummitRouteContent(): Promise<RouteContent> {
 
   if (!mediaResult.error) cacheRouteContent(content);
   return content;
+}
+
+export async function listAvailableRoutes(): Promise<RouteContent[]> {
+  const { data, error } = await supabase.from('routes').select('id').eq('is_active', true).not('asset_prefix', 'is', null).order('created_at');
+  if (error) throw error;
+  return Promise.all((data as Array<{ id: string }>).map((row) => getRouteContent(row.id)));
 }

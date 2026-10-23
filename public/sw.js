@@ -1,5 +1,5 @@
-const CACHE_NAME = 'volcan-santa-maria-v2';
-const OFFLINE_ASSETS = ['/', '/data/santa-maria-route.geojson', '/data/santa-maria-route-metadata.json'];
+const CACHE_NAME = 'volcan-santa-maria-v3';
+const OFFLINE_ASSETS = ['/', '/data/santa-maria-route.geojson', '/data/santa-maria-route-metadata.json', '/data/mirador-picacho-route.geojson', '/data/mirador-picacho-route-metadata.json'];
 self.addEventListener('install', (event) => { event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (event) => { event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (event) => { if (event.request.method !== 'GET') return; event.respondWith(fetch(event.request).then((response) => { const requestUrl = new URL(event.request.url); const isLocalAsset = requestUrl.origin === self.location.origin; const isRouteMedia = requestUrl.pathname.includes('/storage/v1/object/sign/route-media/'); if (response.ok && (isLocalAsset || isRouteMedia)) { const clone = response.clone(); void caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)); } return response; }).catch(() => caches.match(event.request).then((cached) => cached ?? (event.request.mode === 'navigate' ? caches.match('/') : Response.error())))); });

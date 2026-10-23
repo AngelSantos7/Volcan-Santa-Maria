@@ -3,10 +3,10 @@ create extension if not exists pgtap with schema extensions;
 select plan(34);
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
-('e1000000-0000-4000-8000-000000000001','phase4-admin@example.invalid',now(),'{"first_name":"Ana","last_name":"Admin"}'),
-('e2000000-0000-4000-8000-000000000002','phase4-manager@example.invalid',now(),'{"first_name":"Marta","last_name":"Gestora"}'),
-('e3000000-0000-4000-8000-000000000003','phase4-adult@example.invalid',now(),'{"first_name":"Adulta","last_name":"Responsable"}'),
-('e4000000-0000-4000-8000-000000000004','phase4-tourist@example.invalid',now(),'{"first_name":"Otra","last_name":"Turista"}');
+('e1000000-0000-4000-8000-000000000001','phase4-admin@example.invalid',now(),'{"date_of_birth":"1990-01-01","first_name":"Ana","last_name":"Admin"}'),
+('e2000000-0000-4000-8000-000000000002','phase4-manager@example.invalid',now(),'{"date_of_birth":"1990-01-01","first_name":"Marta","last_name":"Gestora"}'),
+('e3000000-0000-4000-8000-000000000003','phase4-adult@example.invalid',now(),'{"date_of_birth":"1990-01-01","first_name":"Adulta","last_name":"Responsable"}'),
+('e4000000-0000-4000-8000-000000000004','phase4-tourist@example.invalid',now(),'{"date_of_birth":"1990-01-01","first_name":"Otra","last_name":"Turista"}');
 update public.user_roles set role='admin' where user_id='e1000000-0000-4000-8000-000000000001';
 update public.user_roles set role='visitor_manager' where user_id='e2000000-0000-4000-8000-000000000002';
 update public.profiles set date_of_birth='1990-01-01',sex='female',nationality_country_code='GT',phone='+50255550000',document_type='passport',document_number='PHASE4-'||id::text where id in ('e3000000-0000-4000-8000-000000000003','e4000000-0000-4000-8000-000000000004');

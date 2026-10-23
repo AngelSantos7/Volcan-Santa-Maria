@@ -1,10 +1,18 @@
 begin;
+
+-- Advance only this file's fixtures to a normal-return time.
+create function pg_temp.elapse_fixture_visits() returns void language sql security definer as $$
+  update public.visits set started_at=now()-interval '6 hours',
+    planned_start_at=now()-interval '7 hours', expected_return_at=now()-interval '1 hour'
+  where status='in_progress' and created_by in ('fa000000-0000-4000-8000-000000000001'::uuid,'fa000000-0000-4000-8000-000000000002'::uuid);
+$$;
+
 create extension if not exists pgtap with schema extensions;
 select plan(10);
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
-('fa000000-0000-4000-8000-000000000001','adult-a@example.invalid',now(),'{}'),
-('fa000000-0000-4000-8000-000000000002','adult-b@example.invalid',now(),'{}');
+('fa000000-0000-4000-8000-000000000001','adult-a@example.invalid',now(),'{"date_of_birth":"1990-01-01"}'),
+('fa000000-0000-4000-8000-000000000002','adult-b@example.invalid',now(),'{"date_of_birth":"1990-01-01"}');
 
 update public.profiles set first_name='Adulto',last_name='A',date_of_birth='1980-01-01',sex='male',nationality_country_code='GT',department_code='quetzaltenango',phone='+50255551001',document_type='passport',document_number='RETURN-A' where id='fa000000-0000-4000-8000-000000000001';
 update public.profiles set first_name='Adulto',last_name='B',date_of_birth='1985-01-01',sex='female',nationality_country_code='MX',phone='+525555551002',document_type='passport',document_number='RETURN-B' where id='fa000000-0000-4000-8000-000000000002';
@@ -40,6 +48,7 @@ select is((select count(distinct responsible_member_id) from public.visit_minors
 
 select pg_temp.authenticate_as('fa000000-0000-4000-8000-000000000001');
 select public.start_group_visit((select visit_id from return_group));
+select pg_temp.elapse_fixture_visits();
 select public.complete_my_visit_participation((select visit_id from return_group));
 reset role;
 
@@ -51,6 +60,7 @@ select is((select public.visit_minor_operational_status(visit.status,responsible
 
 set local role authenticated;
 select pg_temp.authenticate_as('fa000000-0000-4000-8000-000000000002');
+select pg_temp.elapse_fixture_visits();
 select public.complete_my_visit_participation((select visit_id from return_group));
 reset role;
 select is((select status::text from public.visits where id=(select visit_id from return_group)),'completed','group completes only after adult B returns');
