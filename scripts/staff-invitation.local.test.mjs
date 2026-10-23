@@ -35,14 +35,31 @@ async function fixture(role = 'tourist') {
   check(!signed.error && signed.data.session, 'Fixture login');
   return { id, instance, token: signed.data.session.access_token };
 }
-async function invite(token, email) {
+async function manageInvitation(token, body) {
   const response = await fetch(new URL('/functions/v1/invite-staff', url), {
     method: 'POST', headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'invite', email, firstName: 'Synthetic', lastName: 'Manager', phone: '+50255551234', permissions: { can_view_visitors: true, can_view_emergency_contacts: true } }),
+    body: JSON.stringify(body),
   });
   const data = await response.json();
   if (data.user_id) created.add(data.user_id);
   return { status: response.status, data };
+}
+async function invite(token, email) {
+  return manageInvitation(token, {
+    action: 'invite', email, firstName: 'Synthetic', lastName: 'Manager',
+    phone: '+50255551234', permissions: { can_view_visitors: true, can_view_emergency_contacts: true },
+  });
+}
+async function mailCount(email) {
+  const inbox = await (await fetch(new URL(`/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`, mail))).json();
+  return (inbox.messages ?? []).length;
+}
+async function waitForMailCount(email, minimum) {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (await mailCount(email) >= minimum) return;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  throw new CheckError('Expected local email count was not reached');
 }
 async function emailSession(email, type) {
   for (let attempt = 0; attempt < 40; attempt++) {
@@ -91,6 +108,16 @@ try {
     for (const [key, value] of Object.entries(pending)) {
       if (key.startsWith('can_')) check(value === ['can_view_visitors', 'can_view_emergency_contacts'].includes(key), 'Unexpected granted permission');
     }
+    const createdAudit = (await admin.from('audit_logs').select('metadata').eq('action', 'staff_invitation_created').eq('target_id', id).single()).data;
+    check(createdAudit?.metadata?.source === 'invite_staff', 'Creation audit missing');
+    check(!['email', 'full_name', 'phone', 'token', 'link'].some(key => key in createdAudit.metadata), 'Creation audit contains personal or secret data');
+    await waitForMailCount(email, 1);
+    const resent = await manageInvitation(owner.token, { action: 'resend', userId: id, email });
+    check(resent.status === 200, 'Pending invitation resend');
+    await waitForMailCount(email, 2);
+    const resendAudit = (await admin.from('audit_logs').select('actor_user_id,metadata').eq('action', 'staff_invitation_resend_requested').eq('target_id', id).single()).data;
+    check(resendAudit?.actor_user_id === owner.id && Object.keys(resendAudit.metadata ?? {}).length === 0, 'Resend request audit');
+    console.log('Creation/resend audit and two Mailpit messages PASS');
     const staff = client();
     check(!(await staff.auth.setSession(await emailSession(email, 'invite'))).error, 'Invite link session');
     // GoTrue generates an internal temporary password when consuming an invite.
@@ -154,6 +181,11 @@ try {
   console.error(`FAIL: ${error instanceof CheckError ? error.message : 'Local request failed (details withheld)'}`);
   process.exitCode = 1;
 } finally {
+  const fixtureIds = [...created];
+  if (fixtureIds.length) {
+    if ((await admin.from('audit_logs').delete().in('target_id', fixtureIds)).error) process.exitCode = 1;
+    if ((await admin.from('audit_logs').delete().in('actor_user_id', fixtureIds)).error) process.exitCode = 1;
+  }
   for (const id of created) if ((await admin.auth.admin.deleteUser(id)).error) process.exitCode = 1;
   for (const instance of clients) await instance.auth.dispose();
   console.log('Synthetic fixture cleanup completed');

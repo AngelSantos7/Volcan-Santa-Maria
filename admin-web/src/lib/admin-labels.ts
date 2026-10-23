@@ -47,6 +47,7 @@ const AUDIT_ACTIONS: Record<string, string> = {
   staff_deactivated: 'Desactivó gestor',
   staff_invited: 'Invitó gestor',
   staff_invitation_resent: 'Reenvió invitación',
+  staff_invitation_resend_requested: 'Solicitó reenvío de invitación',
   staff_invitation_deleted: 'Eliminó invitación pendiente',
 };
 
