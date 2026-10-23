@@ -73,7 +73,8 @@ select lives_ok($$select public.snooze_notification((select notification_id from
 select is(pg_temp.sqlstate_from($$select public.snooze_notification((select notification_id from public.get_my_notifications() limit 1))$$),'P0001','recipient cannot snooze twice');
 select lives_ok($$select public.mark_notification_read((select notification_id from public.get_my_notifications() limit 1))$$,'recipient can close a notification');
 select is((select count(*) from public.get_my_notifications() where read_at is not null),1::bigint,'read notification remains in history');
-select lives_ok($$select public.register_push_subscription('https://push.example.invalid/phase4','p256dh-test','auth-test','pgTAP')$$,'user can register own push subscription');
+-- Synthetic token on an allowed provider; this SQL test never sends a push.
+select lives_ok($$select public.register_push_subscription('https://fcm.googleapis.com/fcm/send/synthetic-phase4','p256dh-test','auth-test','pgTAP')$$,'user can register own push subscription');
 reset role;
 select is((select count(*) from public.push_subscriptions where user_id='e2000000-0000-4000-8000-000000000002'),1::bigint,'push subscription is bound to the authenticated user');
 
