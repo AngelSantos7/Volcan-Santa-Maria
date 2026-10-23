@@ -6,14 +6,13 @@ import { randomUUID } from 'node:crypto';
 import { isValidPassword } from '../shared/account-policy.ts';
 
 assert.equal(isValidPassword('volcan25'), false, 'Application policy requires uppercase');
-// Local Auth letters_digits preset validates length/letter/digit only; uppercase is
-// enforced by the shared application policy. Cloud configuration is not modified.
+// Auth lower_upper_letters_digits enforces the same composition as the application.
 
 const url = new URL(process.env.SUPABASE_TEST_URL ?? 'http://127.0.0.1:54321');
 assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname), 'LOCAL tests only');
 const key = process.env.SUPABASE_TEST_ANON_KEY;
 assert.ok(key, 'Set SUPABASE_TEST_ANON_KEY from local status');
-for (const [password, valid] of [['12345678', false], ['abcdefgh', false], ['Ab12', false], ['Volcan25', true], ['Maria2026', true]]) {
+for (const [password, valid] of [['12345678', false], ['abcdefgh', false], ['volcan25', false], ['VOLCAN25', false], ['Ab12', false], ['Volcan25', true], ['Maria2026', true]]) {
   const response = await fetch(new URL('/auth/v1/signup', url), {
     method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: `policy-${randomUUID()}@example.com`, password, data: { date_of_birth: '2015-01-01' } }),

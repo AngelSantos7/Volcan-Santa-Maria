@@ -30,7 +30,10 @@ function fixture({
           },
         };
       },
-      updateUser: async () => {
+      updateUser: async (attributes) => {
+        assert.equal(typeof attributes.current_password, 'string');
+        assert.ok(attributes.current_password.length > 0);
+        assert.equal(typeof attributes.password, 'string');
         calls.push(['update']);
         return { error: null };
       },
@@ -73,7 +76,7 @@ for (const role of ['tourist', 'admin', 'visitor_manager']) {
   });
 }
 test('invalid new password fails before contacting Auth', async () => {
-  for (const password of ['short1', 'lowercase9', 'NoNumberHere']) {
+  for (const password of ['short1', 'lowercase9', 'NoNumberHere', 'UPPERCASE9']) {
     const f = fixture();
     await assert.rejects(
       changeOwnPassword(

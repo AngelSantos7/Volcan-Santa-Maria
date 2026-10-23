@@ -187,10 +187,9 @@ enable_manual_linking = false
 minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-# App policy additionally requires an uppercase letter (shared/account-policy.ts).
-# CLI presets cannot express uppercase + digit without also requiring lowercase.
-# Keep the compatible Auth baseline; see docs/UX_UI_CORRECTIONS.md for enforcement limits.
-password_requirements = "letters_digits"
+# Match shared/account-policy.ts: at least one lowercase letter, uppercase letter and digit.
+# This official preset adds lowercase to the previous application requirements.
+password_requirements = "lower_upper_letters_digits"
 
 # Configure passkey sign-ins.
 # [auth.passkey]
@@ -233,7 +232,9 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
-secure_password_change = false
+# CLI 2.117.0 maps this to REQUIRE_REAUTHENTICATION, not REQUIRE_CURRENT_PASSWORD.
+# Use npm run auth:local:start to also enable GoTrue's native current-password check.
+secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
 # Number of characters used in the email OTP.

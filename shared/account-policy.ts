@@ -3,6 +3,7 @@ export const MIN_PASSWORD_LENGTH = 8;
 export function passwordChecks(password: string) {
   return {
     length: password.length >= MIN_PASSWORD_LENGTH,
+    lowercase: /[a-z]/u.test(password),
     uppercase: /[A-Z]/u.test(password),
     number: /[0-9]/u.test(password),
   };

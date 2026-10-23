@@ -1,6 +1,9 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+-- These SQL fixtures omit encrypted_password. Force the deferred passwordless
+-- age constraint at statement end so throws_ok also observes commit-time rules.
+set constraints auth.auth_users_check_registration_age immediate;
 
 select is(public.is_adult('2009-10-22','2026-10-22'),false,'17 is rejected');
 select is(public.is_adult('2008-10-22','2026-10-22'),true,'exactly 18 is adult');

@@ -18,7 +18,10 @@
     "test:staff": "node --test scripts/staff-invitation.test.mjs",
     "test:auth:local": "node scripts/auth-policy.local.test.mjs",
     "test:password": "node --test scripts/password-change.test.mjs",
-    "test:ui:final": "node scripts/final-flows-ui.test.mjs"
+    "test:ui:final": "node scripts/final-flows-ui.test.mjs",
+    "auth:local:start": "node scripts/start-local-auth.mjs",
+    "test:auth:security": "node scripts/auth-security.local.test.mjs",
+    "test:staff:local": "node scripts/staff-invitation.local.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

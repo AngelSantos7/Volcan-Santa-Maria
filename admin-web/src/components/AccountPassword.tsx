@@ -37,7 +37,7 @@ export function AccountPassword({ invitation = false, recovery = false, close, o
   const checks = passwordChecks(password);
   async function submit(event: FormEvent) {
     event.preventDefault(); setError('');
-    if (!isValidPassword(password)) { setError('Use al menos 8 caracteres, una letra mayúscula y un número.'); return; }
+    if (!isValidPassword(password)) { setError('Use al menos 8 caracteres, una letra minúscula, una mayúscula y un número.'); return; }
     if (confirmation !== password) { setError('Las contraseñas no coinciden.'); return; }
     setBusy(true);
     try {
@@ -61,6 +61,7 @@ export function AccountPassword({ invitation = false, recovery = false, close, o
       <label>Nueva contraseña<PasswordField autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} required /></label>
       <div className="password-rules" aria-live="polite">
         <span>{checks.length ? '✓' : '○'} Mínimo 8 caracteres</span>
+        <span>{checks.lowercase ? '✓' : '○'} Incluye una letra minúscula</span>
         <span>{checks.uppercase ? '✓' : '○'} Incluye una letra mayúscula</span>
         <span>{checks.number ? '✓' : '○'} Incluye un número</span>
       </div>

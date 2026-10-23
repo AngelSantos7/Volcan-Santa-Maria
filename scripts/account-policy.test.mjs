@@ -15,8 +15,8 @@ test('age uses calendar birthdays, including the exact eighteenth birthday', () 
 });
 
 test('one password policy for signup, change, reset and administrative accounts', () => {
-  for (const password of ['12345678', 'abcdefgh', 'Ab12', '!!!!!!!!', 'volcan25', 'volcan25!']) assert.equal(isValidPassword(password), false);
-  for (const password of ['Volcan25', 'Maria2026', 'Xela1234', 'VOLCAN25', 'Volcan25!']) assert.equal(isValidPassword(password), true);
+  for (const password of ['12345678', 'abcdefgh', 'Ab12', '!!!!!!!!', 'volcan25', 'volcan25!', 'VOLCAN25']) assert.equal(isValidPassword(password), false);
+  for (const password of ['Volcan25', 'Maria2026', 'Xela1234', 'Volcan25!']) assert.equal(isValidPassword(password), true);
 });
 
 test('08:00 start requires 12:00 estimate; physical early returns use their own flow', () => {
