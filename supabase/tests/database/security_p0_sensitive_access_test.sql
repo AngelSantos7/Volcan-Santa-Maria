@@ -123,7 +123,7 @@ select is(pg_temp.sqlstate_from($$select public.staff_get_visitor_sensitive_deta
 select pg_temp.authenticate_as(5);
 select lives_ok($$create temporary table p0_admin_sensitive_payload as select public.staff_get_visitor_sensitive_details('a0020000-0000-4000-8000-000000000002',true) payload$$,'Admin exception allows inactive visitor contacts and identity');
 select is((select payload->>'date_of_birth' from p0_admin_sensitive_payload),'1990-01-01','Admin explicit identity request retains date of birth');
-select lives_ok($$select public.admin_update_staff_permissions('a0020000-0000-4000-8000-000000000004','{"can_view_identity_documents":true}')$$,'historical permission setter preserves independent identity grant');
+select lives_ok($$select public.admin_update_staff_permissions_v2('a0020000-0000-4000-8000-000000000004','{"can_view_identity_documents":true}')$$,'current permission setter preserves independent identity grant');
 select lives_ok($$select public.admin_update_staff_permissions_v2('a0020000-0000-4000-8000-000000000004','{"can_view_emergency_contacts":false}')$$,'Admin can revoke contact permission without revoking identity');
 select pg_temp.authenticate_as(4);
 select is(public.staff_get_identity_details('a0020000-0000-4000-8000-000000000002')->>'document_number','P0-SYNTHETIC-DOCUMENT','identity-only permission works outside contact operational window');

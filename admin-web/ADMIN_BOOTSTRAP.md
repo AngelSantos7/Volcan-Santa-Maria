@@ -21,4 +21,4 @@ commit;
 
 Si el `select` no devuelve una fila, ejecute `rollback;` y compruebe que la cuenta completó el registro. No use el correo como identificador para este cambio.
 
-Después del bootstrap, los cambios futuros de rol deben hacerse únicamente mediante la función administrativa protegida `admin_set_user_role`, ejecutada por una sesión con rol `admin`. La interfaz de esta fase administra gestores ya asignados; no genera cuentas ni contraseñas.
+Después del bootstrap, el panel crea únicamente gestores mediante la Edge Function `invite-staff` y las RPC administrativas vigentes. La RPC heredada `admin_set_user_role(uuid,text)` se conserva por compatibilidad histórica, pero no está expuesta a `PUBLIC`, `anon`, `authenticated` ni `service_role`; no debe utilizarse para promover administradores. Cualquier alta adicional de administradores requiere el mismo procedimiento manual, explícito y auditado aplicado al primer administrador.

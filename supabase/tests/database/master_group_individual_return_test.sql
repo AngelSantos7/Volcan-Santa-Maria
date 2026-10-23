@@ -43,8 +43,8 @@ select * from public.add_my_visit_minors((select visit_id from return_group),
   '[{"full_name":"Menor B","age":12,"sex":"male","relationship":"child"}]'::jsonb,true);
 
 select is((select count(*) from public.visit_members where visit_id=(select visit_id from return_group)),2::bigint,'group stores two adults once');
-select is((select count(*) from public.visit_minors where visit_id=(select visit_id from return_group)),2::bigint,'group stores two minors once');
-select is((select count(distinct responsible_member_id) from public.visit_minors where visit_id=(select visit_id from return_group)),2::bigint,'minors remain assigned to their registering adults');
+select is((select count(*) from public.get_visit_minors((select visit_id from return_group))),2::bigint,'group stores two minors once');
+select is((select count(distinct responsible_member_id) from public.get_visit_minors((select visit_id from return_group))),2::bigint,'minors remain assigned to their registering adults');
 
 select pg_temp.authenticate_as('fa000000-0000-4000-8000-000000000001');
 select public.start_group_visit((select visit_id from return_group));

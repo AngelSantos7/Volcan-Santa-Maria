@@ -26,7 +26,7 @@ exception when others then
 end;
 $$;
 
-select ok(has_table_privilege('authenticated', 'public.profiles', 'UPDATE'), 'authenticated has the required table UPDATE grant');
+select ok(not has_table_privilege('authenticated', 'public.profiles', 'UPDATE'), 'authenticated has no table-wide UPDATE grant');
 select ok(has_column_privilege('authenticated', 'public.profiles', 'sex', 'UPDATE'), 'authenticated can update the sex profile field');
 select ok(has_column_privilege('authenticated', 'public.profiles', 'first_name', 'UPDATE'), 'authenticated can update an established profile field');
 select ok(not has_table_privilege('anon', 'public.profiles', 'UPDATE'), 'anon has no UPDATE privilege on profiles');

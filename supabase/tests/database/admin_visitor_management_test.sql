@@ -118,8 +118,8 @@ select results_eq(
   'name search preserves the real six-person group size'
 );
 select is(pg_temp.sqlstate_from($$select public.staff_get_visitor_sensitive_details('b5000000-0000-4000-8000-000000000005', false)$$), '42501', 'manager without permission cannot see sensitive data');
-select is(pg_temp.sqlstate_from($$select public.admin_update_staff_permissions('b2000000-0000-4000-8000-000000000002', '{"can_view_visitors":false}')$$), '42501', 'only an admin can modify permissions');
-select is(pg_temp.sqlstate_from($$select public.admin_set_user_role('b2000000-0000-4000-8000-000000000002', 'admin')$$), '42501', 'manager cannot convert users to admin');
+select is(pg_temp.sqlstate_from($$select public.admin_update_staff_permissions('b2000000-0000-4000-8000-000000000002', '{"can_view_visitors":false}')$$), '42501', 'legacy permission RPC is not exposed');
+select is(pg_temp.sqlstate_from($$select public.admin_set_user_role('b2000000-0000-4000-8000-000000000002', 'admin')$$), '42501', 'legacy role RPC is not exposed');
 
 reset role;
 update public.staff_permissions set can_view_emergency_contacts = true where user_id = 'b2000000-0000-4000-8000-000000000002';
@@ -133,7 +133,7 @@ select is((select count(*) from public.audit_logs where actor_user_id = 'b200000
 set local role authenticated;
 select pg_temp.authenticate_as('b1000000-0000-4000-8000-000000000001');
 select lives_ok($$select public.staff_get_visitor_sensitive_details('b5000000-0000-4000-8000-000000000005', true)$$, 'admin can see complete sensitive data');
-select lives_ok($$select public.admin_update_staff_permissions('b2000000-0000-4000-8000-000000000002', '{"can_view_identity_documents":true}')$$, 'admin can modify manager permissions');
+select lives_ok($$select public.admin_update_staff_permissions_v2('b2000000-0000-4000-8000-000000000002', '{"can_view_identity_documents":true}')$$, 'admin can modify manager permissions through the current RPC');
 
 select is(
   (public.get_visitor_dashboard_stats('2090-09-18 00:00:00-06', '2090-09-19 00:00:00-06') ->> 'entries_registered')::integer,

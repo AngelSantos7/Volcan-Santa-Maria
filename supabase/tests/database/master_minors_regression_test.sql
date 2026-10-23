@@ -67,7 +67,7 @@ select created.visit_id from public.create_group_visit_with_minors(
   'day_hike',null,now()+interval '8 hours',false,null,true,true,'now','[]'::jsonb,false
 ) created;
 grant select on created_zero to authenticated;
-select is((select count(*) from public.visit_minors where visit_id=(select visit_id from created_zero)),0::bigint,'atomic creation supports zero minors');
+select is((select count(*) from public.get_visit_minors((select visit_id from created_zero))),0::bigint,'atomic creation supports zero minors');
 select public.cancel_group_visit((select visit_id from created_zero));
 
 create temporary table created_one as
@@ -76,7 +76,7 @@ select created.visit_id from public.create_group_visit_with_minors(
   '[{"full_name":"Menor Único","age":7,"sex":"female","relationship":"child"}]'::jsonb,true
 ) created;
 grant select on created_one to authenticated;
-select is((select count(*) from public.visit_minors where visit_id=(select visit_id from created_one)),1::bigint,'planned expedition creation supports one minor');
+select is((select count(*) from public.get_visit_minors((select visit_id from created_one))),1::bigint,'planned expedition creation supports one minor');
 select public.cancel_group_visit((select visit_id from created_one));
 
 create temporary table created_three as
@@ -85,8 +85,11 @@ select created.visit_id from public.create_group_visit_with_minors(
   '[{"full_name":"Menor A","age":5,"sex":"female","relationship":"child"},{"full_name":"Menor B","age":9,"sex":"male","relationship":"sibling"},{"full_name":"Menor C","age":15,"sex":"female","relationship":"cousin"}]'::jsonb,true
 ) created;
 grant select on created_three to authenticated;
-select is((select count(*) from public.visit_minors where visit_id=(select visit_id from created_three)),3::bigint,'immediate expedition creation supports three minors');
+select is((select count(*) from public.get_visit_minors((select visit_id from created_three))),3::bigint,'immediate expedition creation supports three minors');
+reset role;
 select is((select count(*) from public.visit_minors where visit_id=(select visit_id from created_three) and responsibility_consent_version='1.0' and responsibility_consent_accepted_at is not null),3::bigint,'each minor records versioned responsibility consent');
+set local role authenticated;
+select pg_temp.authenticate_as('f1000000-0000-4000-8000-000000000001');
 select public.cancel_group_visit((select visit_id from created_three));
 
 select is(pg_temp.sqlstate_from($$select * from public.create_group_visit_with_minors(

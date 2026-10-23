@@ -7,6 +7,8 @@ insert into auth.users(id,email,raw_user_meta_data) values
 ('fa550000-0000-4000-8000-000000000002','push-test-b@example.invalid','{"date_of_birth":"1990-01-01"}');
 create function pg_temp.authenticate_as(p_id uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claims',jsonb_build_object('sub',p_id,'role','authenticated')::text,true); end; $$;
+create function pg_temp.sqlstate_from(command text) returns text language plpgsql as $$
+begin execute command; return null; exception when others then return sqlstate; end; $$;
 select ok((select relrowsecurity from pg_class where oid='public.push_subscriptions'::regclass),'RLS remains enabled');
 select ok(not has_table_privilege('authenticated','public.push_subscriptions','TRUNCATE'),'No RLS-bypassing TRUNCATE privilege');
 select ok(not has_table_privilege('authenticated','public.push_subscriptions','INSERT'),'Client writes must use the RPC');
@@ -30,7 +32,7 @@ select pg_temp.authenticate_as('fa550000-0000-4000-8000-000000000002');
 set local role authenticated;
 select throws_ok($$select public.register_push_subscription('https://fcm.googleapis.com/fcm/send/synthetic-owned','synthetic-B','synthetic-auth-B')$$,'42501','Unable to register push subscription.','Original takeover exploit denied');
 select throws_ok($$select public.register_push_subscription('https://fcm.googleapis.com/fcm/send/synthetic-owned','synthetic-B2','synthetic-auth-B2')$$,'42501','Unable to register push subscription.','Repeated cross-owner key replacement denied');
-select is((select count(*) from public.push_subscriptions),0::bigint,'RLS reveals no endpoints or keys to B');
+select is(pg_temp.sqlstate_from('select * from public.push_subscriptions'),'42501','direct subscription reads are denied to B');
 select lives_ok($$select public.remove_push_subscription('https://fcm.googleapis.com/fcm/send/synthetic-owned')$$,'Removal RPC hides foreign ownership');
 reset role;
 select ok((select user_id='fa550000-0000-4000-8000-000000000001' and p256dh='synthetic-A2' and auth='synthetic-auth-A2' from public.push_subscriptions where id=(select id from original_push_id)),'Owner and both keys unchanged after attacks and foreign removal');
