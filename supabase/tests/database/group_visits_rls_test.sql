@@ -10,7 +10,7 @@ $$;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(42);
 
 -- All identities and records are isolated by the surrounding transaction.
 insert into auth.users (id, email, raw_user_meta_data)
@@ -643,11 +643,15 @@ select pg_temp.authenticate_as(
 select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
-    'select public.complete_group_visit(%L::uuid)',
+    'select public.complete_my_visit_participation(%L::uuid)',
     (select visit_id from pg_temp.test_created_visits where label = 'main')
   ),
-  'leader can complete an in-progress group visit'
+  'leader can complete their own participation'
 );
+select pg_temp.authenticate_as('b2000000-0000-4000-8000-000000000002');
+select lives_ok(format('select public.complete_my_visit_participation(%L::uuid)',
+  (select visit_id from pg_temp.test_created_visits where label = 'main')),
+  'member confirms own arrival before the group closes');
 
 select results_eq(
   $$

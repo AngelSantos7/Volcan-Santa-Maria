@@ -367,7 +367,7 @@ select results_eq(
 select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
-    'select public.complete_group_visit(%L::uuid)',
+    'select public.complete_my_visit_participation(%L::uuid)',
     (
       select visit_id
       from pg_temp.test_visit_returns

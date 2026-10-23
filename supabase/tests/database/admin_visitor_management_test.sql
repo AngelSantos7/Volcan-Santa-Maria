@@ -122,10 +122,10 @@ select is(pg_temp.sqlstate_from($$select public.admin_update_staff_permissions('
 select is(pg_temp.sqlstate_from($$select public.admin_set_user_role('b2000000-0000-4000-8000-000000000002', 'admin')$$), '42501', 'manager cannot convert users to admin');
 
 reset role;
-update public.staff_permissions set can_view_sensitive_data = true where user_id = 'b2000000-0000-4000-8000-000000000002';
+update public.staff_permissions set can_view_emergency_contacts = true where user_id = 'b2000000-0000-4000-8000-000000000002';
 set local role authenticated;
 select pg_temp.authenticate_as('b2000000-0000-4000-8000-000000000002');
-select lives_ok($$select public.staff_get_visitor_sensitive_details('b5000000-0000-4000-8000-000000000005', false)$$, 'manager with permission can see sensitive data');
+select lives_ok($$select public.staff_get_visitor_sensitive_details('b5000000-0000-4000-8000-000000000005', false)$$, 'manager with specific contact permission can see operational sensitive data');
 select is(pg_temp.sqlstate_from($$select public.staff_get_visitor_sensitive_details('b1000000-0000-4000-8000-000000000001', false)$$), 'P0002', 'sensitive visitor RPC rejects a staff account without visit membership');
 reset role;
 select is((select count(*) from public.audit_logs where actor_user_id = 'b2000000-0000-4000-8000-000000000002' and action = 'sensitive_data_viewed'), 1::bigint, 'sensitive access creates an audit record');

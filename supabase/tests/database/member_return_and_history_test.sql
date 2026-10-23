@@ -10,7 +10,7 @@ $$;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(42);
+select plan(43);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -623,11 +623,17 @@ select pg_temp.authenticate_as(
 select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
-    'select public.complete_group_visit(%L::uuid)',
+    'select public.complete_my_visit_participation(%L::uuid)',
     (select visit_id from pg_temp.test_member_visits where label = 'main')
   ),
-  'organizer completes the group visit'
+  'organizer completes only their participation'
 );
+
+-- The remaining adult must personally confirm arrival before group closure.
+select pg_temp.authenticate_as('e6000000-0000-4000-8000-000000000006');
+select lives_ok(format('select public.complete_my_visit_participation(%L::uuid)',
+  (select visit_id from pg_temp.test_member_visits where label = 'main')),
+  'remaining active adult confirms their own return');
 
 -- 30
 select is(
@@ -640,7 +646,7 @@ select is(
       and member_status = 'completed'::public.visit_member_status
   ),
   2::bigint,
-  'all members still active at group completion become completed'
+  'both adults that confirmed their own returns are completed'
 );
 
 -- 31
@@ -757,7 +763,7 @@ select lives_ok(
 select pg_temp.elapse_fixture_visits();
 select lives_ok(
   format(
-    'select public.complete_group_visit(%L::uuid)',
+    'select public.complete_my_visit_participation(%L::uuid)',
     (select visit_id from pg_temp.test_member_visits where label = 'solo')
   ),
   'single-participant visit can complete'
